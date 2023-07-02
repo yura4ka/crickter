@@ -17,7 +17,7 @@ type User struct {
 func (User) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Unique().Default(uuid.New),
-		field.String("email").Unique().Match(regexp.MustCompile(`^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$`)),
+		field.String("email").Unique().Match(regexp.MustCompile(`[\w-\.]+@([\w-]+\.)+[\w-]{2,4}`)),
 		field.String("password"),
 		field.String("username").MaxLen(20),
 		field.Time("createdAt").Default(time.Now),

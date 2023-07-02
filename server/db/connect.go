@@ -10,6 +10,7 @@ import (
 )
 
 var Client *ent.Client
+var Ctx context.Context
 
 func Connect() {
 	var err error
@@ -21,4 +22,6 @@ func Connect() {
 	if err := Client.Schema.Create(context.Background()); err != nil {
 		log.Fatalf("failed creating schema resources: %v", err)
 	}
+
+	Ctx = context.Background()
 }

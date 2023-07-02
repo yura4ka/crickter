@@ -9,6 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/joho/godotenv"
 	"github.com/yura4ka/crickter/db"
+	"github.com/yura4ka/crickter/router"
 )
 
 func init() {
@@ -24,10 +25,7 @@ func main() {
 	app.Use(cors.New())
 
 	db.Connect()
-
-	app.Get("/ping", func(c *fiber.Ctx) error {
-		return c.SendString("pong")
-	})
+	router.SetupRouter(app)
 
 	log.Fatal(app.Listen(os.Getenv("SERVER_ADDR")))
 }
