@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"log"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/yura4ka/crickter/services"
@@ -58,18 +57,38 @@ func Login(c *fiber.Ctx) error {
 		return c.SendStatus(400)
 	}
 
-	c.Cookie(&fiber.Cookie{
-		Name:     "refresh_token",
-		Value:    refresh,
-		Expires:  time.Now().Add(time.Hour * 24 * 30),
-		HTTPOnly: true,
-	})
-
+	c.Cookie(services.CreateRefreshCookie(refresh))
 	return c.JSON(fiber.Map{
 		"access": access,
 	})
 }
 
 func Refresh(c *fiber.Ctx) error {
-	return c.SendString("refresh")
+	refresh := c.Cookies("refresh_token")
+	payload, err := services.VerifyRefreshToken(refresh)
+	if err != nil {
+		log.Print(err)
+		return c.SendStatus(403)
+	}
+
+	user, err := services.GetUserById(payload.Id)
+	if err != nil {
+		log.Print(err)
+		c.ClearCookie()
+		return c.SendStatus(403)
+	}
+
+	newAccess, _ := services.CreateAccessToken(services.TokenPayload{Id: payload.Id})
+	newRefresh, _ := services.CreateRefreshToken(services.TokenPayload{Id: payload.Id})
+	if newAccess == "" || newRefresh == "" {
+		log.Print("Error creating token")
+		return c.SendStatus(403)
+	}
+
+	c.Cookie(services.CreateRefreshCookie(newRefresh))
+	return c.JSON(fiber.Map{
+		"access":   newAccess,
+		"email":    user.Email,
+		"username": user.Username,
+	})
 }

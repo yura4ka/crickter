@@ -1,6 +1,7 @@
 package services
 
 import (
+	"github.com/google/uuid"
 	"github.com/yura4ka/crickter/db"
 	"github.com/yura4ka/crickter/ent"
 	"github.com/yura4ka/crickter/ent/user"
@@ -38,5 +39,17 @@ func GetUserByEmail(email string) (*ent.User, error) {
 	return db.Client.User.
 		Query().
 		Where(user.Email(email)).
+		Only(db.Ctx)
+}
+
+func GetUserById(id string) (*ent.User, error) {
+	uuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return db.Client.User.
+		Query().
+		Where(user.ID(uuid)).
 		Only(db.Ctx)
 }
