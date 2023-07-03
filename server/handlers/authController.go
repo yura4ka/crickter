@@ -87,8 +87,10 @@ func Refresh(c *fiber.Ctx) error {
 
 	c.Cookie(services.CreateRefreshCookie(newRefresh))
 	return c.JSON(fiber.Map{
-		"access":   newAccess,
-		"email":    user.Email,
-		"username": user.Username,
+		"token": newAccess,
+		"user": fiber.Map{
+			"email":    user.Email,
+			"username": user.Username,
+		},
 	})
 }
