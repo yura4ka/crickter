@@ -2,6 +2,8 @@ package services
 
 import (
 	"github.com/yura4ka/crickter/db"
+	"github.com/yura4ka/crickter/ent"
+	"github.com/yura4ka/crickter/ent/user"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -30,4 +32,11 @@ func CreateUser(user *NewUser) (string, error) {
 	}
 
 	return created.ID.String(), err
+}
+
+func GetUserByEmail(email string) (*ent.User, error) {
+	return db.Client.User.
+		Query().
+		Where(user.Email(email)).
+		Only(db.Ctx)
 }
