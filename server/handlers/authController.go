@@ -68,21 +68,21 @@ func Refresh(c *fiber.Ctx) error {
 	payload, err := services.VerifyRefreshToken(refresh)
 	if err != nil {
 		log.Print(err)
-		return c.SendStatus(403)
+		return c.SendStatus(400)
 	}
 
 	user, err := services.GetUserById(payload.Id)
 	if err != nil {
 		log.Print(err)
 		c.ClearCookie()
-		return c.SendStatus(403)
+		return c.SendStatus(400)
 	}
 
 	newAccess, _ := services.CreateAccessToken(services.TokenPayload{Id: payload.Id})
 	newRefresh, _ := services.CreateRefreshToken(services.TokenPayload{Id: payload.Id})
 	if newAccess == "" || newRefresh == "" {
 		log.Print("Error creating token")
-		return c.SendStatus(403)
+		return c.SendStatus(400)
 	}
 
 	c.Cookie(services.CreateRefreshCookie(newRefresh))

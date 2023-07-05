@@ -1,12 +1,12 @@
 import { RootState } from "@/app/store";
 import { PayloadAction, createSlice } from "@reduxjs/toolkit";
-import { authApiSlice } from "./authApiSlice";
+import { authApi } from "./authApiSlice";
 
 export interface AuthState {
   user?: {
     email: string;
     username: string;
-  };
+  } | null;
   token?: string;
 }
 
@@ -23,16 +23,24 @@ export const authSlice = createSlice({
       state.token = action.payload.token;
       state.user = action.payload.user;
     },
-    logOut: () => initialState,
+    logOut: (state) => {
+      state.token = undefined;
+      state.user = null;
+    },
   },
   extraReducers: (builder) => {
-    builder.addMatcher(
-      authApiSlice.endpoints.login.matchFulfilled,
-      (state, { payload }) => {
-        state.token = payload.token;
-        state.user = payload.user;
-      }
-    );
+    builder.addMatcher(authApi.endpoints.login.matchFulfilled, (state, { payload }) => {
+      state.token = payload.token;
+      state.user = payload.user;
+    });
+    builder.addMatcher(authApi.endpoints.refresh.matchFulfilled, (state, { payload }) => {
+      state.token = payload.token;
+      state.user = payload.user;
+    });
+    builder.addMatcher(authApi.endpoints.refresh.matchRejected, (state) => {
+      state.token = undefined;
+      state.user = null;
+    });
   },
 });
 
