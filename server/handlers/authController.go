@@ -94,3 +94,21 @@ func Refresh(c *fiber.Ctx) error {
 		},
 	})
 }
+
+func CheckEmail(c *fiber.Ctx) error {
+	type Input struct {
+		Email string `json:"email"`
+	}
+
+	input := new(Input)
+	if err := c.BodyParser(input); err != nil {
+		return c.SendStatus(400)
+	}
+
+	_, err := services.GetUserByEmail(input.Email)
+	if err != nil {
+		return c.SendStatus(400)
+	}
+	return c.SendStatus(200)
+
+}
