@@ -2,11 +2,13 @@ import { RootState } from "@/app/store";
 import { PayloadAction, createSlice } from "@reduxjs/toolkit";
 import { authApi } from "./authApiSlice";
 
+export interface User {
+  email: string;
+  username: string;
+}
+
 export interface AuthState {
-  user?: {
-    email: string;
-    username: string;
-  } | null;
+  user?: User | null;
   token?: string;
 }
 

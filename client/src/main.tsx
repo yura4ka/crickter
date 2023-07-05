@@ -15,6 +15,7 @@ import AuthLayout from "./features/auth/AuthLayout.tsx";
 import Login from "./features/auth/Login.tsx";
 import Register from "./features/auth/Register.tsx";
 import Profile from "./features/profile/Profile.tsx";
+import { ThemeProvider } from "./lib/ThemeContext.tsx";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -33,7 +34,9 @@ const router = createBrowserRouter(
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <Provider store={store}>
-      <RouterProvider router={router} />
+      <ThemeProvider>
+        <RouterProvider router={router} />
+      </ThemeProvider>
     </Provider>
   </React.StrictMode>
 );
