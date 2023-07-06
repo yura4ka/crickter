@@ -70,3 +70,12 @@ func VerifyRefreshToken(token string) (*TokenPayload, error) {
 
 	return nil, err
 }
+
+func ClearRefreshCookie() *fiber.Cookie {
+	return &fiber.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		Expires:  time.Now().Add(-time.Hour * 24),
+		HTTPOnly: true,
+	}
+}

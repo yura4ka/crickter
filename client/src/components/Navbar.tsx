@@ -1,5 +1,3 @@
-import { useAppDispatch } from "@/app/hooks";
-import { logOut } from "@/features/auth/authSlice";
 import { useAuth } from "@/features/auth/useAuth";
 import {
   DropdownMenu,
@@ -14,10 +12,11 @@ import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Link } from "react-router-dom";
 import { Button } from "./ui/button";
 import ModeToggle from "./ui/ModeToggle";
+import { useLogoutMutation } from "@/features/auth/authApiSlice";
 
 const Navbar = () => {
   const { isAuth, isLoading, user } = useAuth();
-  const dispatch = useAppDispatch();
+  const [logout] = useLogoutMutation();
 
   return (
     <header className="supports-backdrop-blur:bg-background/60 sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur">
@@ -51,10 +50,7 @@ const Navbar = () => {
                     </DropdownMenuItem>
                   </Link>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    onClick={() => dispatch(logOut)}
-                  >
+                  <DropdownMenuItem className="cursor-pointer" onClick={logout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                   </DropdownMenuItem>

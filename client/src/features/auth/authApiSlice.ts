@@ -39,6 +39,13 @@ export const authApi = api.injectEndpoints({
         responseHandler: (response) => response.text(),
       }),
     }),
+    logout: builder.mutation({
+      query: () => ({
+        url: "auth/logout",
+        method: "GET",
+        responseHandler: (response) => response.text(),
+      }),
+    }),
   }),
 });
 
@@ -47,4 +54,5 @@ export const {
   useRegisterMutation,
   useRefreshQuery,
   useCheckEmailMutation,
+  useLogoutMutation
 } = authApi;

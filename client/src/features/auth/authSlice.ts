@@ -21,13 +21,9 @@ export const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    setCredentials: (state, action: PayloadAction<Required<AuthState>>) => {
+    setCredentials: (state, action: PayloadAction<AuthState>) => {
       state.token = action.payload.token;
       state.user = action.payload.user;
-    },
-    logOut: (state) => {
-      state.token = undefined;
-      state.user = null;
     },
   },
   extraReducers: (builder) => {
@@ -43,10 +39,14 @@ export const authSlice = createSlice({
       state.token = undefined;
       state.user = null;
     });
+    builder.addMatcher(authApi.endpoints.logout.matchFulfilled, (state) => {
+      state.token = undefined;
+      state.user = null;
+    });
   },
 });
 
-export const { setCredentials, logOut } = authSlice.actions;
+export const { setCredentials } = authSlice.actions;
 
 export const selectUser = (state: RootState) => state.auth.user;
 

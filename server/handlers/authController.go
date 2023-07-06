@@ -74,7 +74,7 @@ func Refresh(c *fiber.Ctx) error {
 	user, err := services.GetUserById(payload.Id)
 	if err != nil {
 		log.Print(err)
-		c.ClearCookie()
+		c.Cookie(services.ClearRefreshCookie())
 		return c.SendStatus(400)
 	}
 
@@ -109,6 +109,11 @@ func CheckEmail(c *fiber.Ctx) error {
 	if err != nil {
 		return c.SendStatus(200)
 	}
-	return c.SendStatus(400)
 
+	return c.SendStatus(400)
+}
+
+func Logout(c *fiber.Ctx) error {
+	c.Cookie(services.ClearRefreshCookie())
+	return c.SendStatus(200)
 }
