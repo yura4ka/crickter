@@ -19,15 +19,17 @@ const Navbar = () => {
   const [logout] = useLogoutMutation();
 
   return (
-    <header className="supports-backdrop-blur:bg-background/60 sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur">
-      <div className="container flex items-center justify-between gap-4 py-2">
-        <h1 className="font-mono text-2xl font-semibold tracking-tighter">crickter</h1>
-        <nav className="flex gap-2">
+    <header className="supports-backdrop-blur:bg-background/60 sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
+      <div className="flex items-center justify-between gap-4 px-4 py-2 sm:container">
+        <Link to="/" className="font-mono text-2xl font-semibold tracking-tighter">
+          crickter
+        </Link>
+        <nav className="flex">
           {!isLoading &&
             (isAuth ? (
               <DropdownMenu>
                 <DropdownMenuTrigger>
-                  <Avatar>
+                  <Avatar className="mr-2 sm:mx-4">
                     <AvatarFallback>{user.username[0]}</AvatarFallback>
                   </Avatar>
                 </DropdownMenuTrigger>
@@ -57,9 +59,16 @@ const Navbar = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button variant="outline" asChild className="mr-4">
-                <Link to="/login">Log in</Link>
-              </Button>
+              <>
+                <Button asChild className="hidden sm:flex">
+                  <Link to="/register">Sign up</Link>
+                </Button>
+                <Button variant="outline" asChild className="mr-1 sm:mx-2">
+                  <Link to="/login" className="whitespace-nowrap">
+                    Log in
+                  </Link>
+                </Button>
+              </>
             ))}
           <Button variant="ghost" size="icon" asChild>
             <a href="https://github.com/yura4ka/">

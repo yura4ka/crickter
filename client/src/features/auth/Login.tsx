@@ -47,9 +47,9 @@ const Login = () => {
   };
 
   return (
-    <div className="grid h-full place-content-center p-2">
-      <Card className="min-w-[420px]">
-        <CardHeader>
+    <div className="grid p-4 sm:place-content-center sm:p-2">
+      <Card className="mt-8 h-min p-4 sm:mt-0 sm:min-w-[420px] sm:border">
+        <CardHeader className="px-0 sm:p-6">
           <CardTitle>Log in</CardTitle>
           <CardDescription>
             Don't have an account?{" "}
@@ -62,7 +62,7 @@ const Login = () => {
           </CardDescription>
         </CardHeader>
         <form onSubmit={onSubmit}>
-          <CardContent className="grid items-center gap-4">
+          <CardContent className="grid items-center gap-4 px-0 sm:p-6 sm:pt-0">
             <CustomInput
               type="text"
               label="Email"
@@ -79,7 +79,7 @@ const Login = () => {
               description={isError ? "Wrong email or password" : undefined}
             />
           </CardContent>
-          <CardFooter>
+          <CardFooter className="px-0 sm:p-6 sm:pt-0">
             <SubmitButton isLoading={isLoading} disabled={!canSubmit} className="w-full">
               Log in
             </SubmitButton>
