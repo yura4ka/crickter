@@ -1,6 +1,5 @@
 import CustomInput from "@/components/CustomInput";
 import PasswordInput from "@/components/PasswordInput";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -13,6 +12,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useLoginMutation } from "./authApiSlice";
 import { emailRegexp, validatePassword } from "@/lib/utils";
+import SubmitButton from "@/components/SubmitButton";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -34,10 +34,7 @@ const Login = () => {
   };
 
   const canSubmit =
-    !isError &&
-    !isLoading &&
-    emailRegexp.test(email.trim()) &&
-    validatePassword(password);
+    !isError && emailRegexp.test(email.trim()) && validatePassword(password);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,9 +80,9 @@ const Login = () => {
             />
           </CardContent>
           <CardFooter>
-            <Button disabled={!canSubmit} className="w-full">
+            <SubmitButton isLoading={isLoading} disabled={!canSubmit} className="w-full">
               Log in
-            </Button>
+            </SubmitButton>
           </CardFooter>
         </form>
       </Card>

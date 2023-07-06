@@ -20,7 +20,9 @@ const PasswordInput: FC<CustomInputProps> = (props) => {
         type="button"
         variant="secondary"
         size="icon"
-        className="absolute right-0 top-0 translate-y-1/2 rounded-l-none"
+        className={`absolute right-0 top-0 translate-y-1/2 rounded-l-none ${
+          props.isError ? "border border-l-0 border-destructive" : ""
+        }`}
       >
         {isVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
       </Button>

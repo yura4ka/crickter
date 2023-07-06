@@ -17,7 +17,7 @@ import {
 } from "./authApiSlice";
 import { emailRegexp, validatePassword } from "@/lib/utils";
 import ConfirmPassword from "@/components/ConfirmPassword";
-import { Button } from "@/components/ui/button";
+import SubmitButton from "@/components/SubmitButton";
 
 const EmailInfoState = {
   OK: "",
@@ -69,8 +69,6 @@ const Register = () => {
 
   const canSubmit =
     !isCheckLoading &&
-    !isRegisterLoad &&
-    !isLoginLoad &&
     !isEmailTaken &&
     emailInfo === EmailInfoState.OK &&
     form.username.trim().length !== 0 &&
@@ -138,9 +136,13 @@ const Register = () => {
             />
           </CardContent>
           <CardFooter>
-            <Button disabled={!canSubmit} className="w-full">
+            <SubmitButton
+              isLoading={isRegisterLoad || isLoginLoad}
+              disabled={!canSubmit}
+              className="w-full"
+            >
               Sign up
-            </Button>
+            </SubmitButton>
           </CardFooter>
         </form>
       </Card>
