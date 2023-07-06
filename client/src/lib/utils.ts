@@ -6,3 +6,4 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const emailRegexp = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
+export const validatePassword = (password: string) => password.trim().length >= 4;

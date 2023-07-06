@@ -15,7 +15,7 @@ import {
   useLoginMutation,
   useRegisterMutation,
 } from "./authApiSlice";
-import { emailRegexp } from "@/lib/utils";
+import { emailRegexp, validatePassword } from "@/lib/utils";
 import ConfirmPassword from "@/components/ConfirmPassword";
 import { Button } from "@/components/ui/button";
 
@@ -129,7 +129,7 @@ const Register = () => {
             />
             <ConfirmPassword
               description="At least 4 characters"
-              validate={(value) => value.trim().length >= 4}
+              validate={validatePassword}
               onChange={(value, isValid) => {
                 changeForm("password", value);
                 changeForm("isPasswordValid", isValid);
