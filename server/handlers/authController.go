@@ -107,8 +107,8 @@ func CheckEmail(c *fiber.Ctx) error {
 
 	_, err := services.GetUserByEmail(input.Email)
 	if err != nil {
-		return c.SendStatus(400)
+		return c.SendStatus(200)
 	}
-	return c.SendStatus(200)
+	return c.SendStatus(400)
 
 }

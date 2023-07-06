@@ -11,5 +11,5 @@ func addAuthRouter(app *fiber.App) {
 	auth.Post("/register", handlers.Register)
 	auth.Post("/login", handlers.Login)
 	auth.Get("/refresh", handlers.Refresh)
-	auth.Get("/checkEmail", handlers.CheckEmail)
+	auth.Post("/checkEmail", handlers.CheckEmail)
 }

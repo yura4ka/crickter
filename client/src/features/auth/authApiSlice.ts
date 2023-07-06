@@ -3,13 +3,13 @@ import { AuthState } from "./authSlice";
 
 export interface LoginRequest {
   email: string;
-  username: string;
   password: string;
 }
 
 export interface RegisterRequest {
   email: string;
   password: string;
+  username: string;
 }
 
 export const authApi = api.injectEndpoints({
@@ -31,7 +31,20 @@ export const authApi = api.injectEndpoints({
     refresh: builder.query<Required<AuthState>, undefined>({
       query: () => ({ url: "auth/refresh" }),
     }),
+    checkEmail: builder.mutation<undefined, string>({
+      query: (email) => ({
+        url: "auth/checkEmail",
+        method: "POST",
+        body: { email },
+        responseHandler: (response) => response.text(),
+      }),
+    }),
   }),
 });
 
-export const { useLoginMutation, useRegisterMutation, useRefreshQuery } = authApi;
+export const {
+  useLoginMutation,
+  useRegisterMutation,
+  useRefreshQuery,
+  useCheckEmailMutation,
+} = authApi;
