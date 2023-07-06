@@ -3,14 +3,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 
-interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
+export interface CustomInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
   description?: string;
   isError?: boolean;
   isLoading?: boolean;
 }
 
-const CustomInput: FC<Props> = ({ label, description, isError, isLoading, ...rest }) => {
+const CustomInput: FC<CustomInputProps> = ({ label, description, isError, isLoading, ...rest }) => {
   const createdId = useId();
   const id = rest.id || label || "input-" + createdId;
 
