@@ -12,7 +12,9 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/yura4ka/crickter/ent/comment"
 	"github.com/yura4ka/crickter/ent/post"
+	"github.com/yura4ka/crickter/ent/postreaction"
 	"github.com/yura4ka/crickter/ent/predicate"
 	"github.com/yura4ka/crickter/ent/user"
 )
@@ -20,12 +22,16 @@ import (
 // PostQuery is the builder for querying Post entities.
 type PostQuery struct {
 	config
-	ctx         *QueryContext
-	order       []post.OrderOption
-	inters      []Interceptor
-	predicates  []predicate.Post
-	withUser    *UserQuery
-	withLikedBy *UserQuery
+	ctx           *QueryContext
+	order         []post.OrderOption
+	inters        []Interceptor
+	predicates    []predicate.Post
+	withUser      *UserQuery
+	withOriginal  *PostQuery
+	withReposts   *PostQuery
+	withComments  *CommentQuery
+	withReactions *PostReactionQuery
+	withFKs       bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -84,9 +90,9 @@ func (pq *PostQuery) QueryUser() *UserQuery {
 	return query
 }
 
-// QueryLikedBy chains the current query on the "likedBy" edge.
-func (pq *PostQuery) QueryLikedBy() *UserQuery {
-	query := (&UserClient{config: pq.config}).Query()
+// QueryOriginal chains the current query on the "original" edge.
+func (pq *PostQuery) QueryOriginal() *PostQuery {
+	query := (&PostClient{config: pq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := pq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -97,8 +103,74 @@ func (pq *PostQuery) QueryLikedBy() *UserQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(post.Table, post.FieldID, selector),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, post.LikedByTable, post.LikedByPrimaryKey...),
+			sqlgraph.To(post.Table, post.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, post.OriginalTable, post.OriginalColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryReposts chains the current query on the "reposts" edge.
+func (pq *PostQuery) QueryReposts() *PostQuery {
+	query := (&PostClient{config: pq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(post.Table, post.FieldID, selector),
+			sqlgraph.To(post.Table, post.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, post.RepostsTable, post.RepostsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryComments chains the current query on the "comments" edge.
+func (pq *PostQuery) QueryComments() *CommentQuery {
+	query := (&CommentClient{config: pq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(post.Table, post.FieldID, selector),
+			sqlgraph.To(comment.Table, comment.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, post.CommentsTable, post.CommentsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryReactions chains the current query on the "reactions" edge.
+func (pq *PostQuery) QueryReactions() *PostReactionQuery {
+	query := (&PostReactionClient{config: pq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(post.Table, post.FieldID, selector),
+			sqlgraph.To(postreaction.Table, postreaction.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, post.ReactionsTable, post.ReactionsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil
@@ -293,13 +365,16 @@ func (pq *PostQuery) Clone() *PostQuery {
 		return nil
 	}
 	return &PostQuery{
-		config:      pq.config,
-		ctx:         pq.ctx.Clone(),
-		order:       append([]post.OrderOption{}, pq.order...),
-		inters:      append([]Interceptor{}, pq.inters...),
-		predicates:  append([]predicate.Post{}, pq.predicates...),
-		withUser:    pq.withUser.Clone(),
-		withLikedBy: pq.withLikedBy.Clone(),
+		config:        pq.config,
+		ctx:           pq.ctx.Clone(),
+		order:         append([]post.OrderOption{}, pq.order...),
+		inters:        append([]Interceptor{}, pq.inters...),
+		predicates:    append([]predicate.Post{}, pq.predicates...),
+		withUser:      pq.withUser.Clone(),
+		withOriginal:  pq.withOriginal.Clone(),
+		withReposts:   pq.withReposts.Clone(),
+		withComments:  pq.withComments.Clone(),
+		withReactions: pq.withReactions.Clone(),
 		// clone intermediate query.
 		sql:  pq.sql.Clone(),
 		path: pq.path,
@@ -317,14 +392,47 @@ func (pq *PostQuery) WithUser(opts ...func(*UserQuery)) *PostQuery {
 	return pq
 }
 
-// WithLikedBy tells the query-builder to eager-load the nodes that are connected to
-// the "likedBy" edge. The optional arguments are used to configure the query builder of the edge.
-func (pq *PostQuery) WithLikedBy(opts ...func(*UserQuery)) *PostQuery {
-	query := (&UserClient{config: pq.config}).Query()
+// WithOriginal tells the query-builder to eager-load the nodes that are connected to
+// the "original" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PostQuery) WithOriginal(opts ...func(*PostQuery)) *PostQuery {
+	query := (&PostClient{config: pq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	pq.withLikedBy = query
+	pq.withOriginal = query
+	return pq
+}
+
+// WithReposts tells the query-builder to eager-load the nodes that are connected to
+// the "reposts" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PostQuery) WithReposts(opts ...func(*PostQuery)) *PostQuery {
+	query := (&PostClient{config: pq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withReposts = query
+	return pq
+}
+
+// WithComments tells the query-builder to eager-load the nodes that are connected to
+// the "comments" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PostQuery) WithComments(opts ...func(*CommentQuery)) *PostQuery {
+	query := (&CommentClient{config: pq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withComments = query
+	return pq
+}
+
+// WithReactions tells the query-builder to eager-load the nodes that are connected to
+// the "reactions" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PostQuery) WithReactions(opts ...func(*PostReactionQuery)) *PostQuery {
+	query := (&PostReactionClient{config: pq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withReactions = query
 	return pq
 }
 
@@ -405,12 +513,22 @@ func (pq *PostQuery) prepareQuery(ctx context.Context) error {
 func (pq *PostQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Post, error) {
 	var (
 		nodes       = []*Post{}
+		withFKs     = pq.withFKs
 		_spec       = pq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [5]bool{
 			pq.withUser != nil,
-			pq.withLikedBy != nil,
+			pq.withOriginal != nil,
+			pq.withReposts != nil,
+			pq.withComments != nil,
+			pq.withReactions != nil,
 		}
 	)
+	if pq.withOriginal != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, post.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Post).scanValues(nil, columns)
 	}
@@ -435,10 +553,30 @@ func (pq *PostQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Post, e
 			return nil, err
 		}
 	}
-	if query := pq.withLikedBy; query != nil {
-		if err := pq.loadLikedBy(ctx, query, nodes,
-			func(n *Post) { n.Edges.LikedBy = []*User{} },
-			func(n *Post, e *User) { n.Edges.LikedBy = append(n.Edges.LikedBy, e) }); err != nil {
+	if query := pq.withOriginal; query != nil {
+		if err := pq.loadOriginal(ctx, query, nodes, nil,
+			func(n *Post, e *Post) { n.Edges.Original = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := pq.withReposts; query != nil {
+		if err := pq.loadReposts(ctx, query, nodes,
+			func(n *Post) { n.Edges.Reposts = []*Post{} },
+			func(n *Post, e *Post) { n.Edges.Reposts = append(n.Edges.Reposts, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := pq.withComments; query != nil {
+		if err := pq.loadComments(ctx, query, nodes,
+			func(n *Post) { n.Edges.Comments = []*Comment{} },
+			func(n *Post, e *Comment) { n.Edges.Comments = append(n.Edges.Comments, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := pq.withReactions; query != nil {
+		if err := pq.loadReactions(ctx, query, nodes,
+			func(n *Post) { n.Edges.Reactions = []*PostReaction{} },
+			func(n *Post, e *PostReaction) { n.Edges.Reactions = append(n.Edges.Reactions, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -474,64 +612,128 @@ func (pq *PostQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*Po
 	}
 	return nil
 }
-func (pq *PostQuery) loadLikedBy(ctx context.Context, query *UserQuery, nodes []*Post, init func(*Post), assign func(*Post, *User)) error {
-	edgeIDs := make([]driver.Value, len(nodes))
-	byID := make(map[uuid.UUID]*Post)
-	nids := make(map[uuid.UUID]map[*Post]struct{})
-	for i, node := range nodes {
-		edgeIDs[i] = node.ID
-		byID[node.ID] = node
-		if init != nil {
-			init(node)
+func (pq *PostQuery) loadOriginal(ctx context.Context, query *PostQuery, nodes []*Post, init func(*Post), assign func(*Post, *Post)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Post)
+	for i := range nodes {
+		if nodes[i].post_reposts == nil {
+			continue
 		}
+		fk := *nodes[i].post_reposts
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	query.Where(func(s *sql.Selector) {
-		joinT := sql.Table(post.LikedByTable)
-		s.Join(joinT).On(s.C(user.FieldID), joinT.C(post.LikedByPrimaryKey[0]))
-		s.Where(sql.InValues(joinT.C(post.LikedByPrimaryKey[1]), edgeIDs...))
-		columns := s.SelectedColumns()
-		s.Select(joinT.C(post.LikedByPrimaryKey[1]))
-		s.AppendSelect(columns...)
-		s.SetDistinct(false)
-	})
-	if err := query.prepareQuery(ctx); err != nil {
-		return err
+	if len(ids) == 0 {
+		return nil
 	}
-	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
-		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
-			assign := spec.Assign
-			values := spec.ScanValues
-			spec.ScanValues = func(columns []string) ([]any, error) {
-				values, err := values(columns[1:])
-				if err != nil {
-					return nil, err
-				}
-				return append([]any{new(uuid.UUID)}, values...), nil
-			}
-			spec.Assign = func(columns []string, values []any) error {
-				outValue := *values[0].(*uuid.UUID)
-				inValue := *values[1].(*uuid.UUID)
-				if nids[inValue] == nil {
-					nids[inValue] = map[*Post]struct{}{byID[outValue]: {}}
-					return assign(columns[1:], values[1:])
-				}
-				nids[inValue][byID[outValue]] = struct{}{}
-				return nil
-			}
-		})
-	})
-	neighbors, err := withInterceptors[[]*User](ctx, query, qr, query.inters)
+	query.Where(post.IDIn(ids...))
+	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nids[n.ID]
+		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected "likedBy" node returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "post_reposts" returned %v`, n.ID)
 		}
-		for kn := range nodes {
-			assign(kn, n)
+		for i := range nodes {
+			assign(nodes[i], n)
 		}
+	}
+	return nil
+}
+func (pq *PostQuery) loadReposts(ctx context.Context, query *PostQuery, nodes []*Post, init func(*Post), assign func(*Post, *Post)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Post)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Post(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(post.RepostsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.post_reposts
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "post_reposts" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "post_reposts" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (pq *PostQuery) loadComments(ctx context.Context, query *CommentQuery, nodes []*Post, init func(*Post), assign func(*Post, *Comment)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Post)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Comment(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(post.CommentsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.post_comments
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "post_comments" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "post_comments" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (pq *PostQuery) loadReactions(ctx context.Context, query *PostReactionQuery, nodes []*Post, init func(*Post), assign func(*Post, *PostReaction)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Post)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.PostReaction(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(post.ReactionsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.post_reactions
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "post_reactions" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "post_reactions" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
 	}
 	return nil
 }

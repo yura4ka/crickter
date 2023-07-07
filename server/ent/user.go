@@ -26,6 +26,8 @@ type User struct {
 	Username string `json:"username,omitempty"`
 	// CreatedAt holds the value of the "createdAt" field.
 	CreatedAt time.Time `json:"createdAt,omitempty"`
+	// IsPrivate holds the value of the "isPrivate" field.
+	IsPrivate bool `json:"isPrivate,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the UserQuery when eager-loading is set.
 	Edges        UserEdges `json:"edges"`
@@ -36,15 +38,17 @@ type User struct {
 type UserEdges struct {
 	// Posts holds the value of the posts edge.
 	Posts []*Post `json:"posts,omitempty"`
-	// LikedPosts holds the value of the likedPosts edge.
-	LikedPosts []*Post `json:"likedPosts,omitempty"`
 	// Followers holds the value of the followers edge.
 	Followers []*User `json:"followers,omitempty"`
 	// Following holds the value of the following edge.
 	Following []*User `json:"following,omitempty"`
+	// PostReactions holds the value of the postReactions edge.
+	PostReactions []*PostReaction `json:"postReactions,omitempty"`
+	// CommentReactions holds the value of the commentReactions edge.
+	CommentReactions []*CommentReaction `json:"commentReactions,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [5]bool
 }
 
 // PostsOrErr returns the Posts value or an error if the edge
@@ -56,19 +60,10 @@ func (e UserEdges) PostsOrErr() ([]*Post, error) {
 	return nil, &NotLoadedError{edge: "posts"}
 }
 
-// LikedPostsOrErr returns the LikedPosts value or an error if the edge
-// was not loaded in eager-loading.
-func (e UserEdges) LikedPostsOrErr() ([]*Post, error) {
-	if e.loadedTypes[1] {
-		return e.LikedPosts, nil
-	}
-	return nil, &NotLoadedError{edge: "likedPosts"}
-}
-
 // FollowersOrErr returns the Followers value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) FollowersOrErr() ([]*User, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[1] {
 		return e.Followers, nil
 	}
 	return nil, &NotLoadedError{edge: "followers"}
@@ -77,10 +72,28 @@ func (e UserEdges) FollowersOrErr() ([]*User, error) {
 // FollowingOrErr returns the Following value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) FollowingOrErr() ([]*User, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[2] {
 		return e.Following, nil
 	}
 	return nil, &NotLoadedError{edge: "following"}
+}
+
+// PostReactionsOrErr returns the PostReactions value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) PostReactionsOrErr() ([]*PostReaction, error) {
+	if e.loadedTypes[3] {
+		return e.PostReactions, nil
+	}
+	return nil, &NotLoadedError{edge: "postReactions"}
+}
+
+// CommentReactionsOrErr returns the CommentReactions value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) CommentReactionsOrErr() ([]*CommentReaction, error) {
+	if e.loadedTypes[4] {
+		return e.CommentReactions, nil
+	}
+	return nil, &NotLoadedError{edge: "commentReactions"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -88,6 +101,8 @@ func (*User) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case user.FieldIsPrivate:
+			values[i] = new(sql.NullBool)
 		case user.FieldEmail, user.FieldPassword, user.FieldUsername:
 			values[i] = new(sql.NullString)
 		case user.FieldCreatedAt:
@@ -139,6 +154,12 @@ func (u *User) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				u.CreatedAt = value.Time
 			}
+		case user.FieldIsPrivate:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field isPrivate", values[i])
+			} else if value.Valid {
+				u.IsPrivate = value.Bool
+			}
 		default:
 			u.selectValues.Set(columns[i], values[i])
 		}
@@ -157,11 +178,6 @@ func (u *User) QueryPosts() *PostQuery {
 	return NewUserClient(u.config).QueryPosts(u)
 }
 
-// QueryLikedPosts queries the "likedPosts" edge of the User entity.
-func (u *User) QueryLikedPosts() *PostQuery {
-	return NewUserClient(u.config).QueryLikedPosts(u)
-}
-
 // QueryFollowers queries the "followers" edge of the User entity.
 func (u *User) QueryFollowers() *UserQuery {
 	return NewUserClient(u.config).QueryFollowers(u)
@@ -170,6 +186,16 @@ func (u *User) QueryFollowers() *UserQuery {
 // QueryFollowing queries the "following" edge of the User entity.
 func (u *User) QueryFollowing() *UserQuery {
 	return NewUserClient(u.config).QueryFollowing(u)
+}
+
+// QueryPostReactions queries the "postReactions" edge of the User entity.
+func (u *User) QueryPostReactions() *PostReactionQuery {
+	return NewUserClient(u.config).QueryPostReactions(u)
+}
+
+// QueryCommentReactions queries the "commentReactions" edge of the User entity.
+func (u *User) QueryCommentReactions() *CommentReactionQuery {
+	return NewUserClient(u.config).QueryCommentReactions(u)
 }
 
 // Update returns a builder for updating this User.
@@ -206,6 +232,9 @@ func (u *User) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("createdAt=")
 	builder.WriteString(u.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("isPrivate=")
+	builder.WriteString(fmt.Sprintf("%v", u.IsPrivate))
 	builder.WriteByte(')')
 	return builder.String()
 }

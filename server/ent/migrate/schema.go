@@ -8,12 +8,76 @@ import (
 )
 
 var (
+	// CommentsColumns holds the columns for the "comments" table.
+	CommentsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "text", Type: field.TypeString, Size: 256},
+		{Name: "comment_replies", Type: field.TypeUUID, Nullable: true},
+		{Name: "post_comments", Type: field.TypeUUID, Nullable: true},
+	}
+	// CommentsTable holds the schema information for the "comments" table.
+	CommentsTable = &schema.Table{
+		Name:       "comments",
+		Columns:    CommentsColumns,
+		PrimaryKey: []*schema.Column{CommentsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "comments_comments_replies",
+				Columns:    []*schema.Column{CommentsColumns[4]},
+				RefColumns: []*schema.Column{CommentsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "comments_posts_comments",
+				Columns:    []*schema.Column{CommentsColumns[5]},
+				RefColumns: []*schema.Column{PostsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
+	// CommentReactionsColumns holds the columns for the "comment_reactions" table.
+	CommentReactionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "liked", Type: field.TypeBool},
+		{Name: "comment_reactions", Type: field.TypeUUID, Nullable: true},
+		{Name: "user_comment_reactions", Type: field.TypeUUID, Nullable: true},
+	}
+	// CommentReactionsTable holds the schema information for the "comment_reactions" table.
+	CommentReactionsTable = &schema.Table{
+		Name:       "comment_reactions",
+		Columns:    CommentReactionsColumns,
+		PrimaryKey: []*schema.Column{CommentReactionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "comment_reactions_comments_reactions",
+				Columns:    []*schema.Column{CommentReactionsColumns[2]},
+				RefColumns: []*schema.Column{CommentsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "comment_reactions_users_commentReactions",
+				Columns:    []*schema.Column{CommentReactionsColumns[3]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "commentreaction_comment_reactions_user_comment_reactions",
+				Unique:  true,
+				Columns: []*schema.Column{CommentReactionsColumns[2], CommentReactionsColumns[3]},
+			},
+		},
+	}
 	// PostsColumns holds the columns for the "posts" table.
 	PostsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "text", Type: field.TypeString, Size: 512},
+		{Name: "post_reposts", Type: field.TypeUUID, Nullable: true},
 		{Name: "user_id", Type: field.TypeUUID},
 	}
 	// PostsTable holds the schema information for the "posts" table.
@@ -23,8 +87,14 @@ var (
 		PrimaryKey: []*schema.Column{PostsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "posts_users_posts",
+				Symbol:     "posts_posts_reposts",
 				Columns:    []*schema.Column{PostsColumns[4]},
+				RefColumns: []*schema.Column{PostsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "posts_users_posts",
+				Columns:    []*schema.Column{PostsColumns[5]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -33,7 +103,41 @@ var (
 			{
 				Name:    "post_user_id",
 				Unique:  false,
-				Columns: []*schema.Column{PostsColumns[4]},
+				Columns: []*schema.Column{PostsColumns[5]},
+			},
+		},
+	}
+	// PostReactionsColumns holds the columns for the "post_reactions" table.
+	PostReactionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "liked", Type: field.TypeBool},
+		{Name: "post_reactions", Type: field.TypeUUID, Nullable: true},
+		{Name: "user_post_reactions", Type: field.TypeUUID, Nullable: true},
+	}
+	// PostReactionsTable holds the schema information for the "post_reactions" table.
+	PostReactionsTable = &schema.Table{
+		Name:       "post_reactions",
+		Columns:    PostReactionsColumns,
+		PrimaryKey: []*schema.Column{PostReactionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "post_reactions_posts_reactions",
+				Columns:    []*schema.Column{PostReactionsColumns[2]},
+				RefColumns: []*schema.Column{PostsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "post_reactions_users_postReactions",
+				Columns:    []*schema.Column{PostReactionsColumns[3]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "postreaction_post_reactions_user_post_reactions",
+				Unique:  true,
+				Columns: []*schema.Column{PostReactionsColumns[2], PostReactionsColumns[3]},
 			},
 		},
 	}
@@ -44,37 +148,13 @@ var (
 		{Name: "password", Type: field.TypeString},
 		{Name: "username", Type: field.TypeString, Size: 20},
 		{Name: "created_at", Type: field.TypeTime},
+		{Name: "is_private", Type: field.TypeBool, Default: false},
 	}
 	// UsersTable holds the schema information for the "users" table.
 	UsersTable = &schema.Table{
 		Name:       "users",
 		Columns:    UsersColumns,
 		PrimaryKey: []*schema.Column{UsersColumns[0]},
-	}
-	// UserLikedPostsColumns holds the columns for the "user_likedPosts" table.
-	UserLikedPostsColumns = []*schema.Column{
-		{Name: "user_id", Type: field.TypeUUID},
-		{Name: "post_id", Type: field.TypeUUID},
-	}
-	// UserLikedPostsTable holds the schema information for the "user_likedPosts" table.
-	UserLikedPostsTable = &schema.Table{
-		Name:       "user_likedPosts",
-		Columns:    UserLikedPostsColumns,
-		PrimaryKey: []*schema.Column{UserLikedPostsColumns[0], UserLikedPostsColumns[1]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "user_likedPosts_user_id",
-				Columns:    []*schema.Column{UserLikedPostsColumns[0]},
-				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "user_likedPosts_post_id",
-				Columns:    []*schema.Column{UserLikedPostsColumns[1]},
-				RefColumns: []*schema.Column{PostsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
 	}
 	// UserFollowingColumns holds the columns for the "user_following" table.
 	UserFollowingColumns = []*schema.Column{
@@ -103,17 +183,24 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		CommentsTable,
+		CommentReactionsTable,
 		PostsTable,
+		PostReactionsTable,
 		UsersTable,
-		UserLikedPostsTable,
 		UserFollowingTable,
 	}
 )
 
 func init() {
-	PostsTable.ForeignKeys[0].RefTable = UsersTable
-	UserLikedPostsTable.ForeignKeys[0].RefTable = UsersTable
-	UserLikedPostsTable.ForeignKeys[1].RefTable = PostsTable
+	CommentsTable.ForeignKeys[0].RefTable = CommentsTable
+	CommentsTable.ForeignKeys[1].RefTable = PostsTable
+	CommentReactionsTable.ForeignKeys[0].RefTable = CommentsTable
+	CommentReactionsTable.ForeignKeys[1].RefTable = UsersTable
+	PostsTable.ForeignKeys[0].RefTable = PostsTable
+	PostsTable.ForeignKeys[1].RefTable = UsersTable
+	PostReactionsTable.ForeignKeys[0].RefTable = PostsTable
+	PostReactionsTable.ForeignKeys[1].RefTable = UsersTable
 	UserFollowingTable.ForeignKeys[0].RefTable = UsersTable
 	UserFollowingTable.ForeignKeys[1].RefTable = UsersTable
 }

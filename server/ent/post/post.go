@@ -25,8 +25,14 @@ const (
 	FieldUserId = "user_id"
 	// EdgeUser holds the string denoting the user edge name in mutations.
 	EdgeUser = "user"
-	// EdgeLikedBy holds the string denoting the likedby edge name in mutations.
-	EdgeLikedBy = "likedBy"
+	// EdgeOriginal holds the string denoting the original edge name in mutations.
+	EdgeOriginal = "original"
+	// EdgeReposts holds the string denoting the reposts edge name in mutations.
+	EdgeReposts = "reposts"
+	// EdgeComments holds the string denoting the comments edge name in mutations.
+	EdgeComments = "comments"
+	// EdgeReactions holds the string denoting the reactions edge name in mutations.
+	EdgeReactions = "reactions"
 	// Table holds the table name of the post in the database.
 	Table = "posts"
 	// UserTable is the table that holds the user relation/edge.
@@ -36,11 +42,28 @@ const (
 	UserInverseTable = "users"
 	// UserColumn is the table column denoting the user relation/edge.
 	UserColumn = "user_id"
-	// LikedByTable is the table that holds the likedBy relation/edge. The primary key declared below.
-	LikedByTable = "user_likedPosts"
-	// LikedByInverseTable is the table name for the User entity.
-	// It exists in this package in order to avoid circular dependency with the "user" package.
-	LikedByInverseTable = "users"
+	// OriginalTable is the table that holds the original relation/edge.
+	OriginalTable = "posts"
+	// OriginalColumn is the table column denoting the original relation/edge.
+	OriginalColumn = "post_reposts"
+	// RepostsTable is the table that holds the reposts relation/edge.
+	RepostsTable = "posts"
+	// RepostsColumn is the table column denoting the reposts relation/edge.
+	RepostsColumn = "post_reposts"
+	// CommentsTable is the table that holds the comments relation/edge.
+	CommentsTable = "comments"
+	// CommentsInverseTable is the table name for the Comment entity.
+	// It exists in this package in order to avoid circular dependency with the "comment" package.
+	CommentsInverseTable = "comments"
+	// CommentsColumn is the table column denoting the comments relation/edge.
+	CommentsColumn = "post_comments"
+	// ReactionsTable is the table that holds the reactions relation/edge.
+	ReactionsTable = "post_reactions"
+	// ReactionsInverseTable is the table name for the PostReaction entity.
+	// It exists in this package in order to avoid circular dependency with the "postreaction" package.
+	ReactionsInverseTable = "post_reactions"
+	// ReactionsColumn is the table column denoting the reactions relation/edge.
+	ReactionsColumn = "post_reactions"
 )
 
 // Columns holds all SQL columns for post fields.
@@ -52,16 +75,21 @@ var Columns = []string{
 	FieldUserId,
 }
 
-var (
-	// LikedByPrimaryKey and LikedByColumn2 are the table columns denoting the
-	// primary key for the likedBy relation (M2M).
-	LikedByPrimaryKey = []string{"user_id", "post_id"}
-)
+// ForeignKeys holds the SQL foreign-keys that are owned by the "posts"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"post_reposts",
+}
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -116,17 +144,52 @@ func ByUserField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
-// ByLikedByCount orders the results by likedBy count.
-func ByLikedByCount(opts ...sql.OrderTermOption) OrderOption {
+// ByOriginalField orders the results by original field.
+func ByOriginalField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newLikedByStep(), opts...)
+		sqlgraph.OrderByNeighborTerms(s, newOriginalStep(), sql.OrderByField(field, opts...))
 	}
 }
 
-// ByLikedBy orders the results by likedBy terms.
-func ByLikedBy(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+// ByRepostsCount orders the results by reposts count.
+func ByRepostsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newLikedByStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborsCount(s, newRepostsStep(), opts...)
+	}
+}
+
+// ByReposts orders the results by reposts terms.
+func ByReposts(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRepostsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByCommentsCount orders the results by comments count.
+func ByCommentsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newCommentsStep(), opts...)
+	}
+}
+
+// ByComments orders the results by comments terms.
+func ByComments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCommentsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByReactionsCount orders the results by reactions count.
+func ByReactionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newReactionsStep(), opts...)
+	}
+}
+
+// ByReactions orders the results by reactions terms.
+func ByReactions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newReactionsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 func newUserStep() *sqlgraph.Step {
@@ -136,10 +199,31 @@ func newUserStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
 	)
 }
-func newLikedByStep() *sqlgraph.Step {
+func newOriginalStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(LikedByInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2M, true, LikedByTable, LikedByPrimaryKey...),
+		sqlgraph.To(Table, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, OriginalTable, OriginalColumn),
+	)
+}
+func newRepostsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(Table, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RepostsTable, RepostsColumn),
+	)
+}
+func newCommentsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CommentsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, CommentsTable, CommentsColumn),
+	)
+}
+func newReactionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ReactionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ReactionsTable, ReactionsColumn),
 	)
 }

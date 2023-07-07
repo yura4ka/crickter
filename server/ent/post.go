@@ -30,6 +30,7 @@ type Post struct {
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PostQuery when eager-loading is set.
 	Edges        PostEdges `json:"edges"`
+	post_reposts *uuid.UUID
 	selectValues sql.SelectValues
 }
 
@@ -37,11 +38,17 @@ type Post struct {
 type PostEdges struct {
 	// User holds the value of the user edge.
 	User *User `json:"user,omitempty"`
-	// LikedBy holds the value of the likedBy edge.
-	LikedBy []*User `json:"likedBy,omitempty"`
+	// Original holds the value of the original edge.
+	Original *Post `json:"original,omitempty"`
+	// Reposts holds the value of the reposts edge.
+	Reposts []*Post `json:"reposts,omitempty"`
+	// Comments holds the value of the comments edge.
+	Comments []*Comment `json:"comments,omitempty"`
+	// Reactions holds the value of the reactions edge.
+	Reactions []*PostReaction `json:"reactions,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [5]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -57,13 +64,44 @@ func (e PostEdges) UserOrErr() (*User, error) {
 	return nil, &NotLoadedError{edge: "user"}
 }
 
-// LikedByOrErr returns the LikedBy value or an error if the edge
-// was not loaded in eager-loading.
-func (e PostEdges) LikedByOrErr() ([]*User, error) {
+// OriginalOrErr returns the Original value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e PostEdges) OriginalOrErr() (*Post, error) {
 	if e.loadedTypes[1] {
-		return e.LikedBy, nil
+		if e.Original == nil {
+			// Edge was loaded but was not found.
+			return nil, &NotFoundError{label: post.Label}
+		}
+		return e.Original, nil
 	}
-	return nil, &NotLoadedError{edge: "likedBy"}
+	return nil, &NotLoadedError{edge: "original"}
+}
+
+// RepostsOrErr returns the Reposts value or an error if the edge
+// was not loaded in eager-loading.
+func (e PostEdges) RepostsOrErr() ([]*Post, error) {
+	if e.loadedTypes[2] {
+		return e.Reposts, nil
+	}
+	return nil, &NotLoadedError{edge: "reposts"}
+}
+
+// CommentsOrErr returns the Comments value or an error if the edge
+// was not loaded in eager-loading.
+func (e PostEdges) CommentsOrErr() ([]*Comment, error) {
+	if e.loadedTypes[3] {
+		return e.Comments, nil
+	}
+	return nil, &NotLoadedError{edge: "comments"}
+}
+
+// ReactionsOrErr returns the Reactions value or an error if the edge
+// was not loaded in eager-loading.
+func (e PostEdges) ReactionsOrErr() ([]*PostReaction, error) {
+	if e.loadedTypes[4] {
+		return e.Reactions, nil
+	}
+	return nil, &NotLoadedError{edge: "reactions"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -77,6 +115,8 @@ func (*Post) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullTime)
 		case post.FieldID, post.FieldUserId:
 			values[i] = new(uuid.UUID)
+		case post.ForeignKeys[0]: // post_reposts
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -122,6 +162,13 @@ func (po *Post) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				po.UserId = *value
 			}
+		case post.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field post_reposts", values[i])
+			} else if value.Valid {
+				po.post_reposts = new(uuid.UUID)
+				*po.post_reposts = *value.S.(*uuid.UUID)
+			}
 		default:
 			po.selectValues.Set(columns[i], values[i])
 		}
@@ -140,9 +187,24 @@ func (po *Post) QueryUser() *UserQuery {
 	return NewPostClient(po.config).QueryUser(po)
 }
 
-// QueryLikedBy queries the "likedBy" edge of the Post entity.
-func (po *Post) QueryLikedBy() *UserQuery {
-	return NewPostClient(po.config).QueryLikedBy(po)
+// QueryOriginal queries the "original" edge of the Post entity.
+func (po *Post) QueryOriginal() *PostQuery {
+	return NewPostClient(po.config).QueryOriginal(po)
+}
+
+// QueryReposts queries the "reposts" edge of the Post entity.
+func (po *Post) QueryReposts() *PostQuery {
+	return NewPostClient(po.config).QueryReposts(po)
+}
+
+// QueryComments queries the "comments" edge of the Post entity.
+func (po *Post) QueryComments() *CommentQuery {
+	return NewPostClient(po.config).QueryComments(po)
+}
+
+// QueryReactions queries the "reactions" edge of the Post entity.
+func (po *Post) QueryReactions() *PostReactionQuery {
+	return NewPostClient(po.config).QueryReactions(po)
 }
 
 // Update returns a builder for updating this Post.

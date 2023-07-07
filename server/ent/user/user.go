@@ -23,14 +23,18 @@ const (
 	FieldUsername = "username"
 	// FieldCreatedAt holds the string denoting the createdat field in the database.
 	FieldCreatedAt = "created_at"
+	// FieldIsPrivate holds the string denoting the isprivate field in the database.
+	FieldIsPrivate = "is_private"
 	// EdgePosts holds the string denoting the posts edge name in mutations.
 	EdgePosts = "posts"
-	// EdgeLikedPosts holds the string denoting the likedposts edge name in mutations.
-	EdgeLikedPosts = "likedPosts"
 	// EdgeFollowers holds the string denoting the followers edge name in mutations.
 	EdgeFollowers = "followers"
 	// EdgeFollowing holds the string denoting the following edge name in mutations.
 	EdgeFollowing = "following"
+	// EdgePostReactions holds the string denoting the postreactions edge name in mutations.
+	EdgePostReactions = "postReactions"
+	// EdgeCommentReactions holds the string denoting the commentreactions edge name in mutations.
+	EdgeCommentReactions = "commentReactions"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// PostsTable is the table that holds the posts relation/edge.
@@ -40,15 +44,24 @@ const (
 	PostsInverseTable = "posts"
 	// PostsColumn is the table column denoting the posts relation/edge.
 	PostsColumn = "user_id"
-	// LikedPostsTable is the table that holds the likedPosts relation/edge. The primary key declared below.
-	LikedPostsTable = "user_likedPosts"
-	// LikedPostsInverseTable is the table name for the Post entity.
-	// It exists in this package in order to avoid circular dependency with the "post" package.
-	LikedPostsInverseTable = "posts"
 	// FollowersTable is the table that holds the followers relation/edge. The primary key declared below.
 	FollowersTable = "user_following"
 	// FollowingTable is the table that holds the following relation/edge. The primary key declared below.
 	FollowingTable = "user_following"
+	// PostReactionsTable is the table that holds the postReactions relation/edge.
+	PostReactionsTable = "post_reactions"
+	// PostReactionsInverseTable is the table name for the PostReaction entity.
+	// It exists in this package in order to avoid circular dependency with the "postreaction" package.
+	PostReactionsInverseTable = "post_reactions"
+	// PostReactionsColumn is the table column denoting the postReactions relation/edge.
+	PostReactionsColumn = "user_post_reactions"
+	// CommentReactionsTable is the table that holds the commentReactions relation/edge.
+	CommentReactionsTable = "comment_reactions"
+	// CommentReactionsInverseTable is the table name for the CommentReaction entity.
+	// It exists in this package in order to avoid circular dependency with the "commentreaction" package.
+	CommentReactionsInverseTable = "comment_reactions"
+	// CommentReactionsColumn is the table column denoting the commentReactions relation/edge.
+	CommentReactionsColumn = "user_comment_reactions"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -58,12 +71,10 @@ var Columns = []string{
 	FieldPassword,
 	FieldUsername,
 	FieldCreatedAt,
+	FieldIsPrivate,
 }
 
 var (
-	// LikedPostsPrimaryKey and LikedPostsColumn2 are the table columns denoting the
-	// primary key for the likedPosts relation (M2M).
-	LikedPostsPrimaryKey = []string{"user_id", "post_id"}
 	// FollowersPrimaryKey and FollowersColumn2 are the table columns denoting the
 	// primary key for the followers relation (M2M).
 	FollowersPrimaryKey = []string{"user_id", "follower_id"}
@@ -85,10 +96,14 @@ func ValidColumn(column string) bool {
 var (
 	// EmailValidator is a validator for the "email" field. It is called by the builders before save.
 	EmailValidator func(string) error
+	// PasswordValidator is a validator for the "password" field. It is called by the builders before save.
+	PasswordValidator func(string) error
 	// UsernameValidator is a validator for the "username" field. It is called by the builders before save.
 	UsernameValidator func(string) error
 	// DefaultCreatedAt holds the default value on creation for the "createdAt" field.
 	DefaultCreatedAt func() time.Time
+	// DefaultIsPrivate holds the default value on creation for the "isPrivate" field.
+	DefaultIsPrivate bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -121,6 +136,11 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
 }
 
+// ByIsPrivate orders the results by the isPrivate field.
+func ByIsPrivate(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIsPrivate, opts...).ToFunc()
+}
+
 // ByPostsCount orders the results by posts count.
 func ByPostsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -132,20 +152,6 @@ func ByPostsCount(opts ...sql.OrderTermOption) OrderOption {
 func ByPosts(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newPostsStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
-// ByLikedPostsCount orders the results by likedPosts count.
-func ByLikedPostsCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newLikedPostsStep(), opts...)
-	}
-}
-
-// ByLikedPosts orders the results by likedPosts terms.
-func ByLikedPosts(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newLikedPostsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -176,18 +182,39 @@ func ByFollowing(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newFollowingStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByPostReactionsCount orders the results by postReactions count.
+func ByPostReactionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newPostReactionsStep(), opts...)
+	}
+}
+
+// ByPostReactions orders the results by postReactions terms.
+func ByPostReactions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPostReactionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByCommentReactionsCount orders the results by commentReactions count.
+func ByCommentReactionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newCommentReactionsStep(), opts...)
+	}
+}
+
+// ByCommentReactions orders the results by commentReactions terms.
+func ByCommentReactions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCommentReactionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newPostsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(PostsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, PostsTable, PostsColumn),
-	)
-}
-func newLikedPostsStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(LikedPostsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2M, false, LikedPostsTable, LikedPostsPrimaryKey...),
 	)
 }
 func newFollowersStep() *sqlgraph.Step {
@@ -202,5 +229,19 @@ func newFollowingStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(Table, FieldID),
 		sqlgraph.Edge(sqlgraph.M2M, false, FollowingTable, FollowingPrimaryKey...),
+	)
+}
+func newPostReactionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PostReactionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, PostReactionsTable, PostReactionsColumn),
+	)
+}
+func newCommentReactionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CommentReactionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, CommentReactionsTable, CommentReactionsColumn),
 	)
 }

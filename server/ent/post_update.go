@@ -12,7 +12,9 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/yura4ka/crickter/ent/comment"
 	"github.com/yura4ka/crickter/ent/post"
+	"github.com/yura4ka/crickter/ent/postreaction"
 	"github.com/yura4ka/crickter/ent/predicate"
 	"github.com/yura4ka/crickter/ent/user"
 )
@@ -73,19 +75,68 @@ func (pu *PostUpdate) SetUser(u *User) *PostUpdate {
 	return pu.SetUserID(u.ID)
 }
 
-// AddLikedByIDs adds the "likedBy" edge to the User entity by IDs.
-func (pu *PostUpdate) AddLikedByIDs(ids ...uuid.UUID) *PostUpdate {
-	pu.mutation.AddLikedByIDs(ids...)
+// SetOriginalID sets the "original" edge to the Post entity by ID.
+func (pu *PostUpdate) SetOriginalID(id uuid.UUID) *PostUpdate {
+	pu.mutation.SetOriginalID(id)
 	return pu
 }
 
-// AddLikedBy adds the "likedBy" edges to the User entity.
-func (pu *PostUpdate) AddLikedBy(u ...*User) *PostUpdate {
-	ids := make([]uuid.UUID, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
+// SetNillableOriginalID sets the "original" edge to the Post entity by ID if the given value is not nil.
+func (pu *PostUpdate) SetNillableOriginalID(id *uuid.UUID) *PostUpdate {
+	if id != nil {
+		pu = pu.SetOriginalID(*id)
 	}
-	return pu.AddLikedByIDs(ids...)
+	return pu
+}
+
+// SetOriginal sets the "original" edge to the Post entity.
+func (pu *PostUpdate) SetOriginal(p *Post) *PostUpdate {
+	return pu.SetOriginalID(p.ID)
+}
+
+// AddRepostIDs adds the "reposts" edge to the Post entity by IDs.
+func (pu *PostUpdate) AddRepostIDs(ids ...uuid.UUID) *PostUpdate {
+	pu.mutation.AddRepostIDs(ids...)
+	return pu
+}
+
+// AddReposts adds the "reposts" edges to the Post entity.
+func (pu *PostUpdate) AddReposts(p ...*Post) *PostUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return pu.AddRepostIDs(ids...)
+}
+
+// AddCommentIDs adds the "comments" edge to the Comment entity by IDs.
+func (pu *PostUpdate) AddCommentIDs(ids ...uuid.UUID) *PostUpdate {
+	pu.mutation.AddCommentIDs(ids...)
+	return pu
+}
+
+// AddComments adds the "comments" edges to the Comment entity.
+func (pu *PostUpdate) AddComments(c ...*Comment) *PostUpdate {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return pu.AddCommentIDs(ids...)
+}
+
+// AddReactionIDs adds the "reactions" edge to the PostReaction entity by IDs.
+func (pu *PostUpdate) AddReactionIDs(ids ...uuid.UUID) *PostUpdate {
+	pu.mutation.AddReactionIDs(ids...)
+	return pu
+}
+
+// AddReactions adds the "reactions" edges to the PostReaction entity.
+func (pu *PostUpdate) AddReactions(p ...*PostReaction) *PostUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return pu.AddReactionIDs(ids...)
 }
 
 // Mutation returns the PostMutation object of the builder.
@@ -99,25 +150,73 @@ func (pu *PostUpdate) ClearUser() *PostUpdate {
 	return pu
 }
 
-// ClearLikedBy clears all "likedBy" edges to the User entity.
-func (pu *PostUpdate) ClearLikedBy() *PostUpdate {
-	pu.mutation.ClearLikedBy()
+// ClearOriginal clears the "original" edge to the Post entity.
+func (pu *PostUpdate) ClearOriginal() *PostUpdate {
+	pu.mutation.ClearOriginal()
 	return pu
 }
 
-// RemoveLikedByIDs removes the "likedBy" edge to User entities by IDs.
-func (pu *PostUpdate) RemoveLikedByIDs(ids ...uuid.UUID) *PostUpdate {
-	pu.mutation.RemoveLikedByIDs(ids...)
+// ClearReposts clears all "reposts" edges to the Post entity.
+func (pu *PostUpdate) ClearReposts() *PostUpdate {
+	pu.mutation.ClearReposts()
 	return pu
 }
 
-// RemoveLikedBy removes "likedBy" edges to User entities.
-func (pu *PostUpdate) RemoveLikedBy(u ...*User) *PostUpdate {
-	ids := make([]uuid.UUID, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
+// RemoveRepostIDs removes the "reposts" edge to Post entities by IDs.
+func (pu *PostUpdate) RemoveRepostIDs(ids ...uuid.UUID) *PostUpdate {
+	pu.mutation.RemoveRepostIDs(ids...)
+	return pu
+}
+
+// RemoveReposts removes "reposts" edges to Post entities.
+func (pu *PostUpdate) RemoveReposts(p ...*Post) *PostUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
 	}
-	return pu.RemoveLikedByIDs(ids...)
+	return pu.RemoveRepostIDs(ids...)
+}
+
+// ClearComments clears all "comments" edges to the Comment entity.
+func (pu *PostUpdate) ClearComments() *PostUpdate {
+	pu.mutation.ClearComments()
+	return pu
+}
+
+// RemoveCommentIDs removes the "comments" edge to Comment entities by IDs.
+func (pu *PostUpdate) RemoveCommentIDs(ids ...uuid.UUID) *PostUpdate {
+	pu.mutation.RemoveCommentIDs(ids...)
+	return pu
+}
+
+// RemoveComments removes "comments" edges to Comment entities.
+func (pu *PostUpdate) RemoveComments(c ...*Comment) *PostUpdate {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return pu.RemoveCommentIDs(ids...)
+}
+
+// ClearReactions clears all "reactions" edges to the PostReaction entity.
+func (pu *PostUpdate) ClearReactions() *PostUpdate {
+	pu.mutation.ClearReactions()
+	return pu
+}
+
+// RemoveReactionIDs removes the "reactions" edge to PostReaction entities by IDs.
+func (pu *PostUpdate) RemoveReactionIDs(ids ...uuid.UUID) *PostUpdate {
+	pu.mutation.RemoveReactionIDs(ids...)
+	return pu
+}
+
+// RemoveReactions removes "reactions" edges to PostReaction entities.
+func (pu *PostUpdate) RemoveReactions(p ...*PostReaction) *PostUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return pu.RemoveReactionIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -219,28 +318,57 @@ func (pu *PostUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if pu.mutation.LikedByCleared() {
+	if pu.mutation.OriginalCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   post.LikedByTable,
-			Columns: post.LikedByPrimaryKey,
+			Table:   post.OriginalTable,
+			Columns: []string{post.OriginalColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pu.mutation.RemovedLikedByIDs(); len(nodes) > 0 && !pu.mutation.LikedByCleared() {
+	if nodes := pu.mutation.OriginalIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   post.LikedByTable,
-			Columns: post.LikedByPrimaryKey,
+			Table:   post.OriginalTable,
+			Columns: []string{post.OriginalColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if pu.mutation.RepostsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.RepostsTable,
+			Columns: []string{post.RepostsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.RemovedRepostsIDs(); len(nodes) > 0 && !pu.mutation.RepostsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.RepostsTable,
+			Columns: []string{post.RepostsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -248,15 +376,105 @@ func (pu *PostUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pu.mutation.LikedByIDs(); len(nodes) > 0 {
+	if nodes := pu.mutation.RepostsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   post.LikedByTable,
-			Columns: post.LikedByPrimaryKey,
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.RepostsTable,
+			Columns: []string{post.RepostsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if pu.mutation.CommentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.CommentsTable,
+			Columns: []string{post.CommentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.RemovedCommentsIDs(); len(nodes) > 0 && !pu.mutation.CommentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.CommentsTable,
+			Columns: []string{post.CommentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.CommentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.CommentsTable,
+			Columns: []string{post.CommentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if pu.mutation.ReactionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.ReactionsTable,
+			Columns: []string{post.ReactionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(postreaction.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.RemovedReactionsIDs(); len(nodes) > 0 && !pu.mutation.ReactionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.ReactionsTable,
+			Columns: []string{post.ReactionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(postreaction.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.ReactionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.ReactionsTable,
+			Columns: []string{post.ReactionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(postreaction.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -327,19 +545,68 @@ func (puo *PostUpdateOne) SetUser(u *User) *PostUpdateOne {
 	return puo.SetUserID(u.ID)
 }
 
-// AddLikedByIDs adds the "likedBy" edge to the User entity by IDs.
-func (puo *PostUpdateOne) AddLikedByIDs(ids ...uuid.UUID) *PostUpdateOne {
-	puo.mutation.AddLikedByIDs(ids...)
+// SetOriginalID sets the "original" edge to the Post entity by ID.
+func (puo *PostUpdateOne) SetOriginalID(id uuid.UUID) *PostUpdateOne {
+	puo.mutation.SetOriginalID(id)
 	return puo
 }
 
-// AddLikedBy adds the "likedBy" edges to the User entity.
-func (puo *PostUpdateOne) AddLikedBy(u ...*User) *PostUpdateOne {
-	ids := make([]uuid.UUID, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
+// SetNillableOriginalID sets the "original" edge to the Post entity by ID if the given value is not nil.
+func (puo *PostUpdateOne) SetNillableOriginalID(id *uuid.UUID) *PostUpdateOne {
+	if id != nil {
+		puo = puo.SetOriginalID(*id)
 	}
-	return puo.AddLikedByIDs(ids...)
+	return puo
+}
+
+// SetOriginal sets the "original" edge to the Post entity.
+func (puo *PostUpdateOne) SetOriginal(p *Post) *PostUpdateOne {
+	return puo.SetOriginalID(p.ID)
+}
+
+// AddRepostIDs adds the "reposts" edge to the Post entity by IDs.
+func (puo *PostUpdateOne) AddRepostIDs(ids ...uuid.UUID) *PostUpdateOne {
+	puo.mutation.AddRepostIDs(ids...)
+	return puo
+}
+
+// AddReposts adds the "reposts" edges to the Post entity.
+func (puo *PostUpdateOne) AddReposts(p ...*Post) *PostUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return puo.AddRepostIDs(ids...)
+}
+
+// AddCommentIDs adds the "comments" edge to the Comment entity by IDs.
+func (puo *PostUpdateOne) AddCommentIDs(ids ...uuid.UUID) *PostUpdateOne {
+	puo.mutation.AddCommentIDs(ids...)
+	return puo
+}
+
+// AddComments adds the "comments" edges to the Comment entity.
+func (puo *PostUpdateOne) AddComments(c ...*Comment) *PostUpdateOne {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return puo.AddCommentIDs(ids...)
+}
+
+// AddReactionIDs adds the "reactions" edge to the PostReaction entity by IDs.
+func (puo *PostUpdateOne) AddReactionIDs(ids ...uuid.UUID) *PostUpdateOne {
+	puo.mutation.AddReactionIDs(ids...)
+	return puo
+}
+
+// AddReactions adds the "reactions" edges to the PostReaction entity.
+func (puo *PostUpdateOne) AddReactions(p ...*PostReaction) *PostUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return puo.AddReactionIDs(ids...)
 }
 
 // Mutation returns the PostMutation object of the builder.
@@ -353,25 +620,73 @@ func (puo *PostUpdateOne) ClearUser() *PostUpdateOne {
 	return puo
 }
 
-// ClearLikedBy clears all "likedBy" edges to the User entity.
-func (puo *PostUpdateOne) ClearLikedBy() *PostUpdateOne {
-	puo.mutation.ClearLikedBy()
+// ClearOriginal clears the "original" edge to the Post entity.
+func (puo *PostUpdateOne) ClearOriginal() *PostUpdateOne {
+	puo.mutation.ClearOriginal()
 	return puo
 }
 
-// RemoveLikedByIDs removes the "likedBy" edge to User entities by IDs.
-func (puo *PostUpdateOne) RemoveLikedByIDs(ids ...uuid.UUID) *PostUpdateOne {
-	puo.mutation.RemoveLikedByIDs(ids...)
+// ClearReposts clears all "reposts" edges to the Post entity.
+func (puo *PostUpdateOne) ClearReposts() *PostUpdateOne {
+	puo.mutation.ClearReposts()
 	return puo
 }
 
-// RemoveLikedBy removes "likedBy" edges to User entities.
-func (puo *PostUpdateOne) RemoveLikedBy(u ...*User) *PostUpdateOne {
-	ids := make([]uuid.UUID, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
+// RemoveRepostIDs removes the "reposts" edge to Post entities by IDs.
+func (puo *PostUpdateOne) RemoveRepostIDs(ids ...uuid.UUID) *PostUpdateOne {
+	puo.mutation.RemoveRepostIDs(ids...)
+	return puo
+}
+
+// RemoveReposts removes "reposts" edges to Post entities.
+func (puo *PostUpdateOne) RemoveReposts(p ...*Post) *PostUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
 	}
-	return puo.RemoveLikedByIDs(ids...)
+	return puo.RemoveRepostIDs(ids...)
+}
+
+// ClearComments clears all "comments" edges to the Comment entity.
+func (puo *PostUpdateOne) ClearComments() *PostUpdateOne {
+	puo.mutation.ClearComments()
+	return puo
+}
+
+// RemoveCommentIDs removes the "comments" edge to Comment entities by IDs.
+func (puo *PostUpdateOne) RemoveCommentIDs(ids ...uuid.UUID) *PostUpdateOne {
+	puo.mutation.RemoveCommentIDs(ids...)
+	return puo
+}
+
+// RemoveComments removes "comments" edges to Comment entities.
+func (puo *PostUpdateOne) RemoveComments(c ...*Comment) *PostUpdateOne {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return puo.RemoveCommentIDs(ids...)
+}
+
+// ClearReactions clears all "reactions" edges to the PostReaction entity.
+func (puo *PostUpdateOne) ClearReactions() *PostUpdateOne {
+	puo.mutation.ClearReactions()
+	return puo
+}
+
+// RemoveReactionIDs removes the "reactions" edge to PostReaction entities by IDs.
+func (puo *PostUpdateOne) RemoveReactionIDs(ids ...uuid.UUID) *PostUpdateOne {
+	puo.mutation.RemoveReactionIDs(ids...)
+	return puo
+}
+
+// RemoveReactions removes "reactions" edges to PostReaction entities.
+func (puo *PostUpdateOne) RemoveReactions(p ...*PostReaction) *PostUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return puo.RemoveReactionIDs(ids...)
 }
 
 // Where appends a list predicates to the PostUpdate builder.
@@ -503,28 +818,57 @@ func (puo *PostUpdateOne) sqlSave(ctx context.Context) (_node *Post, err error) 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if puo.mutation.LikedByCleared() {
+	if puo.mutation.OriginalCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   post.LikedByTable,
-			Columns: post.LikedByPrimaryKey,
+			Table:   post.OriginalTable,
+			Columns: []string{post.OriginalColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := puo.mutation.RemovedLikedByIDs(); len(nodes) > 0 && !puo.mutation.LikedByCleared() {
+	if nodes := puo.mutation.OriginalIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   post.LikedByTable,
-			Columns: post.LikedByPrimaryKey,
+			Table:   post.OriginalTable,
+			Columns: []string{post.OriginalColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if puo.mutation.RepostsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.RepostsTable,
+			Columns: []string{post.RepostsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.RemovedRepostsIDs(); len(nodes) > 0 && !puo.mutation.RepostsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.RepostsTable,
+			Columns: []string{post.RepostsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -532,15 +876,105 @@ func (puo *PostUpdateOne) sqlSave(ctx context.Context) (_node *Post, err error) 
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := puo.mutation.LikedByIDs(); len(nodes) > 0 {
+	if nodes := puo.mutation.RepostsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   post.LikedByTable,
-			Columns: post.LikedByPrimaryKey,
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.RepostsTable,
+			Columns: []string{post.RepostsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if puo.mutation.CommentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.CommentsTable,
+			Columns: []string{post.CommentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.RemovedCommentsIDs(); len(nodes) > 0 && !puo.mutation.CommentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.CommentsTable,
+			Columns: []string{post.CommentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.CommentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.CommentsTable,
+			Columns: []string{post.CommentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if puo.mutation.ReactionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.ReactionsTable,
+			Columns: []string{post.ReactionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(postreaction.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.RemovedReactionsIDs(); len(nodes) > 0 && !puo.mutation.ReactionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.ReactionsTable,
+			Columns: []string{post.ReactionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(postreaction.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.ReactionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.ReactionsTable,
+			Columns: []string{post.ReactionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(postreaction.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

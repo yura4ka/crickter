@@ -6,8 +6,17 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// Comment is the predicate function for comment builders.
+type Comment func(*sql.Selector)
+
+// CommentReaction is the predicate function for commentreaction builders.
+type CommentReaction func(*sql.Selector)
+
 // Post is the predicate function for post builders.
 type Post func(*sql.Selector)
+
+// PostReaction is the predicate function for postreaction builders.
+type PostReaction func(*sql.Selector)
 
 // User is the predicate function for user builders.
 type User func(*sql.Selector)

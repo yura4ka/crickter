@@ -9,6 +9,30 @@ import (
 	"github.com/yura4ka/crickter/ent"
 )
 
+// The CommentFunc type is an adapter to allow the use of ordinary
+// function as Comment mutator.
+type CommentFunc func(context.Context, *ent.CommentMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CommentFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CommentMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CommentMutation", m)
+}
+
+// The CommentReactionFunc type is an adapter to allow the use of ordinary
+// function as CommentReaction mutator.
+type CommentReactionFunc func(context.Context, *ent.CommentReactionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CommentReactionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CommentReactionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CommentReactionMutation", m)
+}
+
 // The PostFunc type is an adapter to allow the use of ordinary
 // function as Post mutator.
 type PostFunc func(context.Context, *ent.PostMutation) (ent.Value, error)
@@ -19,6 +43,18 @@ func (f PostFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error)
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PostMutation", m)
+}
+
+// The PostReactionFunc type is an adapter to allow the use of ordinary
+// function as PostReaction mutator.
+type PostReactionFunc func(context.Context, *ent.PostReactionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f PostReactionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.PostReactionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PostReactionMutation", m)
 }
 
 // The UserFunc type is an adapter to allow the use of ordinary

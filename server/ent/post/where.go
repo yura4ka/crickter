@@ -264,21 +264,90 @@ func HasUserWith(preds ...predicate.User) predicate.Post {
 	})
 }
 
-// HasLikedBy applies the HasEdge predicate on the "likedBy" edge.
-func HasLikedBy() predicate.Post {
+// HasOriginal applies the HasEdge predicate on the "original" edge.
+func HasOriginal() predicate.Post {
 	return predicate.Post(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, LikedByTable, LikedByPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.M2O, true, OriginalTable, OriginalColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasLikedByWith applies the HasEdge predicate on the "likedBy" edge with a given conditions (other predicates).
-func HasLikedByWith(preds ...predicate.User) predicate.Post {
+// HasOriginalWith applies the HasEdge predicate on the "original" edge with a given conditions (other predicates).
+func HasOriginalWith(preds ...predicate.Post) predicate.Post {
 	return predicate.Post(func(s *sql.Selector) {
-		step := newLikedByStep()
+		step := newOriginalStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasReposts applies the HasEdge predicate on the "reposts" edge.
+func HasReposts() predicate.Post {
+	return predicate.Post(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, RepostsTable, RepostsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRepostsWith applies the HasEdge predicate on the "reposts" edge with a given conditions (other predicates).
+func HasRepostsWith(preds ...predicate.Post) predicate.Post {
+	return predicate.Post(func(s *sql.Selector) {
+		step := newRepostsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasComments applies the HasEdge predicate on the "comments" edge.
+func HasComments() predicate.Post {
+	return predicate.Post(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CommentsTable, CommentsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCommentsWith applies the HasEdge predicate on the "comments" edge with a given conditions (other predicates).
+func HasCommentsWith(preds ...predicate.Comment) predicate.Post {
+	return predicate.Post(func(s *sql.Selector) {
+		step := newCommentsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasReactions applies the HasEdge predicate on the "reactions" edge.
+func HasReactions() predicate.Post {
+	return predicate.Post(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ReactionsTable, ReactionsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasReactionsWith applies the HasEdge predicate on the "reactions" edge with a given conditions (other predicates).
+func HasReactionsWith(preds ...predicate.PostReaction) predicate.Post {
+	return predicate.Post(func(s *sql.Selector) {
+		step := newReactionsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

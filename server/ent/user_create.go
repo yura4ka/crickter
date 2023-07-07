@@ -11,7 +11,9 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/yura4ka/crickter/ent/commentreaction"
 	"github.com/yura4ka/crickter/ent/post"
+	"github.com/yura4ka/crickter/ent/postreaction"
 	"github.com/yura4ka/crickter/ent/user"
 )
 
@@ -54,6 +56,20 @@ func (uc *UserCreate) SetNillableCreatedAt(t *time.Time) *UserCreate {
 	return uc
 }
 
+// SetIsPrivate sets the "isPrivate" field.
+func (uc *UserCreate) SetIsPrivate(b bool) *UserCreate {
+	uc.mutation.SetIsPrivate(b)
+	return uc
+}
+
+// SetNillableIsPrivate sets the "isPrivate" field if the given value is not nil.
+func (uc *UserCreate) SetNillableIsPrivate(b *bool) *UserCreate {
+	if b != nil {
+		uc.SetIsPrivate(*b)
+	}
+	return uc
+}
+
 // SetID sets the "id" field.
 func (uc *UserCreate) SetID(u uuid.UUID) *UserCreate {
 	uc.mutation.SetID(u)
@@ -81,21 +97,6 @@ func (uc *UserCreate) AddPosts(p ...*Post) *UserCreate {
 		ids[i] = p[i].ID
 	}
 	return uc.AddPostIDs(ids...)
-}
-
-// AddLikedPostIDs adds the "likedPosts" edge to the Post entity by IDs.
-func (uc *UserCreate) AddLikedPostIDs(ids ...uuid.UUID) *UserCreate {
-	uc.mutation.AddLikedPostIDs(ids...)
-	return uc
-}
-
-// AddLikedPosts adds the "likedPosts" edges to the Post entity.
-func (uc *UserCreate) AddLikedPosts(p ...*Post) *UserCreate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return uc.AddLikedPostIDs(ids...)
 }
 
 // AddFollowerIDs adds the "followers" edge to the User entity by IDs.
@@ -126,6 +127,36 @@ func (uc *UserCreate) AddFollowing(u ...*User) *UserCreate {
 		ids[i] = u[i].ID
 	}
 	return uc.AddFollowingIDs(ids...)
+}
+
+// AddPostReactionIDs adds the "postReactions" edge to the PostReaction entity by IDs.
+func (uc *UserCreate) AddPostReactionIDs(ids ...uuid.UUID) *UserCreate {
+	uc.mutation.AddPostReactionIDs(ids...)
+	return uc
+}
+
+// AddPostReactions adds the "postReactions" edges to the PostReaction entity.
+func (uc *UserCreate) AddPostReactions(p ...*PostReaction) *UserCreate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uc.AddPostReactionIDs(ids...)
+}
+
+// AddCommentReactionIDs adds the "commentReactions" edge to the CommentReaction entity by IDs.
+func (uc *UserCreate) AddCommentReactionIDs(ids ...uuid.UUID) *UserCreate {
+	uc.mutation.AddCommentReactionIDs(ids...)
+	return uc
+}
+
+// AddCommentReactions adds the "commentReactions" edges to the CommentReaction entity.
+func (uc *UserCreate) AddCommentReactions(c ...*CommentReaction) *UserCreate {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uc.AddCommentReactionIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -167,6 +198,10 @@ func (uc *UserCreate) defaults() {
 		v := user.DefaultCreatedAt()
 		uc.mutation.SetCreatedAt(v)
 	}
+	if _, ok := uc.mutation.IsPrivate(); !ok {
+		v := user.DefaultIsPrivate
+		uc.mutation.SetIsPrivate(v)
+	}
 	if _, ok := uc.mutation.ID(); !ok {
 		v := user.DefaultID()
 		uc.mutation.SetID(v)
@@ -186,6 +221,11 @@ func (uc *UserCreate) check() error {
 	if _, ok := uc.mutation.Password(); !ok {
 		return &ValidationError{Name: "password", err: errors.New(`ent: missing required field "User.password"`)}
 	}
+	if v, ok := uc.mutation.Password(); ok {
+		if err := user.PasswordValidator(v); err != nil {
+			return &ValidationError{Name: "password", err: fmt.Errorf(`ent: validator failed for field "User.password": %w`, err)}
+		}
+	}
 	if _, ok := uc.mutation.Username(); !ok {
 		return &ValidationError{Name: "username", err: errors.New(`ent: missing required field "User.username"`)}
 	}
@@ -196,6 +236,9 @@ func (uc *UserCreate) check() error {
 	}
 	if _, ok := uc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "createdAt", err: errors.New(`ent: missing required field "User.createdAt"`)}
+	}
+	if _, ok := uc.mutation.IsPrivate(); !ok {
+		return &ValidationError{Name: "isPrivate", err: errors.New(`ent: missing required field "User.isPrivate"`)}
 	}
 	return nil
 }
@@ -248,28 +291,16 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		_spec.SetField(user.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
+	if value, ok := uc.mutation.IsPrivate(); ok {
+		_spec.SetField(user.FieldIsPrivate, field.TypeBool, value)
+		_node.IsPrivate = value
+	}
 	if nodes := uc.mutation.PostsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   user.PostsTable,
 			Columns: []string{user.PostsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := uc.mutation.LikedPostsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   user.LikedPostsTable,
-			Columns: user.LikedPostsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID),
@@ -305,6 +336,38 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.PostReactionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PostReactionsTable,
+			Columns: []string{user.PostReactionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(postreaction.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.CommentReactionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommentReactionsTable,
+			Columns: []string{user.CommentReactionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentreaction.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

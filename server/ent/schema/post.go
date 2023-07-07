@@ -27,7 +27,9 @@ func (Post) Fields() []ent.Field {
 func (Post) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("user", User.Type).Ref("posts").Field("userId").Unique().Required(),
-		edge.From("likedBy", User.Type).Ref("likedPosts"),
+		edge.To("reposts", Post.Type).From("original").Unique(),
+		edge.To("comments", Comment.Type),
+		edge.To("reactions", PostReaction.Type),
 	}
 }
 

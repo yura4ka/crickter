@@ -76,6 +76,11 @@ func CreatedAt(v time.Time) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldCreatedAt, v))
 }
 
+// IsPrivate applies equality check predicate on the "isPrivate" field. It's identical to IsPrivateEQ.
+func IsPrivate(v bool) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldIsPrivate, v))
+}
+
 // EmailEQ applies the EQ predicate on the "email" field.
 func EmailEQ(v string) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldEmail, v))
@@ -311,6 +316,16 @@ func CreatedAtLTE(v time.Time) predicate.User {
 	return predicate.User(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// IsPrivateEQ applies the EQ predicate on the "isPrivate" field.
+func IsPrivateEQ(v bool) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldIsPrivate, v))
+}
+
+// IsPrivateNEQ applies the NEQ predicate on the "isPrivate" field.
+func IsPrivateNEQ(v bool) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldIsPrivate, v))
+}
+
 // HasPosts applies the HasEdge predicate on the "posts" edge.
 func HasPosts() predicate.User {
 	return predicate.User(func(s *sql.Selector) {
@@ -326,29 +341,6 @@ func HasPosts() predicate.User {
 func HasPostsWith(preds ...predicate.Post) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		step := newPostsStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasLikedPosts applies the HasEdge predicate on the "likedPosts" edge.
-func HasLikedPosts() predicate.User {
-	return predicate.User(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, LikedPostsTable, LikedPostsPrimaryKey...),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasLikedPostsWith applies the HasEdge predicate on the "likedPosts" edge with a given conditions (other predicates).
-func HasLikedPostsWith(preds ...predicate.Post) predicate.User {
-	return predicate.User(func(s *sql.Selector) {
-		step := newLikedPostsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -395,6 +387,52 @@ func HasFollowing() predicate.User {
 func HasFollowingWith(preds ...predicate.User) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		step := newFollowingStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasPostReactions applies the HasEdge predicate on the "postReactions" edge.
+func HasPostReactions() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, PostReactionsTable, PostReactionsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPostReactionsWith applies the HasEdge predicate on the "postReactions" edge with a given conditions (other predicates).
+func HasPostReactionsWith(preds ...predicate.PostReaction) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newPostReactionsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasCommentReactions applies the HasEdge predicate on the "commentReactions" edge.
+func HasCommentReactions() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CommentReactionsTable, CommentReactionsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCommentReactionsWith applies the HasEdge predicate on the "commentReactions" edge with a given conditions (other predicates).
+func HasCommentReactionsWith(preds ...predicate.CommentReaction) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newCommentReactionsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

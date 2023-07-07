@@ -15,7 +15,10 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/yura4ka/crickter/ent/comment"
+	"github.com/yura4ka/crickter/ent/commentreaction"
 	"github.com/yura4ka/crickter/ent/post"
+	"github.com/yura4ka/crickter/ent/postreaction"
 	"github.com/yura4ka/crickter/ent/user"
 )
 
@@ -24,8 +27,14 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// Comment is the client for interacting with the Comment builders.
+	Comment *CommentClient
+	// CommentReaction is the client for interacting with the CommentReaction builders.
+	CommentReaction *CommentReactionClient
 	// Post is the client for interacting with the Post builders.
 	Post *PostClient
+	// PostReaction is the client for interacting with the PostReaction builders.
+	PostReaction *PostReactionClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -41,7 +50,10 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.Comment = NewCommentClient(c.config)
+	c.CommentReaction = NewCommentReactionClient(c.config)
 	c.Post = NewPostClient(c.config)
+	c.PostReaction = NewPostReactionClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -123,10 +135,13 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		Post:   NewPostClient(cfg),
-		User:   NewUserClient(cfg),
+		ctx:             ctx,
+		config:          cfg,
+		Comment:         NewCommentClient(cfg),
+		CommentReaction: NewCommentReactionClient(cfg),
+		Post:            NewPostClient(cfg),
+		PostReaction:    NewPostReactionClient(cfg),
+		User:            NewUserClient(cfg),
 	}, nil
 }
 
@@ -144,17 +159,20 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		Post:   NewPostClient(cfg),
-		User:   NewUserClient(cfg),
+		ctx:             ctx,
+		config:          cfg,
+		Comment:         NewCommentClient(cfg),
+		CommentReaction: NewCommentReactionClient(cfg),
+		Post:            NewPostClient(cfg),
+		PostReaction:    NewPostReactionClient(cfg),
+		User:            NewUserClient(cfg),
 	}, nil
 }
 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Post.
+//		Comment.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -176,26 +194,370 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.Comment.Use(hooks...)
+	c.CommentReaction.Use(hooks...)
 	c.Post.Use(hooks...)
+	c.PostReaction.Use(hooks...)
 	c.User.Use(hooks...)
 }
 
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
+	c.Comment.Intercept(interceptors...)
+	c.CommentReaction.Intercept(interceptors...)
 	c.Post.Intercept(interceptors...)
+	c.PostReaction.Intercept(interceptors...)
 	c.User.Intercept(interceptors...)
 }
 
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *CommentMutation:
+		return c.Comment.mutate(ctx, m)
+	case *CommentReactionMutation:
+		return c.CommentReaction.mutate(ctx, m)
 	case *PostMutation:
 		return c.Post.mutate(ctx, m)
+	case *PostReactionMutation:
+		return c.PostReaction.mutate(ctx, m)
 	case *UserMutation:
 		return c.User.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// CommentClient is a client for the Comment schema.
+type CommentClient struct {
+	config
+}
+
+// NewCommentClient returns a client for the Comment from the given config.
+func NewCommentClient(c config) *CommentClient {
+	return &CommentClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `comment.Hooks(f(g(h())))`.
+func (c *CommentClient) Use(hooks ...Hook) {
+	c.hooks.Comment = append(c.hooks.Comment, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `comment.Intercept(f(g(h())))`.
+func (c *CommentClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Comment = append(c.inters.Comment, interceptors...)
+}
+
+// Create returns a builder for creating a Comment entity.
+func (c *CommentClient) Create() *CommentCreate {
+	mutation := newCommentMutation(c.config, OpCreate)
+	return &CommentCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Comment entities.
+func (c *CommentClient) CreateBulk(builders ...*CommentCreate) *CommentCreateBulk {
+	return &CommentCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Comment.
+func (c *CommentClient) Update() *CommentUpdate {
+	mutation := newCommentMutation(c.config, OpUpdate)
+	return &CommentUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CommentClient) UpdateOne(co *Comment) *CommentUpdateOne {
+	mutation := newCommentMutation(c.config, OpUpdateOne, withComment(co))
+	return &CommentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *CommentClient) UpdateOneID(id uuid.UUID) *CommentUpdateOne {
+	mutation := newCommentMutation(c.config, OpUpdateOne, withCommentID(id))
+	return &CommentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Comment.
+func (c *CommentClient) Delete() *CommentDelete {
+	mutation := newCommentMutation(c.config, OpDelete)
+	return &CommentDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CommentClient) DeleteOne(co *Comment) *CommentDeleteOne {
+	return c.DeleteOneID(co.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *CommentClient) DeleteOneID(id uuid.UUID) *CommentDeleteOne {
+	builder := c.Delete().Where(comment.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &CommentDeleteOne{builder}
+}
+
+// Query returns a query builder for Comment.
+func (c *CommentClient) Query() *CommentQuery {
+	return &CommentQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeComment},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Comment entity by its id.
+func (c *CommentClient) Get(ctx context.Context, id uuid.UUID) (*Comment, error) {
+	return c.Query().Where(comment.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CommentClient) GetX(ctx context.Context, id uuid.UUID) *Comment {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryPost queries the post edge of a Comment.
+func (c *CommentClient) QueryPost(co *Comment) *PostQuery {
+	query := (&PostClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := co.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(comment.Table, comment.FieldID, id),
+			sqlgraph.To(post.Table, post.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, comment.PostTable, comment.PostColumn),
+		)
+		fromV = sqlgraph.Neighbors(co.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryParent queries the parent edge of a Comment.
+func (c *CommentClient) QueryParent(co *Comment) *CommentQuery {
+	query := (&CommentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := co.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(comment.Table, comment.FieldID, id),
+			sqlgraph.To(comment.Table, comment.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, comment.ParentTable, comment.ParentColumn),
+		)
+		fromV = sqlgraph.Neighbors(co.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryReplies queries the replies edge of a Comment.
+func (c *CommentClient) QueryReplies(co *Comment) *CommentQuery {
+	query := (&CommentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := co.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(comment.Table, comment.FieldID, id),
+			sqlgraph.To(comment.Table, comment.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, comment.RepliesTable, comment.RepliesColumn),
+		)
+		fromV = sqlgraph.Neighbors(co.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryReactions queries the reactions edge of a Comment.
+func (c *CommentClient) QueryReactions(co *Comment) *CommentReactionQuery {
+	query := (&CommentReactionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := co.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(comment.Table, comment.FieldID, id),
+			sqlgraph.To(commentreaction.Table, commentreaction.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, comment.ReactionsTable, comment.ReactionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(co.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CommentClient) Hooks() []Hook {
+	return c.hooks.Comment
+}
+
+// Interceptors returns the client interceptors.
+func (c *CommentClient) Interceptors() []Interceptor {
+	return c.inters.Comment
+}
+
+func (c *CommentClient) mutate(ctx context.Context, m *CommentMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CommentCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CommentUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CommentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CommentDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Comment mutation op: %q", m.Op())
+	}
+}
+
+// CommentReactionClient is a client for the CommentReaction schema.
+type CommentReactionClient struct {
+	config
+}
+
+// NewCommentReactionClient returns a client for the CommentReaction from the given config.
+func NewCommentReactionClient(c config) *CommentReactionClient {
+	return &CommentReactionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `commentreaction.Hooks(f(g(h())))`.
+func (c *CommentReactionClient) Use(hooks ...Hook) {
+	c.hooks.CommentReaction = append(c.hooks.CommentReaction, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `commentreaction.Intercept(f(g(h())))`.
+func (c *CommentReactionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CommentReaction = append(c.inters.CommentReaction, interceptors...)
+}
+
+// Create returns a builder for creating a CommentReaction entity.
+func (c *CommentReactionClient) Create() *CommentReactionCreate {
+	mutation := newCommentReactionMutation(c.config, OpCreate)
+	return &CommentReactionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CommentReaction entities.
+func (c *CommentReactionClient) CreateBulk(builders ...*CommentReactionCreate) *CommentReactionCreateBulk {
+	return &CommentReactionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CommentReaction.
+func (c *CommentReactionClient) Update() *CommentReactionUpdate {
+	mutation := newCommentReactionMutation(c.config, OpUpdate)
+	return &CommentReactionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CommentReactionClient) UpdateOne(cr *CommentReaction) *CommentReactionUpdateOne {
+	mutation := newCommentReactionMutation(c.config, OpUpdateOne, withCommentReaction(cr))
+	return &CommentReactionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *CommentReactionClient) UpdateOneID(id uuid.UUID) *CommentReactionUpdateOne {
+	mutation := newCommentReactionMutation(c.config, OpUpdateOne, withCommentReactionID(id))
+	return &CommentReactionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CommentReaction.
+func (c *CommentReactionClient) Delete() *CommentReactionDelete {
+	mutation := newCommentReactionMutation(c.config, OpDelete)
+	return &CommentReactionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CommentReactionClient) DeleteOne(cr *CommentReaction) *CommentReactionDeleteOne {
+	return c.DeleteOneID(cr.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *CommentReactionClient) DeleteOneID(id uuid.UUID) *CommentReactionDeleteOne {
+	builder := c.Delete().Where(commentreaction.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &CommentReactionDeleteOne{builder}
+}
+
+// Query returns a query builder for CommentReaction.
+func (c *CommentReactionClient) Query() *CommentReactionQuery {
+	return &CommentReactionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCommentReaction},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CommentReaction entity by its id.
+func (c *CommentReactionClient) Get(ctx context.Context, id uuid.UUID) (*CommentReaction, error) {
+	return c.Query().Where(commentreaction.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CommentReactionClient) GetX(ctx context.Context, id uuid.UUID) *CommentReaction {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryComment queries the comment edge of a CommentReaction.
+func (c *CommentReactionClient) QueryComment(cr *CommentReaction) *CommentQuery {
+	query := (&CommentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := cr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(commentreaction.Table, commentreaction.FieldID, id),
+			sqlgraph.To(comment.Table, comment.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, commentreaction.CommentTable, commentreaction.CommentColumn),
+		)
+		fromV = sqlgraph.Neighbors(cr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a CommentReaction.
+func (c *CommentReactionClient) QueryUser(cr *CommentReaction) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := cr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(commentreaction.Table, commentreaction.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, commentreaction.UserTable, commentreaction.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(cr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CommentReactionClient) Hooks() []Hook {
+	return c.hooks.CommentReaction
+}
+
+// Interceptors returns the client interceptors.
+func (c *CommentReactionClient) Interceptors() []Interceptor {
+	return c.inters.CommentReaction
+}
+
+func (c *CommentReactionClient) mutate(ctx context.Context, m *CommentReactionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CommentReactionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CommentReactionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CommentReactionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CommentReactionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CommentReaction mutation op: %q", m.Op())
 	}
 }
 
@@ -308,15 +670,63 @@ func (c *PostClient) QueryUser(po *Post) *UserQuery {
 	return query
 }
 
-// QueryLikedBy queries the likedBy edge of a Post.
-func (c *PostClient) QueryLikedBy(po *Post) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
+// QueryOriginal queries the original edge of a Post.
+func (c *PostClient) QueryOriginal(po *Post) *PostQuery {
+	query := (&PostClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := po.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(post.Table, post.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, post.LikedByTable, post.LikedByPrimaryKey...),
+			sqlgraph.To(post.Table, post.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, post.OriginalTable, post.OriginalColumn),
+		)
+		fromV = sqlgraph.Neighbors(po.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryReposts queries the reposts edge of a Post.
+func (c *PostClient) QueryReposts(po *Post) *PostQuery {
+	query := (&PostClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := po.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(post.Table, post.FieldID, id),
+			sqlgraph.To(post.Table, post.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, post.RepostsTable, post.RepostsColumn),
+		)
+		fromV = sqlgraph.Neighbors(po.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryComments queries the comments edge of a Post.
+func (c *PostClient) QueryComments(po *Post) *CommentQuery {
+	query := (&CommentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := po.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(post.Table, post.FieldID, id),
+			sqlgraph.To(comment.Table, comment.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, post.CommentsTable, post.CommentsColumn),
+		)
+		fromV = sqlgraph.Neighbors(po.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryReactions queries the reactions edge of a Post.
+func (c *PostClient) QueryReactions(po *Post) *PostReactionQuery {
+	query := (&PostReactionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := po.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(post.Table, post.FieldID, id),
+			sqlgraph.To(postreaction.Table, postreaction.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, post.ReactionsTable, post.ReactionsColumn),
 		)
 		fromV = sqlgraph.Neighbors(po.driver.Dialect(), step)
 		return fromV, nil
@@ -346,6 +756,156 @@ func (c *PostClient) mutate(ctx context.Context, m *PostMutation) (Value, error)
 		return (&PostDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Post mutation op: %q", m.Op())
+	}
+}
+
+// PostReactionClient is a client for the PostReaction schema.
+type PostReactionClient struct {
+	config
+}
+
+// NewPostReactionClient returns a client for the PostReaction from the given config.
+func NewPostReactionClient(c config) *PostReactionClient {
+	return &PostReactionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `postreaction.Hooks(f(g(h())))`.
+func (c *PostReactionClient) Use(hooks ...Hook) {
+	c.hooks.PostReaction = append(c.hooks.PostReaction, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `postreaction.Intercept(f(g(h())))`.
+func (c *PostReactionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.PostReaction = append(c.inters.PostReaction, interceptors...)
+}
+
+// Create returns a builder for creating a PostReaction entity.
+func (c *PostReactionClient) Create() *PostReactionCreate {
+	mutation := newPostReactionMutation(c.config, OpCreate)
+	return &PostReactionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of PostReaction entities.
+func (c *PostReactionClient) CreateBulk(builders ...*PostReactionCreate) *PostReactionCreateBulk {
+	return &PostReactionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for PostReaction.
+func (c *PostReactionClient) Update() *PostReactionUpdate {
+	mutation := newPostReactionMutation(c.config, OpUpdate)
+	return &PostReactionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *PostReactionClient) UpdateOne(pr *PostReaction) *PostReactionUpdateOne {
+	mutation := newPostReactionMutation(c.config, OpUpdateOne, withPostReaction(pr))
+	return &PostReactionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *PostReactionClient) UpdateOneID(id uuid.UUID) *PostReactionUpdateOne {
+	mutation := newPostReactionMutation(c.config, OpUpdateOne, withPostReactionID(id))
+	return &PostReactionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for PostReaction.
+func (c *PostReactionClient) Delete() *PostReactionDelete {
+	mutation := newPostReactionMutation(c.config, OpDelete)
+	return &PostReactionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *PostReactionClient) DeleteOne(pr *PostReaction) *PostReactionDeleteOne {
+	return c.DeleteOneID(pr.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *PostReactionClient) DeleteOneID(id uuid.UUID) *PostReactionDeleteOne {
+	builder := c.Delete().Where(postreaction.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &PostReactionDeleteOne{builder}
+}
+
+// Query returns a query builder for PostReaction.
+func (c *PostReactionClient) Query() *PostReactionQuery {
+	return &PostReactionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypePostReaction},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a PostReaction entity by its id.
+func (c *PostReactionClient) Get(ctx context.Context, id uuid.UUID) (*PostReaction, error) {
+	return c.Query().Where(postreaction.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *PostReactionClient) GetX(ctx context.Context, id uuid.UUID) *PostReaction {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryPost queries the post edge of a PostReaction.
+func (c *PostReactionClient) QueryPost(pr *PostReaction) *PostQuery {
+	query := (&PostClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(postreaction.Table, postreaction.FieldID, id),
+			sqlgraph.To(post.Table, post.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, postreaction.PostTable, postreaction.PostColumn),
+		)
+		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a PostReaction.
+func (c *PostReactionClient) QueryUser(pr *PostReaction) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(postreaction.Table, postreaction.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, postreaction.UserTable, postreaction.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *PostReactionClient) Hooks() []Hook {
+	return c.hooks.PostReaction
+}
+
+// Interceptors returns the client interceptors.
+func (c *PostReactionClient) Interceptors() []Interceptor {
+	return c.inters.PostReaction
+}
+
+func (c *PostReactionClient) mutate(ctx context.Context, m *PostReactionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&PostReactionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&PostReactionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&PostReactionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&PostReactionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown PostReaction mutation op: %q", m.Op())
 	}
 }
 
@@ -458,22 +1018,6 @@ func (c *UserClient) QueryPosts(u *User) *PostQuery {
 	return query
 }
 
-// QueryLikedPosts queries the likedPosts edge of a User.
-func (c *UserClient) QueryLikedPosts(u *User) *PostQuery {
-	query := (&PostClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := u.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(post.Table, post.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, user.LikedPostsTable, user.LikedPostsPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryFollowers queries the followers edge of a User.
 func (c *UserClient) QueryFollowers(u *User) *UserQuery {
 	query := (&UserClient{config: c.config}).Query()
@@ -499,6 +1043,38 @@ func (c *UserClient) QueryFollowing(u *User) *UserQuery {
 			sqlgraph.From(user.Table, user.FieldID, id),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, user.FollowingTable, user.FollowingPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPostReactions queries the postReactions edge of a User.
+func (c *UserClient) QueryPostReactions(u *User) *PostReactionQuery {
+	query := (&PostReactionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(postreaction.Table, postreaction.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.PostReactionsTable, user.PostReactionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCommentReactions queries the commentReactions edge of a User.
+func (c *UserClient) QueryCommentReactions(u *User) *CommentReactionQuery {
+	query := (&CommentReactionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(commentreaction.Table, commentreaction.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.CommentReactionsTable, user.CommentReactionsColumn),
 		)
 		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
 		return fromV, nil
@@ -534,9 +1110,9 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Post, User []ent.Hook
+		Comment, CommentReaction, Post, PostReaction, User []ent.Hook
 	}
 	inters struct {
-		Post, User []ent.Interceptor
+		Comment, CommentReaction, Post, PostReaction, User []ent.Interceptor
 	}
 )

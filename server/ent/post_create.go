@@ -11,7 +11,9 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/yura4ka/crickter/ent/comment"
 	"github.com/yura4ka/crickter/ent/post"
+	"github.com/yura4ka/crickter/ent/postreaction"
 	"github.com/yura4ka/crickter/ent/user"
 )
 
@@ -87,19 +89,68 @@ func (pc *PostCreate) SetUser(u *User) *PostCreate {
 	return pc.SetUserID(u.ID)
 }
 
-// AddLikedByIDs adds the "likedBy" edge to the User entity by IDs.
-func (pc *PostCreate) AddLikedByIDs(ids ...uuid.UUID) *PostCreate {
-	pc.mutation.AddLikedByIDs(ids...)
+// SetOriginalID sets the "original" edge to the Post entity by ID.
+func (pc *PostCreate) SetOriginalID(id uuid.UUID) *PostCreate {
+	pc.mutation.SetOriginalID(id)
 	return pc
 }
 
-// AddLikedBy adds the "likedBy" edges to the User entity.
-func (pc *PostCreate) AddLikedBy(u ...*User) *PostCreate {
-	ids := make([]uuid.UUID, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
+// SetNillableOriginalID sets the "original" edge to the Post entity by ID if the given value is not nil.
+func (pc *PostCreate) SetNillableOriginalID(id *uuid.UUID) *PostCreate {
+	if id != nil {
+		pc = pc.SetOriginalID(*id)
 	}
-	return pc.AddLikedByIDs(ids...)
+	return pc
+}
+
+// SetOriginal sets the "original" edge to the Post entity.
+func (pc *PostCreate) SetOriginal(p *Post) *PostCreate {
+	return pc.SetOriginalID(p.ID)
+}
+
+// AddRepostIDs adds the "reposts" edge to the Post entity by IDs.
+func (pc *PostCreate) AddRepostIDs(ids ...uuid.UUID) *PostCreate {
+	pc.mutation.AddRepostIDs(ids...)
+	return pc
+}
+
+// AddReposts adds the "reposts" edges to the Post entity.
+func (pc *PostCreate) AddReposts(p ...*Post) *PostCreate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return pc.AddRepostIDs(ids...)
+}
+
+// AddCommentIDs adds the "comments" edge to the Comment entity by IDs.
+func (pc *PostCreate) AddCommentIDs(ids ...uuid.UUID) *PostCreate {
+	pc.mutation.AddCommentIDs(ids...)
+	return pc
+}
+
+// AddComments adds the "comments" edges to the Comment entity.
+func (pc *PostCreate) AddComments(c ...*Comment) *PostCreate {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return pc.AddCommentIDs(ids...)
+}
+
+// AddReactionIDs adds the "reactions" edge to the PostReaction entity by IDs.
+func (pc *PostCreate) AddReactionIDs(ids ...uuid.UUID) *PostCreate {
+	pc.mutation.AddReactionIDs(ids...)
+	return pc
+}
+
+// AddReactions adds the "reactions" edges to the PostReaction entity.
+func (pc *PostCreate) AddReactions(p ...*PostReaction) *PostCreate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return pc.AddReactionIDs(ids...)
 }
 
 // Mutation returns the PostMutation object of the builder.
@@ -237,15 +288,64 @@ func (pc *PostCreate) createSpec() (*Post, *sqlgraph.CreateSpec) {
 		_node.UserId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := pc.mutation.LikedByIDs(); len(nodes) > 0 {
+	if nodes := pc.mutation.OriginalIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   post.LikedByTable,
-			Columns: post.LikedByPrimaryKey,
+			Table:   post.OriginalTable,
+			Columns: []string{post.OriginalColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.post_reposts = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.RepostsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.RepostsTable,
+			Columns: []string{post.RepostsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.CommentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.CommentsTable,
+			Columns: []string{post.CommentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.ReactionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.ReactionsTable,
+			Columns: []string{post.ReactionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(postreaction.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

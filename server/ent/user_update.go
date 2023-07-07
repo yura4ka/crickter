@@ -12,7 +12,9 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/yura4ka/crickter/ent/commentreaction"
 	"github.com/yura4ka/crickter/ent/post"
+	"github.com/yura4ka/crickter/ent/postreaction"
 	"github.com/yura4ka/crickter/ent/predicate"
 	"github.com/yura4ka/crickter/ent/user"
 )
@@ -62,6 +64,20 @@ func (uu *UserUpdate) SetNillableCreatedAt(t *time.Time) *UserUpdate {
 	return uu
 }
 
+// SetIsPrivate sets the "isPrivate" field.
+func (uu *UserUpdate) SetIsPrivate(b bool) *UserUpdate {
+	uu.mutation.SetIsPrivate(b)
+	return uu
+}
+
+// SetNillableIsPrivate sets the "isPrivate" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableIsPrivate(b *bool) *UserUpdate {
+	if b != nil {
+		uu.SetIsPrivate(*b)
+	}
+	return uu
+}
+
 // AddPostIDs adds the "posts" edge to the Post entity by IDs.
 func (uu *UserUpdate) AddPostIDs(ids ...uuid.UUID) *UserUpdate {
 	uu.mutation.AddPostIDs(ids...)
@@ -75,21 +91,6 @@ func (uu *UserUpdate) AddPosts(p ...*Post) *UserUpdate {
 		ids[i] = p[i].ID
 	}
 	return uu.AddPostIDs(ids...)
-}
-
-// AddLikedPostIDs adds the "likedPosts" edge to the Post entity by IDs.
-func (uu *UserUpdate) AddLikedPostIDs(ids ...uuid.UUID) *UserUpdate {
-	uu.mutation.AddLikedPostIDs(ids...)
-	return uu
-}
-
-// AddLikedPosts adds the "likedPosts" edges to the Post entity.
-func (uu *UserUpdate) AddLikedPosts(p ...*Post) *UserUpdate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return uu.AddLikedPostIDs(ids...)
 }
 
 // AddFollowerIDs adds the "followers" edge to the User entity by IDs.
@@ -122,6 +123,36 @@ func (uu *UserUpdate) AddFollowing(u ...*User) *UserUpdate {
 	return uu.AddFollowingIDs(ids...)
 }
 
+// AddPostReactionIDs adds the "postReactions" edge to the PostReaction entity by IDs.
+func (uu *UserUpdate) AddPostReactionIDs(ids ...uuid.UUID) *UserUpdate {
+	uu.mutation.AddPostReactionIDs(ids...)
+	return uu
+}
+
+// AddPostReactions adds the "postReactions" edges to the PostReaction entity.
+func (uu *UserUpdate) AddPostReactions(p ...*PostReaction) *UserUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uu.AddPostReactionIDs(ids...)
+}
+
+// AddCommentReactionIDs adds the "commentReactions" edge to the CommentReaction entity by IDs.
+func (uu *UserUpdate) AddCommentReactionIDs(ids ...uuid.UUID) *UserUpdate {
+	uu.mutation.AddCommentReactionIDs(ids...)
+	return uu
+}
+
+// AddCommentReactions adds the "commentReactions" edges to the CommentReaction entity.
+func (uu *UserUpdate) AddCommentReactions(c ...*CommentReaction) *UserUpdate {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uu.AddCommentReactionIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
@@ -146,27 +177,6 @@ func (uu *UserUpdate) RemovePosts(p ...*Post) *UserUpdate {
 		ids[i] = p[i].ID
 	}
 	return uu.RemovePostIDs(ids...)
-}
-
-// ClearLikedPosts clears all "likedPosts" edges to the Post entity.
-func (uu *UserUpdate) ClearLikedPosts() *UserUpdate {
-	uu.mutation.ClearLikedPosts()
-	return uu
-}
-
-// RemoveLikedPostIDs removes the "likedPosts" edge to Post entities by IDs.
-func (uu *UserUpdate) RemoveLikedPostIDs(ids ...uuid.UUID) *UserUpdate {
-	uu.mutation.RemoveLikedPostIDs(ids...)
-	return uu
-}
-
-// RemoveLikedPosts removes "likedPosts" edges to Post entities.
-func (uu *UserUpdate) RemoveLikedPosts(p ...*Post) *UserUpdate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return uu.RemoveLikedPostIDs(ids...)
 }
 
 // ClearFollowers clears all "followers" edges to the User entity.
@@ -211,6 +221,48 @@ func (uu *UserUpdate) RemoveFollowing(u ...*User) *UserUpdate {
 	return uu.RemoveFollowingIDs(ids...)
 }
 
+// ClearPostReactions clears all "postReactions" edges to the PostReaction entity.
+func (uu *UserUpdate) ClearPostReactions() *UserUpdate {
+	uu.mutation.ClearPostReactions()
+	return uu
+}
+
+// RemovePostReactionIDs removes the "postReactions" edge to PostReaction entities by IDs.
+func (uu *UserUpdate) RemovePostReactionIDs(ids ...uuid.UUID) *UserUpdate {
+	uu.mutation.RemovePostReactionIDs(ids...)
+	return uu
+}
+
+// RemovePostReactions removes "postReactions" edges to PostReaction entities.
+func (uu *UserUpdate) RemovePostReactions(p ...*PostReaction) *UserUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uu.RemovePostReactionIDs(ids...)
+}
+
+// ClearCommentReactions clears all "commentReactions" edges to the CommentReaction entity.
+func (uu *UserUpdate) ClearCommentReactions() *UserUpdate {
+	uu.mutation.ClearCommentReactions()
+	return uu
+}
+
+// RemoveCommentReactionIDs removes the "commentReactions" edge to CommentReaction entities by IDs.
+func (uu *UserUpdate) RemoveCommentReactionIDs(ids ...uuid.UUID) *UserUpdate {
+	uu.mutation.RemoveCommentReactionIDs(ids...)
+	return uu
+}
+
+// RemoveCommentReactions removes "commentReactions" edges to CommentReaction entities.
+func (uu *UserUpdate) RemoveCommentReactions(c ...*CommentReaction) *UserUpdate {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uu.RemoveCommentReactionIDs(ids...)
+}
+
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (uu *UserUpdate) Save(ctx context.Context) (int, error) {
 	return withHooks(ctx, uu.sqlSave, uu.mutation, uu.hooks)
@@ -245,6 +297,11 @@ func (uu *UserUpdate) check() error {
 			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "User.email": %w`, err)}
 		}
 	}
+	if v, ok := uu.mutation.Password(); ok {
+		if err := user.PasswordValidator(v); err != nil {
+			return &ValidationError{Name: "password", err: fmt.Errorf(`ent: validator failed for field "User.password": %w`, err)}
+		}
+	}
 	if v, ok := uu.mutation.Username(); ok {
 		if err := user.UsernameValidator(v); err != nil {
 			return &ValidationError{Name: "username", err: fmt.Errorf(`ent: validator failed for field "User.username": %w`, err)}
@@ -276,6 +333,9 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := uu.mutation.CreatedAt(); ok {
 		_spec.SetField(user.FieldCreatedAt, field.TypeTime, value)
+	}
+	if value, ok := uu.mutation.IsPrivate(); ok {
+		_spec.SetField(user.FieldIsPrivate, field.TypeBool, value)
 	}
 	if uu.mutation.PostsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -312,51 +372,6 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Inverse: false,
 			Table:   user.PostsTable,
 			Columns: []string{user.PostsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if uu.mutation.LikedPostsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   user.LikedPostsTable,
-			Columns: user.LikedPostsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := uu.mutation.RemovedLikedPostsIDs(); len(nodes) > 0 && !uu.mutation.LikedPostsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   user.LikedPostsTable,
-			Columns: user.LikedPostsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := uu.mutation.LikedPostsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   user.LikedPostsTable,
-			Columns: user.LikedPostsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID),
@@ -457,6 +472,96 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if uu.mutation.PostReactionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PostReactionsTable,
+			Columns: []string{user.PostReactionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(postreaction.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedPostReactionsIDs(); len(nodes) > 0 && !uu.mutation.PostReactionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PostReactionsTable,
+			Columns: []string{user.PostReactionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(postreaction.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.PostReactionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PostReactionsTable,
+			Columns: []string{user.PostReactionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(postreaction.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uu.mutation.CommentReactionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommentReactionsTable,
+			Columns: []string{user.CommentReactionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentreaction.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedCommentReactionsIDs(); len(nodes) > 0 && !uu.mutation.CommentReactionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommentReactionsTable,
+			Columns: []string{user.CommentReactionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentreaction.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.CommentReactionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommentReactionsTable,
+			Columns: []string{user.CommentReactionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentreaction.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, uu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -509,6 +614,20 @@ func (uuo *UserUpdateOne) SetNillableCreatedAt(t *time.Time) *UserUpdateOne {
 	return uuo
 }
 
+// SetIsPrivate sets the "isPrivate" field.
+func (uuo *UserUpdateOne) SetIsPrivate(b bool) *UserUpdateOne {
+	uuo.mutation.SetIsPrivate(b)
+	return uuo
+}
+
+// SetNillableIsPrivate sets the "isPrivate" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableIsPrivate(b *bool) *UserUpdateOne {
+	if b != nil {
+		uuo.SetIsPrivate(*b)
+	}
+	return uuo
+}
+
 // AddPostIDs adds the "posts" edge to the Post entity by IDs.
 func (uuo *UserUpdateOne) AddPostIDs(ids ...uuid.UUID) *UserUpdateOne {
 	uuo.mutation.AddPostIDs(ids...)
@@ -522,21 +641,6 @@ func (uuo *UserUpdateOne) AddPosts(p ...*Post) *UserUpdateOne {
 		ids[i] = p[i].ID
 	}
 	return uuo.AddPostIDs(ids...)
-}
-
-// AddLikedPostIDs adds the "likedPosts" edge to the Post entity by IDs.
-func (uuo *UserUpdateOne) AddLikedPostIDs(ids ...uuid.UUID) *UserUpdateOne {
-	uuo.mutation.AddLikedPostIDs(ids...)
-	return uuo
-}
-
-// AddLikedPosts adds the "likedPosts" edges to the Post entity.
-func (uuo *UserUpdateOne) AddLikedPosts(p ...*Post) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return uuo.AddLikedPostIDs(ids...)
 }
 
 // AddFollowerIDs adds the "followers" edge to the User entity by IDs.
@@ -569,6 +673,36 @@ func (uuo *UserUpdateOne) AddFollowing(u ...*User) *UserUpdateOne {
 	return uuo.AddFollowingIDs(ids...)
 }
 
+// AddPostReactionIDs adds the "postReactions" edge to the PostReaction entity by IDs.
+func (uuo *UserUpdateOne) AddPostReactionIDs(ids ...uuid.UUID) *UserUpdateOne {
+	uuo.mutation.AddPostReactionIDs(ids...)
+	return uuo
+}
+
+// AddPostReactions adds the "postReactions" edges to the PostReaction entity.
+func (uuo *UserUpdateOne) AddPostReactions(p ...*PostReaction) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uuo.AddPostReactionIDs(ids...)
+}
+
+// AddCommentReactionIDs adds the "commentReactions" edge to the CommentReaction entity by IDs.
+func (uuo *UserUpdateOne) AddCommentReactionIDs(ids ...uuid.UUID) *UserUpdateOne {
+	uuo.mutation.AddCommentReactionIDs(ids...)
+	return uuo
+}
+
+// AddCommentReactions adds the "commentReactions" edges to the CommentReaction entity.
+func (uuo *UserUpdateOne) AddCommentReactions(c ...*CommentReaction) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uuo.AddCommentReactionIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uuo *UserUpdateOne) Mutation() *UserMutation {
 	return uuo.mutation
@@ -593,27 +727,6 @@ func (uuo *UserUpdateOne) RemovePosts(p ...*Post) *UserUpdateOne {
 		ids[i] = p[i].ID
 	}
 	return uuo.RemovePostIDs(ids...)
-}
-
-// ClearLikedPosts clears all "likedPosts" edges to the Post entity.
-func (uuo *UserUpdateOne) ClearLikedPosts() *UserUpdateOne {
-	uuo.mutation.ClearLikedPosts()
-	return uuo
-}
-
-// RemoveLikedPostIDs removes the "likedPosts" edge to Post entities by IDs.
-func (uuo *UserUpdateOne) RemoveLikedPostIDs(ids ...uuid.UUID) *UserUpdateOne {
-	uuo.mutation.RemoveLikedPostIDs(ids...)
-	return uuo
-}
-
-// RemoveLikedPosts removes "likedPosts" edges to Post entities.
-func (uuo *UserUpdateOne) RemoveLikedPosts(p ...*Post) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return uuo.RemoveLikedPostIDs(ids...)
 }
 
 // ClearFollowers clears all "followers" edges to the User entity.
@@ -656,6 +769,48 @@ func (uuo *UserUpdateOne) RemoveFollowing(u ...*User) *UserUpdateOne {
 		ids[i] = u[i].ID
 	}
 	return uuo.RemoveFollowingIDs(ids...)
+}
+
+// ClearPostReactions clears all "postReactions" edges to the PostReaction entity.
+func (uuo *UserUpdateOne) ClearPostReactions() *UserUpdateOne {
+	uuo.mutation.ClearPostReactions()
+	return uuo
+}
+
+// RemovePostReactionIDs removes the "postReactions" edge to PostReaction entities by IDs.
+func (uuo *UserUpdateOne) RemovePostReactionIDs(ids ...uuid.UUID) *UserUpdateOne {
+	uuo.mutation.RemovePostReactionIDs(ids...)
+	return uuo
+}
+
+// RemovePostReactions removes "postReactions" edges to PostReaction entities.
+func (uuo *UserUpdateOne) RemovePostReactions(p ...*PostReaction) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uuo.RemovePostReactionIDs(ids...)
+}
+
+// ClearCommentReactions clears all "commentReactions" edges to the CommentReaction entity.
+func (uuo *UserUpdateOne) ClearCommentReactions() *UserUpdateOne {
+	uuo.mutation.ClearCommentReactions()
+	return uuo
+}
+
+// RemoveCommentReactionIDs removes the "commentReactions" edge to CommentReaction entities by IDs.
+func (uuo *UserUpdateOne) RemoveCommentReactionIDs(ids ...uuid.UUID) *UserUpdateOne {
+	uuo.mutation.RemoveCommentReactionIDs(ids...)
+	return uuo
+}
+
+// RemoveCommentReactions removes "commentReactions" edges to CommentReaction entities.
+func (uuo *UserUpdateOne) RemoveCommentReactions(c ...*CommentReaction) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uuo.RemoveCommentReactionIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -703,6 +858,11 @@ func (uuo *UserUpdateOne) check() error {
 	if v, ok := uuo.mutation.Email(); ok {
 		if err := user.EmailValidator(v); err != nil {
 			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "User.email": %w`, err)}
+		}
+	}
+	if v, ok := uuo.mutation.Password(); ok {
+		if err := user.PasswordValidator(v); err != nil {
+			return &ValidationError{Name: "password", err: fmt.Errorf(`ent: validator failed for field "User.password": %w`, err)}
 		}
 	}
 	if v, ok := uuo.mutation.Username(); ok {
@@ -754,6 +914,9 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 	if value, ok := uuo.mutation.CreatedAt(); ok {
 		_spec.SetField(user.FieldCreatedAt, field.TypeTime, value)
 	}
+	if value, ok := uuo.mutation.IsPrivate(); ok {
+		_spec.SetField(user.FieldIsPrivate, field.TypeBool, value)
+	}
 	if uuo.mutation.PostsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -789,51 +952,6 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Inverse: false,
 			Table:   user.PostsTable,
 			Columns: []string{user.PostsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if uuo.mutation.LikedPostsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   user.LikedPostsTable,
-			Columns: user.LikedPostsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := uuo.mutation.RemovedLikedPostsIDs(); len(nodes) > 0 && !uuo.mutation.LikedPostsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   user.LikedPostsTable,
-			Columns: user.LikedPostsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := uuo.mutation.LikedPostsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   user.LikedPostsTable,
-			Columns: user.LikedPostsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID),
@@ -927,6 +1045,96 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.PostReactionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PostReactionsTable,
+			Columns: []string{user.PostReactionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(postreaction.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedPostReactionsIDs(); len(nodes) > 0 && !uuo.mutation.PostReactionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PostReactionsTable,
+			Columns: []string{user.PostReactionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(postreaction.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.PostReactionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PostReactionsTable,
+			Columns: []string{user.PostReactionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(postreaction.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.CommentReactionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommentReactionsTable,
+			Columns: []string{user.CommentReactionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentreaction.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedCommentReactionsIDs(); len(nodes) > 0 && !uuo.mutation.CommentReactionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommentReactionsTable,
+			Columns: []string{user.CommentReactionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentreaction.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.CommentReactionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommentReactionsTable,
+			Columns: []string{user.CommentReactionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commentreaction.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
