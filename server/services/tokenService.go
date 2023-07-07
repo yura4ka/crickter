@@ -79,3 +79,19 @@ func ClearRefreshCookie() *fiber.Cookie {
 		HTTPOnly: true,
 	}
 }
+
+func VerifyAccessToken(token string) (*TokenPayload, error) {
+	parsed, err := jwt.ParseWithClaims(token, &customClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(os.Getenv("ACCESS_TOKEN")), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if claims, ok := parsed.Claims.(*customClaims); ok && parsed.Valid {
+		return &claims.TokenPayload, nil
+	}
+
+	return nil, err
+}
