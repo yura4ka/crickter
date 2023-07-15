@@ -20,11 +20,13 @@ func Connect() {
 		log.Fatalf("failed opening connection to postgres: %v", err)
 	}
 
-	if err := Client.Debug().Schema.Create(
-		context.Background(), 
+	err = Client.Debug().Schema.Create(
+		context.Background(),
 		migrate.WithDropIndex(true),
-		migrate.WithDropColumn(true)); 
-		err != nil {
+		migrate.WithDropColumn(true),
+	)
+
+	if err != nil {
 		log.Fatalf("failed creating schema resources: %v", err)
 	}
 

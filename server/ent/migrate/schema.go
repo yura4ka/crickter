@@ -78,7 +78,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "text", Type: field.TypeString, Size: 512},
-		{Name: "post_tsv", Type: field.TypeOther, SchemaType: map[string]string{"postgres": "tsvector GENERATED ALWAYS AS (to_tsvector('english', text)) STORED"}},
+		{Name: "post_tsv", Type: field.TypeOther, SchemaType: map[string]string{"postgres": "tsvector"}},
 		{Name: "post_reposts", Type: field.TypeUUID, Nullable: true},
 		{Name: "user_id", Type: field.TypeUUID},
 	}

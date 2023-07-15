@@ -26,7 +26,7 @@ func (Post) Fields() []ent.Field {
 		field.UUID("userId", uuid.UUID{}),
 		field.Other("postTsv", &tsvector.TSVector{}).
 			SchemaType(map[string]string{
-				dialect.Postgres: "tsvector GENERATED ALWAYS AS (to_tsvector('english', text)) STORED",
+				dialect.Postgres: "tsvector",
 			}),
 	}
 }
