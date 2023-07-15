@@ -23,6 +23,8 @@ const (
 	FieldText = "text"
 	// FieldUserId holds the string denoting the userid field in the database.
 	FieldUserId = "user_id"
+	// FieldPostTsv holds the string denoting the posttsv field in the database.
+	FieldPostTsv = "post_tsv"
 	// EdgeUser holds the string denoting the user edge name in mutations.
 	EdgeUser = "user"
 	// EdgeOriginal holds the string denoting the original edge name in mutations.
@@ -73,6 +75,7 @@ var Columns = []string{
 	FieldUpdatedAt,
 	FieldText,
 	FieldUserId,
+	FieldPostTsv,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "posts"
@@ -135,6 +138,11 @@ func ByText(opts ...sql.OrderTermOption) OrderOption {
 // ByUserId orders the results by the userId field.
 func ByUserId(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUserId, opts...).ToFunc()
+}
+
+// ByPostTsv orders the results by the postTsv field.
+func ByPostTsv(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPostTsv, opts...).ToFunc()
 }
 
 // ByUserField orders the results by user field.

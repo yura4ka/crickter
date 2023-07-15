@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	tsvector "github.com/aymericbeaumet/go-tsvector"
 	"github.com/google/uuid"
 	"github.com/yura4ka/crickter/ent/comment"
 	"github.com/yura4ka/crickter/ent/post"
@@ -61,6 +62,12 @@ func (pu *PostUpdate) SetText(s string) *PostUpdate {
 // SetUserId sets the "userId" field.
 func (pu *PostUpdate) SetUserId(u uuid.UUID) *PostUpdate {
 	pu.mutation.SetUserId(u)
+	return pu
+}
+
+// SetPostTsv sets the "postTsv" field.
+func (pu *PostUpdate) SetPostTsv(tv *tsvector.TSVector) *PostUpdate {
+	pu.mutation.SetPostTsv(tv)
 	return pu
 }
 
@@ -288,6 +295,9 @@ func (pu *PostUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := pu.mutation.Text(); ok {
 		_spec.SetField(post.FieldText, field.TypeString, value)
+	}
+	if value, ok := pu.mutation.PostTsv(); ok {
+		_spec.SetField(post.FieldPostTsv, field.TypeOther, value)
 	}
 	if pu.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -531,6 +541,12 @@ func (puo *PostUpdateOne) SetText(s string) *PostUpdateOne {
 // SetUserId sets the "userId" field.
 func (puo *PostUpdateOne) SetUserId(u uuid.UUID) *PostUpdateOne {
 	puo.mutation.SetUserId(u)
+	return puo
+}
+
+// SetPostTsv sets the "postTsv" field.
+func (puo *PostUpdateOne) SetPostTsv(tv *tsvector.TSVector) *PostUpdateOne {
+	puo.mutation.SetPostTsv(tv)
 	return puo
 }
 
@@ -788,6 +804,9 @@ func (puo *PostUpdateOne) sqlSave(ctx context.Context) (_node *Post, err error) 
 	}
 	if value, ok := puo.mutation.Text(); ok {
 		_spec.SetField(post.FieldText, field.TypeString, value)
+	}
+	if value, ok := puo.mutation.PostTsv(); ok {
+		_spec.SetField(post.FieldPostTsv, field.TypeOther, value)
 	}
 	if puo.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -4,9 +4,12 @@ import (
 	"time"
 
 	"entgo.io/ent"
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/aymericbeaumet/go-tsvector"
 	"github.com/google/uuid"
 )
 
@@ -21,6 +24,10 @@ func (Post) Fields() []ent.Field {
 		field.Time("updatedAt").Default(time.Now()).UpdateDefault(time.Now),
 		field.String("text").MaxLen(512),
 		field.UUID("userId", uuid.UUID{}),
+		field.Other("postTsv", &tsvector.TSVector{}).
+			SchemaType(map[string]string{
+				dialect.Postgres: "tsvector GENERATED ALWAYS AS (to_tsvector('english', text)) STORED",
+			}),
 	}
 }
 
@@ -36,5 +43,6 @@ func (Post) Edges() []ent.Edge {
 func (Post) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("userId"),
+		index.Fields("postTsv").Annotations(entsql.IndexType("GIN")),
 	}
 }

@@ -3,6 +3,7 @@
 package migrate
 
 import (
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/dialect/sql/schema"
 	"entgo.io/ent/schema/field"
 )
@@ -77,6 +78,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "text", Type: field.TypeString, Size: 512},
+		{Name: "post_tsv", Type: field.TypeOther, SchemaType: map[string]string{"postgres": "tsvector GENERATED ALWAYS AS (to_tsvector('english', text)) STORED"}},
 		{Name: "post_reposts", Type: field.TypeUUID, Nullable: true},
 		{Name: "user_id", Type: field.TypeUUID},
 	}
@@ -88,13 +90,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "posts_posts_reposts",
-				Columns:    []*schema.Column{PostsColumns[4]},
+				Columns:    []*schema.Column{PostsColumns[5]},
 				RefColumns: []*schema.Column{PostsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "posts_users_posts",
-				Columns:    []*schema.Column{PostsColumns[5]},
+				Columns:    []*schema.Column{PostsColumns[6]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -103,7 +105,15 @@ var (
 			{
 				Name:    "post_user_id",
 				Unique:  false,
-				Columns: []*schema.Column{PostsColumns[5]},
+				Columns: []*schema.Column{PostsColumns[6]},
+			},
+			{
+				Name:    "post_post_tsv",
+				Unique:  false,
+				Columns: []*schema.Column{PostsColumns[4]},
+				Annotation: &entsql.IndexAnnotation{
+					Type: "GIN",
+				},
 			},
 		},
 	}

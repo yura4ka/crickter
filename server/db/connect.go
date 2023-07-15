@@ -7,6 +7,7 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/yura4ka/crickter/ent"
+	"github.com/yura4ka/crickter/ent/migrate"
 )
 
 var Client *ent.Client
@@ -19,7 +20,11 @@ func Connect() {
 		log.Fatalf("failed opening connection to postgres: %v", err)
 	}
 
-	if err := Client.Schema.Create(context.Background()); err != nil {
+	if err := Client.Debug().Schema.Create(
+		context.Background(), 
+		migrate.WithDropIndex(true),
+		migrate.WithDropColumn(true)); 
+		err != nil {
 		log.Fatalf("failed creating schema resources: %v", err)
 	}
 

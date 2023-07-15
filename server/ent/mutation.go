@@ -11,6 +11,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	tsvector "github.com/aymericbeaumet/go-tsvector"
 	"github.com/google/uuid"
 	"github.com/yura4ka/crickter/ent/comment"
 	"github.com/yura4ka/crickter/ent/commentreaction"
@@ -1237,6 +1238,7 @@ type PostMutation struct {
 	createdAt        *time.Time
 	updatedAt        *time.Time
 	text             *string
+	postTsv          **tsvector.TSVector
 	clearedFields    map[string]struct{}
 	user             *uuid.UUID
 	cleareduser      bool
@@ -1502,6 +1504,42 @@ func (m *PostMutation) OldUserId(ctx context.Context) (v uuid.UUID, err error) {
 // ResetUserId resets all changes to the "userId" field.
 func (m *PostMutation) ResetUserId() {
 	m.user = nil
+}
+
+// SetPostTsv sets the "postTsv" field.
+func (m *PostMutation) SetPostTsv(tv *tsvector.TSVector) {
+	m.postTsv = &tv
+}
+
+// PostTsv returns the value of the "postTsv" field in the mutation.
+func (m *PostMutation) PostTsv() (r *tsvector.TSVector, exists bool) {
+	v := m.postTsv
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPostTsv returns the old "postTsv" field's value of the Post entity.
+// If the Post object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PostMutation) OldPostTsv(ctx context.Context) (v *tsvector.TSVector, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPostTsv is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPostTsv requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPostTsv: %w", err)
+	}
+	return oldValue.PostTsv, nil
+}
+
+// ResetPostTsv resets all changes to the "postTsv" field.
+func (m *PostMutation) ResetPostTsv() {
+	m.postTsv = nil
 }
 
 // SetUserID sets the "user" edge to the User entity by id.
@@ -1778,7 +1816,7 @@ func (m *PostMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *PostMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 5)
 	if m.createdAt != nil {
 		fields = append(fields, post.FieldCreatedAt)
 	}
@@ -1790,6 +1828,9 @@ func (m *PostMutation) Fields() []string {
 	}
 	if m.user != nil {
 		fields = append(fields, post.FieldUserId)
+	}
+	if m.postTsv != nil {
+		fields = append(fields, post.FieldPostTsv)
 	}
 	return fields
 }
@@ -1807,6 +1848,8 @@ func (m *PostMutation) Field(name string) (ent.Value, bool) {
 		return m.Text()
 	case post.FieldUserId:
 		return m.UserId()
+	case post.FieldPostTsv:
+		return m.PostTsv()
 	}
 	return nil, false
 }
@@ -1824,6 +1867,8 @@ func (m *PostMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldText(ctx)
 	case post.FieldUserId:
 		return m.OldUserId(ctx)
+	case post.FieldPostTsv:
+		return m.OldPostTsv(ctx)
 	}
 	return nil, fmt.Errorf("unknown Post field %s", name)
 }
@@ -1860,6 +1905,13 @@ func (m *PostMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUserId(v)
+		return nil
+	case post.FieldPostTsv:
+		v, ok := value.(*tsvector.TSVector)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPostTsv(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Post field %s", name)
@@ -1921,6 +1973,9 @@ func (m *PostMutation) ResetField(name string) error {
 		return nil
 	case post.FieldUserId:
 		m.ResetUserId()
+		return nil
+	case post.FieldPostTsv:
+		m.ResetPostTsv()
 		return nil
 	}
 	return fmt.Errorf("unknown Post field %s", name)

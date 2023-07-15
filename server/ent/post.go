@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	tsvector "github.com/aymericbeaumet/go-tsvector"
 	"github.com/google/uuid"
 	"github.com/yura4ka/crickter/ent/post"
 	"github.com/yura4ka/crickter/ent/user"
@@ -27,6 +28,8 @@ type Post struct {
 	Text string `json:"text,omitempty"`
 	// UserId holds the value of the "userId" field.
 	UserId uuid.UUID `json:"userId,omitempty"`
+	// PostTsv holds the value of the "postTsv" field.
+	PostTsv *tsvector.TSVector `json:"postTsv,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PostQuery when eager-loading is set.
 	Edges        PostEdges `json:"edges"`
@@ -113,6 +116,8 @@ func (*Post) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case post.FieldCreatedAt, post.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
+		case post.FieldPostTsv:
+			values[i] = new(tsvector.TSVector)
 		case post.FieldID, post.FieldUserId:
 			values[i] = new(uuid.UUID)
 		case post.ForeignKeys[0]: // post_reposts
@@ -161,6 +166,12 @@ func (po *Post) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field userId", values[i])
 			} else if value != nil {
 				po.UserId = *value
+			}
+		case post.FieldPostTsv:
+			if value, ok := values[i].(*tsvector.TSVector); !ok {
+				return fmt.Errorf("unexpected type %T for field postTsv", values[i])
+			} else if value != nil {
+				po.PostTsv = value
 			}
 		case post.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -241,6 +252,9 @@ func (po *Post) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("userId=")
 	builder.WriteString(fmt.Sprintf("%v", po.UserId))
+	builder.WriteString(", ")
+	builder.WriteString("postTsv=")
+	builder.WriteString(fmt.Sprintf("%v", po.PostTsv))
 	builder.WriteByte(')')
 	return builder.String()
 }
