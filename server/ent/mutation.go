@@ -11,7 +11,6 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	tsvector "github.com/aymericbeaumet/go-tsvector"
 	"github.com/google/uuid"
 	"github.com/yura4ka/crickter/ent/comment"
 	"github.com/yura4ka/crickter/ent/commentreaction"
@@ -1238,7 +1237,7 @@ type PostMutation struct {
 	createdAt        *time.Time
 	updatedAt        *time.Time
 	text             *string
-	postTsv          **tsvector.TSVector
+	postTsv          *string
 	clearedFields    map[string]struct{}
 	user             *uuid.UUID
 	cleareduser      bool
@@ -1507,12 +1506,12 @@ func (m *PostMutation) ResetUserId() {
 }
 
 // SetPostTsv sets the "postTsv" field.
-func (m *PostMutation) SetPostTsv(tv *tsvector.TSVector) {
-	m.postTsv = &tv
+func (m *PostMutation) SetPostTsv(s string) {
+	m.postTsv = &s
 }
 
 // PostTsv returns the value of the "postTsv" field in the mutation.
-func (m *PostMutation) PostTsv() (r *tsvector.TSVector, exists bool) {
+func (m *PostMutation) PostTsv() (r string, exists bool) {
 	v := m.postTsv
 	if v == nil {
 		return
@@ -1523,7 +1522,7 @@ func (m *PostMutation) PostTsv() (r *tsvector.TSVector, exists bool) {
 // OldPostTsv returns the old "postTsv" field's value of the Post entity.
 // If the Post object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PostMutation) OldPostTsv(ctx context.Context) (v *tsvector.TSVector, err error) {
+func (m *PostMutation) OldPostTsv(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldPostTsv is only allowed on UpdateOne operations")
 	}
@@ -1537,9 +1536,22 @@ func (m *PostMutation) OldPostTsv(ctx context.Context) (v *tsvector.TSVector, er
 	return oldValue.PostTsv, nil
 }
 
+// ClearPostTsv clears the value of the "postTsv" field.
+func (m *PostMutation) ClearPostTsv() {
+	m.postTsv = nil
+	m.clearedFields[post.FieldPostTsv] = struct{}{}
+}
+
+// PostTsvCleared returns if the "postTsv" field was cleared in this mutation.
+func (m *PostMutation) PostTsvCleared() bool {
+	_, ok := m.clearedFields[post.FieldPostTsv]
+	return ok
+}
+
 // ResetPostTsv resets all changes to the "postTsv" field.
 func (m *PostMutation) ResetPostTsv() {
 	m.postTsv = nil
+	delete(m.clearedFields, post.FieldPostTsv)
 }
 
 // SetUserID sets the "user" edge to the User entity by id.
@@ -1907,7 +1919,7 @@ func (m *PostMutation) SetField(name string, value ent.Value) error {
 		m.SetUserId(v)
 		return nil
 	case post.FieldPostTsv:
-		v, ok := value.(*tsvector.TSVector)
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -1942,7 +1954,11 @@ func (m *PostMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *PostMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(post.FieldPostTsv) {
+		fields = append(fields, post.FieldPostTsv)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -1955,6 +1971,11 @@ func (m *PostMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *PostMutation) ClearField(name string) error {
+	switch name {
+	case post.FieldPostTsv:
+		m.ClearPostTsv()
+		return nil
+	}
 	return fmt.Errorf("unknown Post nullable field %s", name)
 }
 

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"entgo.io/ent"
+	"entgo.io/ent/dialect"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
@@ -19,7 +20,10 @@ func (User) Fields() []ent.Field {
 		field.UUID("id", uuid.UUID{}).Unique().Default(uuid.New),
 		field.String("email").Unique().Match(regexp.MustCompile(`[\w-\.]+@([\w-]+\.)+[\w-]{2,4}`)),
 		field.String("password").MinLen(4),
-		field.String("username").MaxLen(20),
+		field.String("username").
+			SchemaType(map[string]string{
+				dialect.Postgres: "VARCHAR(20)",
+			}).MaxLen(20),
 		field.Time("createdAt").Default(time.Now),
 		field.Bool("isPrivate").Default(false),
 	}

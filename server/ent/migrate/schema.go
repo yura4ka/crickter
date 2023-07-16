@@ -14,7 +14,7 @@ var (
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "text", Type: field.TypeString, Size: 256},
+		{Name: "text", Type: field.TypeString, Size: 256, SchemaType: map[string]string{"postgres": "VARCHAR(256)"}},
 		{Name: "comment_replies", Type: field.TypeUUID, Nullable: true},
 		{Name: "post_comments", Type: field.TypeUUID, Nullable: true},
 	}
@@ -77,8 +77,8 @@ var (
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "text", Type: field.TypeString, Size: 512},
-		{Name: "post_tsv", Type: field.TypeOther, SchemaType: map[string]string{"postgres": "tsvector"}},
+		{Name: "text", Type: field.TypeString, Size: 512, SchemaType: map[string]string{"postgres": "VARCHAR(512)"}},
+		{Name: "post_tsv", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "tsvector"}},
 		{Name: "post_reposts", Type: field.TypeUUID, Nullable: true},
 		{Name: "user_id", Type: field.TypeUUID},
 	}
@@ -156,7 +156,7 @@ var (
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "email", Type: field.TypeString, Unique: true},
 		{Name: "password", Type: field.TypeString},
-		{Name: "username", Type: field.TypeString, Size: 20},
+		{Name: "username", Type: field.TypeString, Size: 20, SchemaType: map[string]string{"postgres": "VARCHAR(20)"}},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "is_private", Type: field.TypeBool, Default: false},
 	}

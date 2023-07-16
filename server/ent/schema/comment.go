@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"entgo.io/ent"
+	"entgo.io/ent/dialect"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
@@ -18,7 +19,10 @@ func (Comment) Fields() []ent.Field {
 		field.UUID("id", uuid.UUID{}).Unique().Default(uuid.New),
 		field.Time("createdAt").Default(time.Now()),
 		field.Time("updatedAt").Default(time.Now()).UpdateDefault(time.Now),
-		field.String("text").MaxLen(256),
+		field.String("text").
+			SchemaType(map[string]string{
+				dialect.Postgres: "VARCHAR(256)",
+			}).MaxLen(256),
 	}
 }
 

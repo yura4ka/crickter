@@ -9,7 +9,6 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
-	"github.com/aymericbeaumet/go-tsvector"
 	"github.com/google/uuid"
 )
 
@@ -22,12 +21,15 @@ func (Post) Fields() []ent.Field {
 		field.UUID("id", uuid.UUID{}).Unique().Default(uuid.New),
 		field.Time("createdAt").Default(time.Now()),
 		field.Time("updatedAt").Default(time.Now()).UpdateDefault(time.Now),
-		field.String("text").MaxLen(512),
+		field.String("text").
+			SchemaType(map[string]string{
+				dialect.Postgres: "VARCHAR(512)",
+			}).MaxLen(512),
 		field.UUID("userId", uuid.UUID{}),
-		field.Other("postTsv", &tsvector.TSVector{}).
+		field.String("postTsv").
 			SchemaType(map[string]string{
 				dialect.Postgres: "tsvector",
-			}),
+			}).Immutable().Optional(),
 	}
 }
 

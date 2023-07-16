@@ -7,7 +7,6 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	tsvector "github.com/aymericbeaumet/go-tsvector"
 	"github.com/google/uuid"
 	"github.com/yura4ka/crickter/ent/predicate"
 )
@@ -78,7 +77,7 @@ func UserId(v uuid.UUID) predicate.Post {
 }
 
 // PostTsv applies equality check predicate on the "postTsv" field. It's identical to PostTsvEQ.
-func PostTsv(v *tsvector.TSVector) predicate.Post {
+func PostTsv(v string) predicate.Post {
 	return predicate.Post(sql.FieldEQ(FieldPostTsv, v))
 }
 
@@ -248,43 +247,78 @@ func UserIdNotIn(vs ...uuid.UUID) predicate.Post {
 }
 
 // PostTsvEQ applies the EQ predicate on the "postTsv" field.
-func PostTsvEQ(v *tsvector.TSVector) predicate.Post {
+func PostTsvEQ(v string) predicate.Post {
 	return predicate.Post(sql.FieldEQ(FieldPostTsv, v))
 }
 
 // PostTsvNEQ applies the NEQ predicate on the "postTsv" field.
-func PostTsvNEQ(v *tsvector.TSVector) predicate.Post {
+func PostTsvNEQ(v string) predicate.Post {
 	return predicate.Post(sql.FieldNEQ(FieldPostTsv, v))
 }
 
 // PostTsvIn applies the In predicate on the "postTsv" field.
-func PostTsvIn(vs ...*tsvector.TSVector) predicate.Post {
+func PostTsvIn(vs ...string) predicate.Post {
 	return predicate.Post(sql.FieldIn(FieldPostTsv, vs...))
 }
 
 // PostTsvNotIn applies the NotIn predicate on the "postTsv" field.
-func PostTsvNotIn(vs ...*tsvector.TSVector) predicate.Post {
+func PostTsvNotIn(vs ...string) predicate.Post {
 	return predicate.Post(sql.FieldNotIn(FieldPostTsv, vs...))
 }
 
 // PostTsvGT applies the GT predicate on the "postTsv" field.
-func PostTsvGT(v *tsvector.TSVector) predicate.Post {
+func PostTsvGT(v string) predicate.Post {
 	return predicate.Post(sql.FieldGT(FieldPostTsv, v))
 }
 
 // PostTsvGTE applies the GTE predicate on the "postTsv" field.
-func PostTsvGTE(v *tsvector.TSVector) predicate.Post {
+func PostTsvGTE(v string) predicate.Post {
 	return predicate.Post(sql.FieldGTE(FieldPostTsv, v))
 }
 
 // PostTsvLT applies the LT predicate on the "postTsv" field.
-func PostTsvLT(v *tsvector.TSVector) predicate.Post {
+func PostTsvLT(v string) predicate.Post {
 	return predicate.Post(sql.FieldLT(FieldPostTsv, v))
 }
 
 // PostTsvLTE applies the LTE predicate on the "postTsv" field.
-func PostTsvLTE(v *tsvector.TSVector) predicate.Post {
+func PostTsvLTE(v string) predicate.Post {
 	return predicate.Post(sql.FieldLTE(FieldPostTsv, v))
+}
+
+// PostTsvContains applies the Contains predicate on the "postTsv" field.
+func PostTsvContains(v string) predicate.Post {
+	return predicate.Post(sql.FieldContains(FieldPostTsv, v))
+}
+
+// PostTsvHasPrefix applies the HasPrefix predicate on the "postTsv" field.
+func PostTsvHasPrefix(v string) predicate.Post {
+	return predicate.Post(sql.FieldHasPrefix(FieldPostTsv, v))
+}
+
+// PostTsvHasSuffix applies the HasSuffix predicate on the "postTsv" field.
+func PostTsvHasSuffix(v string) predicate.Post {
+	return predicate.Post(sql.FieldHasSuffix(FieldPostTsv, v))
+}
+
+// PostTsvIsNil applies the IsNil predicate on the "postTsv" field.
+func PostTsvIsNil() predicate.Post {
+	return predicate.Post(sql.FieldIsNull(FieldPostTsv))
+}
+
+// PostTsvNotNil applies the NotNil predicate on the "postTsv" field.
+func PostTsvNotNil() predicate.Post {
+	return predicate.Post(sql.FieldNotNull(FieldPostTsv))
+}
+
+// PostTsvEqualFold applies the EqualFold predicate on the "postTsv" field.
+func PostTsvEqualFold(v string) predicate.Post {
+	return predicate.Post(sql.FieldEqualFold(FieldPostTsv, v))
+}
+
+// PostTsvContainsFold applies the ContainsFold predicate on the "postTsv" field.
+func PostTsvContainsFold(v string) predicate.Post {
+	return predicate.Post(sql.FieldContainsFold(FieldPostTsv, v))
 }
 
 // HasUser applies the HasEdge predicate on the "user" edge.

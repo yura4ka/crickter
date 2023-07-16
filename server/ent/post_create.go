@@ -10,7 +10,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	tsvector "github.com/aymericbeaumet/go-tsvector"
 	"github.com/google/uuid"
 	"github.com/yura4ka/crickter/ent/comment"
 	"github.com/yura4ka/crickter/ent/post"
@@ -66,8 +65,16 @@ func (pc *PostCreate) SetUserId(u uuid.UUID) *PostCreate {
 }
 
 // SetPostTsv sets the "postTsv" field.
-func (pc *PostCreate) SetPostTsv(tv *tsvector.TSVector) *PostCreate {
-	pc.mutation.SetPostTsv(tv)
+func (pc *PostCreate) SetPostTsv(s string) *PostCreate {
+	pc.mutation.SetPostTsv(s)
+	return pc
+}
+
+// SetNillablePostTsv sets the "postTsv" field if the given value is not nil.
+func (pc *PostCreate) SetNillablePostTsv(s *string) *PostCreate {
+	if s != nil {
+		pc.SetPostTsv(*s)
+	}
 	return pc
 }
 
@@ -228,9 +235,6 @@ func (pc *PostCreate) check() error {
 	if _, ok := pc.mutation.UserId(); !ok {
 		return &ValidationError{Name: "userId", err: errors.New(`ent: missing required field "Post.userId"`)}
 	}
-	if _, ok := pc.mutation.PostTsv(); !ok {
-		return &ValidationError{Name: "postTsv", err: errors.New(`ent: missing required field "Post.postTsv"`)}
-	}
 	if _, ok := pc.mutation.UserID(); !ok {
 		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "Post.user"`)}
 	}
@@ -282,7 +286,7 @@ func (pc *PostCreate) createSpec() (*Post, *sqlgraph.CreateSpec) {
 		_node.Text = value
 	}
 	if value, ok := pc.mutation.PostTsv(); ok {
-		_spec.SetField(post.FieldPostTsv, field.TypeOther, value)
+		_spec.SetField(post.FieldPostTsv, field.TypeString, value)
 		_node.PostTsv = value
 	}
 	if nodes := pc.mutation.UserIDs(); len(nodes) > 0 {
