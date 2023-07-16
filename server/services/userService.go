@@ -1,6 +1,8 @@
 package services
 
 import (
+	"strings"
+
 	"github.com/google/uuid"
 	"github.com/yura4ka/crickter/db"
 	"github.com/yura4ka/crickter/ent"
@@ -23,9 +25,9 @@ func CreateUser(user *NewUser) (string, error) {
 
 	created, err := db.Client.User.
 		Create().
-		SetEmail(user.Email).
-		SetUsername(user.Username).
-		SetPassword(string(hashed)).
+		SetEmail(strings.TrimSpace(user.Email)).
+		SetUsername(strings.TrimSpace(user.Username)).
+		SetPassword(strings.TrimSpace(string(hashed))).
 		Save(db.Ctx)
 
 	if err != nil {

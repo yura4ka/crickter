@@ -1,6 +1,8 @@
 package services
 
 import (
+	"strings"
+
 	"github.com/google/uuid"
 	"github.com/yura4ka/crickter/db"
 	"github.com/yura4ka/crickter/ent"
@@ -17,7 +19,7 @@ func CreatePost(userId, text string, parentId *string) (*ent.Post, error) {
 
 	return db.Client.Post.Create().
 		SetUserID(userUuid).
-		SetText(text).
+		SetText(strings.TrimSpace(text)).
 		SetNillableOriginalID(parentUuid).
 		Save(db.Ctx)
 }
@@ -29,5 +31,5 @@ func GetPostById(id string) (*ent.Post, error) {
 
 func UpdatePost(id, text string) (*ent.Post, error) {
 	uuid, _ := uuid.Parse(id)
-	return db.Client.Post.UpdateOneID(uuid).SetText(text).Save(db.Ctx)
+	return db.Client.Post.UpdateOneID(uuid).SetText(strings.TrimSpace(text)).Save(db.Ctx)
 }
