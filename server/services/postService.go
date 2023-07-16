@@ -4,6 +4,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/yura4ka/crickter/db"
 	"github.com/yura4ka/crickter/ent"
+	"github.com/yura4ka/crickter/ent/post"
 )
 
 func CreatePost(userId, text string, parentId *string) (*ent.Post, error) {
@@ -19,4 +20,14 @@ func CreatePost(userId, text string, parentId *string) (*ent.Post, error) {
 		SetText(text).
 		SetNillableOriginalID(parentUuid).
 		Save(db.Ctx)
+}
+
+func GetPostById(id string) (*ent.Post, error) {
+	uuid, _ := uuid.Parse(id)
+	return db.Client.Post.Query().Where(post.IDEQ(uuid)).Only(db.Ctx)
+}
+
+func UpdatePost(id, text string) (*ent.Post, error) {
+	uuid, _ := uuid.Parse(id)
+	return db.Client.Post.UpdateOneID(uuid).SetText(text).Save(db.Ctx)
 }

@@ -14,7 +14,7 @@ const baseQuery = fetchBaseQuery({
 
 const baseQueryWithAuth: typeof baseQuery = async (args, api, endpoints) => {
   let result = await baseQuery(args, api, endpoints);
-  if ((result.error as Record<string, unknown>)?.originalStatus === 403) {
+  if ((result.error as Record<string, unknown>)?.originalStatus === 401) {
     const refreshResult = await baseQuery("auth/refresh", api, endpoints);
     if (refreshResult.data) {
       api.dispatch(setCredentials(refreshResult.data as Required<AuthState>));

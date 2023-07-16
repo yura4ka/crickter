@@ -12,12 +12,12 @@ import (
 func RequireAuth(c *fiber.Ctx) error {
 	cookie := strings.Split(c.Get("Authorization"), " ")
 	if len(cookie) != 2 || cookie[0] != "Bearer" {
-		return c.SendStatus(403)
+		return c.SendStatus(401)
 	}
 
 	payload, err := services.VerifyAccessToken(cookie[1])
 	if errors.Is(err, jwt.ErrTokenExpired) {
-		return c.SendStatus(403)
+		return c.SendStatus(401)
 	} else if err != nil {
 		return c.SendStatus(400)
 	}
