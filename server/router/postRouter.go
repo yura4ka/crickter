@@ -9,6 +9,7 @@ import (
 func addPostRouter(app *fiber.App) {
 	post := app.Group("post")
 
+	post.Get("/", middleware.ParseAuth, handlers.GetPosts)
 	post.Post("/", middleware.RequireAuth, handlers.CreatePost)
 	post.Patch("/", middleware.RequireAuth, handlers.UpdatePost)
 }
