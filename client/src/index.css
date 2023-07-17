@@ -86,3 +86,13 @@
     @apply font-semibold text-cyan-600 transition-all hover:text-cyan-700 hover:underline;
   }
 }
+
+@layer utilities {
+  .scrollbar::-webkit-scrollbar {
+    @apply w-1 rounded bg-transparent;
+  }
+
+  .scrollbar::-webkit-scrollbar-thumb {
+    @apply rounded-sm bg-secondary outline-none;
+  }
+}
