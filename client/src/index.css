@@ -80,3 +80,9 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .link {
+    @apply font-semibold text-cyan-600 transition-all hover:text-cyan-700 hover:underline;
+  }
+}
