@@ -12,4 +12,5 @@ func addPostRouter(app *fiber.App) {
 	post.Get("/", middleware.ParseAuth, handlers.GetPosts)
 	post.Post("/", middleware.RequireAuth, handlers.CreatePost)
 	post.Patch("/", middleware.RequireAuth, handlers.UpdatePost)
+	post.Post("/reaction", middleware.RequireAuth, handlers.ProcessReaction)
 }

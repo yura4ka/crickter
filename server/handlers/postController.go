@@ -77,3 +77,25 @@ func GetPosts(c *fiber.Ctx) error {
 		"posts": posts,
 	})
 }
+
+func ProcessReaction(c *fiber.Ctx) error {
+	type Input struct {
+		PostId string `json:"postId"`
+		Liked  bool   `json:"liked"`
+	}
+
+	input := new(Input)
+	if err := c.BodyParser(input); err != nil {
+		return c.SendStatus(400)
+	}
+	userId := c.Locals("userId").(string)
+
+	err := services.ProcessReaction(userId, input.PostId, input.Liked)
+	if err != nil {
+		return c.SendStatus(400)
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Ok",
+	})
+}

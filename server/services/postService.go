@@ -7,6 +7,8 @@ import (
 	"github.com/yura4ka/crickter/db"
 	"github.com/yura4ka/crickter/ent"
 	"github.com/yura4ka/crickter/ent/post"
+	"github.com/yura4ka/crickter/ent/postreaction"
+	"github.com/yura4ka/crickter/ent/user"
 )
 
 func CreatePost(userId, text string, parentId *string) (*ent.Post, error) {
@@ -47,11 +49,11 @@ type postBase struct {
 
 type PostsResult struct {
 	postBase
-	CreatedAt string    `json:"created_at"`
-	UpdatedAt *string   `json:"updated_at"`
+	CreatedAt string    `json:"createdAt"`
+	UpdatedAt *string   `json:"updatedAt"`
 	Original  *postBase `json:"original"`
-	Likes     int       `json:"liked"`
-	Dislikes  int       `json:"disliked"`
+	Likes     int       `json:"likes"`
+	Dislikes  int       `json:"dislikes"`
 	Reaction  int       `json:"reaction"`
 }
 
@@ -126,4 +128,26 @@ func GetPosts(userId string) ([]PostsResult, error) {
 	}
 
 	return result, nil
+}
+
+func ProcessReaction(userId, postId string, liked bool) error {
+	uid, _ := uuid.Parse(userId)
+	pid, _ := uuid.Parse(postId)
+
+	r, _ := db.Client.Debug().PostReaction.Query().Where(
+		postreaction.HasPostWith(post.IDEQ(pid)),
+		postreaction.HasUserWith(user.IDEQ(uid)),
+	).Only(db.Ctx)
+
+	if r == nil {
+		_, err := db.Client.PostReaction.Create().SetLiked(liked).SetPostID(pid).SetUserID(uid).Save(db.Ctx)
+		return err
+	}
+
+	if r.Liked != liked {
+		_, err := r.Update().SetLiked(liked).Save(db.Ctx)
+		return err
+	}
+
+	return db.Client.PostReaction.DeleteOne(r).Exec(db.Ctx)
 }
