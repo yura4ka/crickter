@@ -1,0 +1,101 @@
+import { FC } from "react";
+import {
+  PostResponse,
+  useGetPostByIdQuery,
+  useProcessReactionMutation,
+} from "./postsApiSlice";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { cn, formatTimeAgo } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { MessageSquare, ThumbsDown, ThumbsUp } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Link } from "react-router-dom";
+
+interface Props {
+  post: PostResponse | undefined;
+  fetchOriginal?: boolean;
+  className?: string;
+}
+
+const PostCard: FC<Props> = ({ post: p, fetchOriginal = true, className }) => {
+  const { data: original } = useGetPostByIdQuery(p?.originalId || "", {
+    skip: !(fetchOriginal && p?.originalId !== null),
+  });
+
+  const [handleReaction] = useProcessReactionMutation();
+
+  const onReactionClick = (postId: string, liked: boolean) => {
+    handleReaction({ postId, liked });
+  };
+
+  if (p === undefined) {
+    return (
+      <article className={cn("flex gap-4 py-6", className)}>
+        <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+        <div className="w-full">
+          <Skeleton className="mb-1 h-4 w-[250px]" />
+          <Skeleton className="mb-1 h-4 w-[200px]" />
+          <div className="flex gap-1"></div>
+        </div>
+      </article>
+    );
+  }
+
+  return (
+    <article className={cn("flex gap-4 py-6", className)}>
+      <Avatar>
+        <AvatarFallback>{p.user.username[0]}</AvatarFallback>
+      </Avatar>
+      <div className="w-full">
+        <p className="mb-1 flex items-baseline gap-2 align-bottom text-sm text-muted-foreground">
+          <span className="text-base font-bold text-foreground">{p.user.username}</span>•
+          <span>{formatTimeAgo(new Date(p.createdAt))}</span>
+          {p.updatedAt !== null && (
+            <>
+              •<span>ed. {formatTimeAgo(new Date(p.updatedAt))}</span>
+            </>
+          )}
+        </p>
+        <p className="pb-1">{p.text}</p>
+        {p.originalId && (
+          <PostCard
+            post={original}
+            fetchOriginal={false}
+            className="mt-1 rounded border p-4"
+          />
+        )}
+        <div className="flex gap-4">
+          <Button
+            onClick={() => onReactionClick(p.id, true)}
+            size={"icon"}
+            variant={"ghost"}
+          >
+            <ThumbsUp
+              className="mr-2 h-4 w-4"
+              {...(p.reaction === 1 && { fill: "hsl(var(--reaction))" })}
+            />
+            {p.likes}
+          </Button>
+          <Button
+            onClick={() => onReactionClick(p.id, false)}
+            size={"icon"}
+            variant={"ghost"}
+          >
+            <ThumbsDown
+              className="mr-2 h-4 w-4"
+              {...(p.reaction === -1 && { fill: "hsl(var(--reaction))" })}
+            />
+            {p.dislikes}
+          </Button>
+          <Button asChild size={"icon"} variant={"ghost"}>
+            <Link to={"/post/" + p.id}>
+              <MessageSquare className="mr-2 h-4 w-4" />
+              {p.comments}
+            </Link>
+          </Button>
+        </div>
+      </div>
+    </article>
+  );
+};
+export default PostCard;

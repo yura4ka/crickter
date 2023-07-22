@@ -7,3 +7,29 @@ export function cn(...inputs: ClassValue[]) {
 
 export const emailRegexp = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
 export const validatePassword = (password: string) => password.trim().length >= 4;
+
+const formatter = new Intl.RelativeTimeFormat(undefined, {
+  numeric: "auto",
+});
+
+const DIVISIONS = [
+  { amount: 60, name: "seconds" },
+  { amount: 60, name: "minutes" },
+  { amount: 24, name: "hours" },
+  { amount: 7, name: "days" },
+  { amount: 4.34524, name: "weeks" },
+  { amount: 12, name: "months" },
+  { amount: Number.POSITIVE_INFINITY, name: "years" },
+] as const;
+
+export function formatTimeAgo(date: Date) {
+  let duration = (Number(date) - Number(new Date())) / 1000;
+
+  for (let i = 0; i < DIVISIONS.length; i++) {
+    const division = DIVISIONS[i];
+    if (Math.abs(duration) < division.amount) {
+      return formatter.format(Math.round(duration), division.name);
+    }
+    duration /= division.amount;
+  }
+}
