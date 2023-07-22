@@ -1,6 +1,7 @@
 package services
 
 import (
+	"database/sql"
 	"strings"
 
 	"github.com/google/uuid"
@@ -42,45 +43,61 @@ type postUser struct {
 }
 
 type postBase struct {
-	Id   string   `json:"id"`
-	Text string   `json:"text"`
-	User postUser `json:"user"`
+	Id        string   `json:"id"`
+	Text      string   `json:"text"`
+	User      postUser `json:"user"`
+	CreatedAt string   `json:"createdAt"`
+	UpdatedAt *string  `json:"updatedAt"`
+	Comments  int      `json:"comments"`
 }
 
 type PostsResult struct {
 	postBase
-	CreatedAt string    `json:"createdAt"`
-	UpdatedAt *string   `json:"updatedAt"`
-	Original  *postBase `json:"original"`
-	Likes     int       `json:"likes"`
-	Dislikes  int       `json:"dislikes"`
-	Reaction  int       `json:"reaction"`
+	Original *string `json:"originalId"`
+	Likes    int     `json:"likes"`
+	Dislikes int     `json:"dislikes"`
+	Reaction int     `json:"reaction"`
 }
 
-func GetPosts(userId string) ([]PostsResult, error) {
+func GetPosts(id, userId string) ([]PostsResult, error) {
 	if userId == "" {
 		userId = "00000000-0000-0000-0000-000000000000"
 	}
 
-	rows, err := db.Client.QueryContext(db.Ctx,
-		`SELECT p.id, p.text, p.created_at, p.updated_at,
+	query := `
+		SELECT p.id, p.text, p.created_at, p.updated_at,
 			u.id as "userId", u.username,
-			o.id as "parentId", o.text as "parentText", ou.id as "parentUserId", ou.username as "parentUsername",
+			o.id as "parentId",
 			SUM(case when pr.liked = true then 1 else 0 end) AS likes,
 			SUM(case when pr.liked = false then 1 else 0 end) AS dislikes,
 			SUM(case
 				when pr.user_post_reactions != $1 then 0
 				when pr.liked = true then 1
-				when pr.liked = false then -1 end) AS reaction
+				when pr.liked = false then -1 end) AS reaction,
+			COUNT(c.id) AS comments
 		FROM posts as p
 		LEFT JOIN users as u ON p.user_id = u.id
 		LEFT JOIN posts as o ON p.post_reposts = o.id
-		LEFT JOIN users as ou ON o.user_id = ou.id
 		LEFT JOIN post_reactions as pr ON p.id = pr.post_reactions
-		GROUP BY p.id, u.id, o.id, ou.id
-		ORDER BY p.created_at DESC;`,
-		userId,
-	)
+		LEFT JOIN comments as c ON p.id = c.post_comments`
+
+	if id != "" {
+		query += "\nWHERE p.id = $2\n"
+	}
+
+	query += `
+		GROUP BY p.id, u.id, o.id, c.id
+		ORDER BY p.created_at DESC;`
+
+	var rows *sql.Rows
+	var err error
+
+	if id != "" {
+		rows, err = db.Client.QueryContext(db.Ctx, query, userId, id)
+	} else {
+		rows, err = db.Client.QueryContext(db.Ctx, query, userId)
+	}
+
 	defer rows.Close()
 
 	if err != nil {
@@ -89,30 +106,32 @@ func GetPosts(userId string) ([]PostsResult, error) {
 
 	result := make([]PostsResult, 0)
 	for rows.Next() {
-		var id, text, userId, username, createdAt, updatedAt string
-		var parentId, parentText, parentUserId, parentUsername *string
-		var likes, dislikes int
+		var id, text, createdAt, updatedAt, userId, username string
+		var parentId *string
+		var likes, dislikes, comments int
 		var reaction *int
 		err := rows.Scan(
 			&id, &text, &createdAt, &updatedAt,
 			&userId, &username,
-			&parentId, &parentText, &parentUserId, &parentUsername,
-			&likes, &dislikes, &reaction,
+			&parentId,
+			&likes, &dislikes, &reaction, &comments,
 		)
 		if err != nil {
 			return nil, err
 		}
 		row := PostsResult{
-			postBase:  postBase{Id: id, Text: text, User: postUser{Id: userId, Username: username}},
-			CreatedAt: createdAt,
-			Likes:     likes,
-			Dislikes:  dislikes,
+			postBase: postBase{
+				Id:        id,
+				Text:      text,
+				CreatedAt: createdAt,
+				User:      postUser{Id: userId, Username: username},
+			},
+			Likes:    likes,
+			Dislikes: dislikes,
 		}
 
 		if parentId != nil {
-			row.Original = &postBase{
-				Id: *parentId, Text: *parentText, User: postUser{Id: *parentUserId, Username: *parentUsername},
-			}
+			row.Original = parentId
 		}
 
 		if reaction != nil {
@@ -134,7 +153,7 @@ func ProcessReaction(userId, postId string, liked bool) error {
 	uid, _ := uuid.Parse(userId)
 	pid, _ := uuid.Parse(postId)
 
-	r, _ := db.Client.Debug().PostReaction.Query().Where(
+	r, _ := db.Client.PostReaction.Query().Where(
 		postreaction.HasPostWith(post.IDEQ(pid)),
 		postreaction.HasUserWith(user.IDEQ(uid)),
 	).Only(db.Ctx)

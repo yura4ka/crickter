@@ -66,7 +66,7 @@ func UpdatePost(c *fiber.Ctx) error {
 
 func GetPosts(c *fiber.Ctx) error {
 	userId, _ := c.Locals("userId").(string)
-	posts, err := services.GetPosts(userId)
+	posts, err := services.GetPosts("", userId)
 
 	if err != nil {
 		log.Print(err)
@@ -98,4 +98,17 @@ func ProcessReaction(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"message": "Ok",
 	})
+}
+
+func GetPostById(c *fiber.Ctx) error {
+	id := c.Params("id")
+	userId, _ := c.Locals("userId").(string)
+
+	posts, err := services.GetPosts(id, userId)
+
+	if err != nil || len(posts) != 1 {
+		return c.SendStatus(400)
+	}
+
+	return c.JSON(posts[0])
 }
