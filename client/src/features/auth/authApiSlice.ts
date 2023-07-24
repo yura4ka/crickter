@@ -20,6 +20,7 @@ export const authApi = api.injectEndpoints({
         method: "POST",
         body: credentials,
       }),
+      invalidatesTags: [{ type: "Posts" }],
     }),
     register: builder.mutation<{ id: string }, RegisterRequest>({
       query: (credentials) => ({
@@ -45,6 +46,7 @@ export const authApi = api.injectEndpoints({
         method: "GET",
         responseHandler: (response) => response.text(),
       }),
+      invalidatesTags: [{ type: "Posts" }],
     }),
   }),
 });

@@ -59,7 +59,7 @@ func Login(c *fiber.Ctx) error {
 
 	c.Cookie(services.CreateRefreshCookie(refresh))
 	return c.JSON(fiber.Map{
-		"access": access,
+		"token": access,
 		"user": fiber.Map{
 			"email":    user.Email,
 			"username": user.Username,
