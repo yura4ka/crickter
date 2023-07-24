@@ -19,8 +19,8 @@ type Post struct {
 func (Post) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Unique().Default(uuid.New),
-		field.Time("createdAt").Default(time.Now()),
-		field.Time("updatedAt").Default(time.Now()).UpdateDefault(time.Now),
+		field.Time("createdAt").Default(time.Now),
+		field.Time("updatedAt").Default(time.Now).UpdateDefault(time.Now),
 		field.String("text").
 			SchemaType(map[string]string{
 				dialect.Postgres: "VARCHAR(512)",

@@ -49,11 +49,11 @@ func init() {
 	// postDescCreatedAt is the schema descriptor for createdAt field.
 	postDescCreatedAt := postFields[1].Descriptor()
 	// post.DefaultCreatedAt holds the default value on creation for the createdAt field.
-	post.DefaultCreatedAt = postDescCreatedAt.Default.(time.Time)
+	post.DefaultCreatedAt = postDescCreatedAt.Default.(func() time.Time)
 	// postDescUpdatedAt is the schema descriptor for updatedAt field.
 	postDescUpdatedAt := postFields[2].Descriptor()
 	// post.DefaultUpdatedAt holds the default value on creation for the updatedAt field.
-	post.DefaultUpdatedAt = postDescUpdatedAt.Default.(time.Time)
+	post.DefaultUpdatedAt = postDescUpdatedAt.Default.(func() time.Time)
 	// post.UpdateDefaultUpdatedAt holds the default value on update for the updatedAt field.
 	post.UpdateDefaultUpdatedAt = postDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// postDescText is the schema descriptor for text field.

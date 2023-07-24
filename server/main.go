@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -13,6 +14,9 @@ import (
 )
 
 func init() {
+	location, _ := time.LoadLocation("UTC")
+	time.Local = location
+
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
