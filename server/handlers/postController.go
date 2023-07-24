@@ -19,14 +19,14 @@ func CreatePost(c *fiber.Ctx) error {
 	}
 	userId := c.Locals("userId").(string)
 
-	postId, err := services.CreatePost(userId, input.Text, input.ParentId)
+	post, err := services.CreatePost(userId, input.Text, input.ParentId)
 	if err != nil {
 		log.Print(err)
 		return c.SendStatus(400)
 	}
 
 	return c.JSON(fiber.Map{
-		"id": postId,
+		"id": post.ID.String(),
 	})
 }
 

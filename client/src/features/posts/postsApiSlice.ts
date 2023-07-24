@@ -1,5 +1,6 @@
 import { api } from "@/app/api/apiSlice";
 import { setReaction } from "./utils";
+import { RootState } from "@/app/store";
 
 interface PostUser {
   id: string;
@@ -50,6 +51,28 @@ export const postApi = api.injectEndpoints({
     }),
     createPost: builder.mutation<{ id: string }, CreatePostRequest>({
       query: (body) => ({ url: "post", method: "POST", body }),
+      async onQueryStarted({ text, parentId }, { dispatch, queryFulfilled, getState }) {
+        const user = (getState() as RootState).auth.user;
+        if (!user) return;
+
+        const { data } = await queryFulfilled;
+        dispatch(
+          postApi.util.updateQueryData("getPosts", undefined, (draft) => {
+            draft.unshift({
+              id: data.id,
+              text,
+              user: { id: user.id, username: user.username },
+              createdAt: new Date().toISOString(),
+              updatedAt: null,
+              originalId: parentId || null,
+              comments: 0,
+              likes: 0,
+              dislikes: 0,
+              reaction: 0,
+            });
+          })
+        );
+      },
     }),
     processReaction: builder.mutation<undefined, ReactionRequest>({
       query: (body) => ({ url: "post/reaction", method: "POST", body }),

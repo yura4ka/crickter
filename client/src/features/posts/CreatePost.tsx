@@ -3,9 +3,9 @@ import { useAuth } from "../auth/useAuth";
 import { Link } from "react-router-dom";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { FC, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { FC, useRef, useState } from "react";
 import { useCreatePostMutation } from "./postsApiSlice";
+import SubmitButton from "@/components/SubmitButton";
 
 const MAX_LENGTH = 512;
 
@@ -34,7 +34,10 @@ const CreatePost: FC<Props> = ({ onPostCreated }) => {
   const [value, setValue] = useState("");
   const [createPost, { isLoading: isCreating, isError }] = useCreatePostMutation();
 
-  const handleSubmit = async () => {
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     const v = value.trim();
     if (v.length === 0 || v.length > MAX_LENGTH) return;
 
@@ -67,7 +70,7 @@ const CreatePost: FC<Props> = ({ onPostCreated }) => {
   }
 
   return (
-    <div className="flex gap-2">
+    <form onSubmit={handleSubmit} ref={formRef} className="flex gap-2">
       <Avatar>
         <AvatarFallback>{user.username[0]}</AvatarFallback>
       </Avatar>
@@ -87,6 +90,11 @@ const CreatePost: FC<Props> = ({ onPostCreated }) => {
             e.currentTarget.style.height = "";
             e.currentTarget.style.height = e.currentTarget.scrollHeight + "px";
           }}
+          onKeyDown={(e) => {
+            if (e.key !== "Enter" || e.shiftKey) return;
+            formRef.current?.requestSubmit();
+            e.preventDefault();
+          }}
         />
         <div className="mt-2 flex justify-between gap-1">
           <div className="flex gap-1 divide-x">
@@ -96,17 +104,15 @@ const CreatePost: FC<Props> = ({ onPostCreated }) => {
               </p>
             )}
           </div>
-          <Button
-            onClick={handleSubmit}
-            disabled={
-              isCreating || value.trim().length === 0 || value.length > MAX_LENGTH
-            }
+          <SubmitButton
+            isLoading={isCreating}
+            disabled={value.trim().length === 0 || value.length > MAX_LENGTH}
           >
             Post
-          </Button>
+          </SubmitButton>
         </div>
       </div>
-    </div>
+    </form>
   );
 };
 export default CreatePost;

@@ -61,6 +61,7 @@ func Login(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"token": access,
 		"user": fiber.Map{
+			"id":       user.ID.String(),
 			"email":    user.Email,
 			"username": user.Username,
 		},
@@ -93,6 +94,7 @@ func Refresh(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"token": newAccess,
 		"user": fiber.Map{
+			"id":       user.ID.String(),
 			"email":    user.Email,
 			"username": user.Username,
 		},
