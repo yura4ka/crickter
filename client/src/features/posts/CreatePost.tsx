@@ -80,9 +80,13 @@ const CreatePost: FC<Props> = ({ onPostCreated }) => {
             placeholders[Math.floor(Math.random() * placeholders.length)]
           }
           maxLength={MAX_LENGTH}
-          className={`scrollbar h-24 resize-none ${
+          className={`scrollbar resize-none ${
             isError ? "border-destructive focus-visible:ring-destructive" : ""
           }`}
+          onInput={(e) => {
+            e.currentTarget.style.height = "";
+            e.currentTarget.style.height = e.currentTarget.scrollHeight + "px";
+          }}
         />
         <div className="mt-2 flex justify-between gap-1">
           <div className="flex gap-1 divide-x">

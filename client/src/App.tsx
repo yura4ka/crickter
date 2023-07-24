@@ -20,12 +20,8 @@ const Feed = () => {
 
 function App() {
   return (
-    <div className="flex sm:container">
-      <main className="w-3/4 border-r py-4 pr-4">
-        <CreatePost />
-        <Feed />
-      </main>
-      <aside className="flex w-1/4 flex-col p-4">
+    <div className="sm:container sm:flex">
+      <aside className="flex flex-col p-4 sm:order-2 sm:w-1/4">
         <input type="search" className="bg-accent" placeholder="search" />
         <div className="mt-4 rounded bg-accent p-2 text-accent-foreground">
           <h3>Trending</h3>
@@ -37,6 +33,11 @@ function App() {
           <p className="link">Show more</p>
         </div>
       </aside>
+      <main className="px-2 py-4 sm:w-3/4 sm:border-r sm:pl-0 sm:pr-4">
+        <CreatePost />
+        <hr className="mt-6" />
+        <Feed />
+      </main>
     </div>
   );
 }
