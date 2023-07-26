@@ -66,7 +66,8 @@ func UpdatePost(c *fiber.Ctx) error {
 
 func GetPosts(c *fiber.Ctx) error {
 	userId, _ := c.Locals("userId").(string)
-	posts, err := services.GetPosts("", userId)
+	page := c.QueryInt("page", 0)
+	posts, hasMore, err := services.GetPosts(userId, page)
 
 	if err != nil {
 		log.Print(err)
@@ -74,7 +75,8 @@ func GetPosts(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"posts": posts,
+		"posts":   posts,
+		"hasMore": hasMore,
 	})
 }
 
@@ -104,11 +106,11 @@ func GetPostById(c *fiber.Ctx) error {
 	id := c.Params("id")
 	userId, _ := c.Locals("userId").(string)
 
-	posts, err := services.GetPosts(id, userId)
+	post, err := services.QueryPostById(id, userId)
 
-	if err != nil || len(posts) != 1 {
+	if err != nil {
 		return c.SendStatus(400)
 	}
 
-	return c.JSON(posts[0])
+	return c.JSON(post)
 }

@@ -2,6 +2,7 @@ package services
 
 import (
 	"database/sql"
+	"errors"
 	"strings"
 
 	"github.com/google/uuid"
@@ -11,6 +12,8 @@ import (
 	"github.com/yura4ka/crickter/ent/postreaction"
 	"github.com/yura4ka/crickter/ent/user"
 )
+
+const POSTS_PER_PAGE = 5
 
 func CreatePost(userId, text string, parentId *string) (*ent.Post, error) {
 	var parentUuid *uuid.UUID
@@ -59,10 +62,15 @@ type PostsResult struct {
 	Reaction int     `json:"reaction"`
 }
 
-func GetPosts(id, userId string) ([]PostsResult, error) {
+func buildPostQuery(id, userId string, page int) (string, []interface{}) {
 	if userId == "" {
 		userId = "00000000-0000-0000-0000-000000000000"
 	}
+
+	limit := POSTS_PER_PAGE
+	offset := POSTS_PER_PAGE * page
+
+	args := []interface{}{userId}
 
 	query := `
 		SELECT p.id, p.text, p.created_at, p.updated_at,
@@ -83,27 +91,23 @@ func GetPosts(id, userId string) ([]PostsResult, error) {
 
 	if id != "" {
 		query += "\nWHERE p.id = $2\n"
+		args = append(args, id)
 	}
 
 	query += `
 		GROUP BY p.id, u.id, o.id, c.id
-		ORDER BY p.created_at DESC;`
+		ORDER BY p.created_at DESC`
 
-	var rows *sql.Rows
-	var err error
-
-	if id != "" {
-		rows, err = db.Client.QueryContext(db.Ctx, query, userId, id)
-	} else {
-		rows, err = db.Client.QueryContext(db.Ctx, query, userId)
+	if id == "" {
+		query += "\nLIMIT $2 OFFSET $3"
+		args = append(args, limit, offset)
 	}
 
-	defer rows.Close()
+	query += ";"
+	return query, args
+}
 
-	if err != nil {
-		return nil, err
-	}
-
+func parsePosts(rows *sql.Rows) ([]PostsResult, error) {
 	result := make([]PostsResult, 0)
 	for rows.Next() {
 		var id, text, createdAt, updatedAt, userId, username string
@@ -149,6 +153,29 @@ func GetPosts(id, userId string) ([]PostsResult, error) {
 	return result, nil
 }
 
+func GetPosts(userId string, page int) ([]PostsResult, bool, error) {
+	query, args := buildPostQuery("", userId, page)
+	rows, err := db.Client.QueryContext(db.Ctx, query, args...)
+
+	defer rows.Close()
+
+	if err != nil {
+		return nil, false, err
+	}
+
+	result, err := parsePosts(rows)
+	if err != nil {
+		return nil, false, err
+	}
+
+	total, err := db.Client.Post.Query().Count(db.Ctx)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return result, total > page*POSTS_PER_PAGE, err
+}
+
 func ProcessReaction(userId, postId string, liked bool) error {
 	uid, _ := uuid.Parse(userId)
 	pid, _ := uuid.Parse(postId)
@@ -169,4 +196,26 @@ func ProcessReaction(userId, postId string, liked bool) error {
 	}
 
 	return db.Client.PostReaction.DeleteOne(r).Exec(db.Ctx)
+}
+
+func QueryPostById(postId, userId string) (*PostsResult, error) {
+	query, args := buildPostQuery(postId, userId, 0)
+	rows, err := db.Client.QueryContext(db.Ctx, query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	result, err := parsePosts(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(result) != 1 {
+		return nil, errors.New("post not found")
+	}
+
+	return &result[0], nil
 }
