@@ -1,13 +1,19 @@
 import { api } from "@/app/api/apiSlice";
-import { setReaction } from "./utils";
+import { getReactionChanges } from "./utils";
 import { RootState } from "@/app/store";
+import { EntityState, createEntityAdapter } from "@reduxjs/toolkit";
 
 interface PostUser {
   id: string;
   username: string;
 }
 
-export interface PostResponse {
+interface PostsResponse {
+  posts: EntityState<Post>;
+  hasMore: boolean;
+}
+
+export interface Post {
   id: string;
   text: string;
   user: PostUser;
@@ -30,21 +36,39 @@ interface ReactionRequest {
   liked: boolean;
 }
 
+export const postsAdapter = createEntityAdapter<Post>({
+  sortComparer: (a, b) => Number(new Date(b.createdAt)) - Number(new Date(a.createdAt)),
+});
+export const postsSelector = postsAdapter.getSelectors();
+
 export const postApi = api.injectEndpoints({
   endpoints: (builder) => ({
-    getPostById: builder.query<PostResponse, string>({
+    getPostById: builder.query<Post, string>({
       query: (id) => ({ url: `post/${id}` }),
       providesTags: (_result, _error, id) => [{ type: "Posts", id }],
     }),
-    getPosts: builder.query<PostResponse[], void>({
-      query: () => ({ url: "post" }),
-      transformResponse: (baseQueryReturnValue: { posts: PostResponse[] }) => {
-        return baseQueryReturnValue.posts;
+    getPosts: builder.query<PostsResponse, number>({
+      query: (page) => ({ url: `post?page=${page}` }),
+      transformResponse: ({ posts, hasMore }: { posts: Post[]; hasMore: boolean }) => {
+        return {
+          posts: postsAdapter.addMany(postsAdapter.getInitialState(), posts),
+          hasMore,
+        };
+      },
+      serializeQueryArgs: ({ endpointName }) => {
+        return endpointName;
+      },
+      merge: (currentCache, newItems) => {
+        postsAdapter.addMany(currentCache.posts, postsSelector.selectAll(newItems.posts));
+        currentCache.hasMore = newItems.hasMore;
+      },
+      forceRefetch({ currentArg, previousArg }) {
+        return currentArg !== previousArg;
       },
       providesTags: (result) =>
         result
           ? [
-              ...result.map((p) => ({ type: "Posts" as const, id: p.id })),
+              ...result.posts.ids.map((id) => ({ type: "Posts" as const, id })),
               { type: "Posts", id: "LIST" },
             ]
           : [{ type: "Posts", id: "LIST" }],
@@ -57,8 +81,8 @@ export const postApi = api.injectEndpoints({
 
         const { data } = await queryFulfilled;
         dispatch(
-          postApi.util.updateQueryData("getPosts", undefined, (draft) => {
-            draft.unshift({
+          postApi.util.updateQueryData("getPosts", 0, (draft) => {
+            postsAdapter.addOne(draft.posts, {
               id: data.id,
               text,
               user: { id: user.id, username: user.username },
@@ -78,14 +102,15 @@ export const postApi = api.injectEndpoints({
       query: (body) => ({ url: "post/reaction", method: "POST", body }),
       async onQueryStarted({ postId, liked }, { dispatch, queryFulfilled }) {
         const patchResult1 = dispatch(
-          postApi.util.updateQueryData("getPosts", undefined, (draft) => {
-            const post = draft.find((p) => p.id === postId);
-            setReaction(post, liked);
+          postApi.util.updateQueryData("getPosts", 0, (draft) => {
+            const post = postsSelector.selectById(draft.posts, postId);
+            const changes = getReactionChanges(post, liked);
+            postsAdapter.updateOne(draft.posts, { id: postId, changes });
           })
         );
         const patchResult2 = dispatch(
           postApi.util.updateQueryData("getPostById", postId, (draft) =>
-            setReaction(draft, liked)
+            Object.assign(draft, getReactionChanges(draft, liked))
           )
         );
         try {

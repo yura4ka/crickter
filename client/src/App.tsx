@@ -1,19 +1,43 @@
+import { useRef, useState } from "react";
 import { useAuth } from "./features/auth/useAuth";
 import CreatePost from "./features/posts/CreatePost";
 import PostCard from "./features/posts/PostCard";
-import { useGetPostsQuery } from "./features/posts/postsApiSlice";
+import {
+  postsAdapter,
+  postsSelector,
+  useGetPostsQuery,
+} from "./features/posts/postsApiSlice";
+import { useInfiniteScroll } from "./lib/hooks";
 
 const Feed = () => {
   const { isLoading: isAuthLoading } = useAuth();
-  const { data: posts, isFetching } = useGetPostsQuery(undefined, {
+  const [page, setPage] = useState(1);
+  const { posts, hasMore, isFetching } = useGetPostsQuery(page, {
     skip: isAuthLoading,
+    selectFromResult: ({ data, ...other }) => ({
+      posts: postsSelector.selectAll(data?.posts ?? postsAdapter.getInitialState()),
+      hasMore: data?.hasMore,
+      ...other,
+    }),
+  });
+
+  const loaderDiv = useRef<HTMLDivElement>(null);
+  useInfiniteScroll(loaderDiv, () => {
+    if (hasMore && !isFetching && !isAuthLoading) {
+      setPage((p) => p + 1);
+    }
   });
 
   return (
     <div className="divide-y">
-      {posts?.map((p) => (
+      {posts.map((p) => (
         <PostCard key={p.id} post={p} />
       ))}
+      <PostCard
+        ref={loaderDiv}
+        post={undefined}
+        className={hasMore || isFetching ? "" : "hidden"}
+      />
     </div>
   );
 };

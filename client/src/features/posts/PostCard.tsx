@@ -1,25 +1,23 @@
-import { FC } from "react";
-import {
-  PostResponse,
-  useGetPostByIdQuery,
-  useProcessReactionMutation,
-} from "./postsApiSlice";
+import { Post, useGetPostByIdQuery, useProcessReactionMutation } from "./postsApiSlice";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn, formatTimeAgo } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, ThumbsDown, ThumbsUp } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
+import { forwardRef } from "react";
 
 interface Props {
-  post: PostResponse | undefined;
+  post: Post | undefined;
   fetchOriginal?: boolean;
   className?: string;
 }
 
-const PostCard: FC<Props> = ({ post: p, fetchOriginal = true, className }) => {
+const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
+  const { post: p, fetchOriginal = true, className } = props;
+
   const { data: original } = useGetPostByIdQuery(p?.originalId || "", {
-    skip: !(fetchOriginal && p?.originalId !== null),
+    skip: !(fetchOriginal && !!p?.originalId),
   });
 
   const [handleReaction] = useProcessReactionMutation();
@@ -30,7 +28,10 @@ const PostCard: FC<Props> = ({ post: p, fetchOriginal = true, className }) => {
 
   if (p === undefined) {
     return (
-      <article className={cn("flex gap-3 py-4 pr-2 sm:gap-4 sm:py-6 sm:pr-0", className)}>
+      <article
+        ref={ref}
+        className={cn("flex gap-3 py-4 pr-2 sm:gap-4 sm:py-6 sm:pr-0", className)}
+      >
         <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
         <div className="w-full">
           <Skeleton className="mb-1 h-4 w-[250px]" />
@@ -41,7 +42,10 @@ const PostCard: FC<Props> = ({ post: p, fetchOriginal = true, className }) => {
   }
 
   return (
-    <article className={cn("flex gap-3 py-4 pr-2 sm:gap-4 sm:py-6 sm:pr-0", className)}>
+    <article
+      ref={ref}
+      className={cn("flex gap-3 py-4 pr-2 sm:gap-4 sm:py-6 sm:pr-0", className)}
+    >
       <Avatar>
         <AvatarFallback>{p.user.username[0]}</AvatarFallback>
       </Avatar>
@@ -98,5 +102,5 @@ const PostCard: FC<Props> = ({ post: p, fetchOriginal = true, className }) => {
       </div>
     </article>
   );
-};
+});
 export default PostCard;
