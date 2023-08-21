@@ -15,18 +15,19 @@ func CreatePost(c *fiber.Ctx) error {
 
 	input := new(Input)
 	if err := c.BodyParser(input); err != nil {
+		log.Print(err)
 		return c.SendStatus(400)
 	}
 	userId := c.Locals("userId").(string)
 
-	post, err := services.CreatePost(userId, input.Text, input.ParentId)
+	postId, err := services.CreatePost(userId, input.Text, input.ParentId)
 	if err != nil {
 		log.Print(err)
 		return c.SendStatus(400)
 	}
 
 	return c.JSON(fiber.Map{
-		"id": post.ID.String(),
+		"id": postId,
 	})
 }
 
@@ -49,11 +50,11 @@ func UpdatePost(c *fiber.Ctx) error {
 		return c.SendStatus(400)
 	}
 
-	if post.UserId.String() != userId {
+	if post.UserId != userId {
 		return c.SendStatus(403)
 	}
 
-	_, err = services.UpdatePost(input.Id, input.Text)
+	err = services.UpdatePost(input.Id, input.Text)
 	if err != nil {
 		log.Print(err)
 		return c.SendStatus(400)

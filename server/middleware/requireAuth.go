@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"errors"
+	"log"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -19,6 +20,7 @@ func RequireAuth(c *fiber.Ctx) error {
 	if errors.Is(err, jwt.ErrTokenExpired) {
 		return c.SendStatus(401)
 	} else if err != nil {
+		log.Print(err)
 		return c.SendStatus(400)
 	}
 

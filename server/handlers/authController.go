@@ -45,13 +45,13 @@ func Login(c *fiber.Ctx) error {
 		return c.SendStatus(400)
 	}
 
-	if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)) != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
 		log.Print(err)
 		return c.SendStatus(400)
 	}
 
-	access, _ := services.CreateAccessToken(services.TokenPayload{Id: user.ID.String()})
-	refresh, _ := services.CreateRefreshToken(services.TokenPayload{Id: user.ID.String()})
+	access, _ := services.CreateAccessToken(services.TokenPayload{Id: user.ID})
+	refresh, _ := services.CreateRefreshToken(services.TokenPayload{Id: user.ID})
 	if access == "" || refresh == "" {
 		log.Print("Error creating token")
 		return c.SendStatus(400)
@@ -61,9 +61,10 @@ func Login(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"token": access,
 		"user": fiber.Map{
-			"id":       user.ID.String(),
+			"id":       user.ID,
 			"email":    user.Email,
 			"username": user.Username,
+			"name":     user.Name,
 		},
 	})
 }
@@ -94,9 +95,10 @@ func Refresh(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"token": newAccess,
 		"user": fiber.Map{
-			"id":       user.ID.String(),
+			"id":       user.ID,
 			"email":    user.Email,
 			"username": user.Username,
+			"name":     user.Name,
 		},
 	})
 }

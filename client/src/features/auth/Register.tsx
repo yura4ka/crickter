@@ -32,6 +32,7 @@ const initializeForm = () => ({
   username: "",
   password: "",
   isPasswordValid: false,
+  name: "",
 });
 
 const Register = () => {
@@ -72,7 +73,8 @@ const Register = () => {
     !isEmailTaken &&
     emailInfo === EmailInfoState.OK &&
     form.username.trim().length !== 0 &&
-    form.isPasswordValid;
+    form.isPasswordValid &&
+    form.name.trim().length !== 0;
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,6 +83,7 @@ const Register = () => {
         email: form.email.trim(),
         password: form.password.trim(),
         username: form.username.trim(),
+        name: form.name.trim(),
       }).unwrap();
       await login({ email: form.email.trim(), password: form.password.trim() }).unwrap();
     } catch {
@@ -116,6 +119,14 @@ const Register = () => {
               isLoading={isCheckLoading}
               description={isEmailTaken ? EmailInfoState.TAKEN : emailInfo}
               placeholder="john_biden@gmail.com"
+            />
+            <CustomInput
+              type="text"
+              value={form.name}
+              onChange={(e) => changeForm("name", e.target.value)}
+              label="Name"
+              description="Your name (you can change it later)"
+              placeholder="John Biden"
             />
             <CustomInput
               type="text"

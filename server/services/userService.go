@@ -1,12 +1,9 @@
 package services
 
 import (
-	"strings"
+	"time"
 
-	"github.com/google/uuid"
 	"github.com/yura4ka/crickter/db"
-	"github.com/yura4ka/crickter/ent"
-	"github.com/yura4ka/crickter/ent/user"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -14,6 +11,7 @@ type NewUser struct {
 	Email    string `json:"email"`
 	Username string `json:"username"`
 	Password string `json:"password"`
+	Name     string `json:"name"`
 }
 
 func CreateUser(user *NewUser) (string, error) {
@@ -23,35 +21,53 @@ func CreateUser(user *NewUser) (string, error) {
 		return "", err
 	}
 
-	created, err := db.Client.User.
-		Create().
-		SetEmail(strings.TrimSpace(user.Email)).
-		SetUsername(strings.TrimSpace(user.Username)).
-		SetPassword(strings.TrimSpace(string(hashed))).
-		Save(db.Ctx)
+	var id string
+
+	err = db.Client.QueryRow(`
+		INSERT INTO users (email, username, password, name)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id;
+	`, user.Email, user.Username, hashed, user.Name).Scan(&id)
 
 	if err != nil {
 		return "", err
 	}
 
-	return created.ID.String(), err
+	return id, err
 }
 
-func GetUserByEmail(email string) (*ent.User, error) {
-	return db.Client.User.
-		Query().
-		Where(user.Email(email)).
-		Only(db.Ctx)
+type User struct {
+	ID, Email, Password, Name, Username string
+	CreatedAt                           time.Time
+	IsPrivate                           bool
 }
 
-func GetUserById(id string) (*ent.User, error) {
-	uuid, err := uuid.Parse(id)
+func GetUserByEmail(email string) (*User, error) {
+	var user User
+
+	err := db.Client.QueryRow(`
+		SELECT * FROM users
+		WHERE email = $1;
+	`, email).Scan(&user.ID, &user.CreatedAt, &user.Email, &user.Password, &user.Name, &user.Username, &user.IsPrivate)
+
 	if err != nil {
 		return nil, err
 	}
 
-	return db.Client.User.
-		Query().
-		Where(user.ID(uuid)).
-		Only(db.Ctx)
+	return &user, nil
+}
+
+func GetUserById(id string) (*User, error) {
+	var user User
+
+	err := db.Client.QueryRow(`
+		SELECT * FROM users
+		WHERE id = $1;
+	`, id).Scan(&user.ID, &user.CreatedAt, &user.Email, &user.Password, &user.Name, &user.Username, &user.IsPrivate)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
 }
