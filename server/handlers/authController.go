@@ -125,3 +125,21 @@ func Logout(c *fiber.Ctx) error {
 	c.Cookie(services.ClearRefreshCookie())
 	return c.SendStatus(200)
 }
+
+func CheckUsername(c *fiber.Ctx) error {
+	type Input struct {
+		Username string `json:"username"`
+	}
+
+	input := new(Input)
+	if err := c.BodyParser(input); err != nil {
+		return c.SendStatus(400)
+	}
+
+	_, err := services.GetUserByUsername(input.Username)
+	if err != nil {
+		return c.SendStatus(200)
+	}
+
+	return c.SendStatus(400)
+}

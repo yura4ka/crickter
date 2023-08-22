@@ -49,6 +49,14 @@ export const authApi = api.injectEndpoints({
       }),
       invalidatesTags: [{ type: "Posts" }],
     }),
+    checkUsername: builder.mutation<undefined, string>({
+      query: (username) => ({
+        url: "auth/checkUsername",
+        method: "POST",
+        body: { username },
+        responseHandler: (response) => response.text(),
+      }),
+    }),
   }),
 });
 
@@ -58,4 +66,5 @@ export const {
   useRefreshQuery,
   useCheckEmailMutation,
   useLogoutMutation,
+  useCheckUsernameMutation,
 } = authApi;

@@ -71,3 +71,18 @@ func GetUserById(id string) (*User, error) {
 
 	return &user, nil
 }
+
+func GetUserByUsername(username string) (*User, error) {
+	var user User
+
+	err := db.Client.QueryRow(`
+		SELECT * FROM users
+		WHERE username = $1;
+	`, username).Scan(&user.ID, &user.CreatedAt, &user.Email, &user.Password, &user.Name, &user.Username, &user.IsPrivate)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}

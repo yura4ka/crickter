@@ -7,6 +7,9 @@ export function cn(...inputs: ClassValue[]) {
 
 export const emailRegexp = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
 export const validatePassword = (password: string) => password.trim().length >= 4;
+export const nameMaxLength = 64;
+export const usernameMaxLength = 64;
+export const emailMaxLength = 256;
 
 const formatter = new Intl.RelativeTimeFormat(undefined, {
   numeric: "auto",

@@ -12,10 +12,17 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   useCheckEmailMutation,
+  useCheckUsernameMutation,
   useLoginMutation,
   useRegisterMutation,
 } from "./authApiSlice";
-import { emailRegexp, validatePassword } from "@/lib/utils";
+import {
+  emailMaxLength,
+  emailRegexp,
+  nameMaxLength,
+  usernameMaxLength,
+  validatePassword,
+} from "@/lib/utils";
 import ConfirmPassword from "@/components/ConfirmPassword";
 import SubmitButton from "@/components/SubmitButton";
 
@@ -49,6 +56,9 @@ const Register = () => {
   const [checkEmail, { isError: isEmailTaken, isLoading: isCheckLoading }] =
     useCheckEmailMutation();
 
+  const [checkUsername, { isError: isUsernameTaken, isLoading: isUCheckLoading }] =
+    useCheckUsernameMutation();
+
   const [register, { isLoading: isRegisterLoad }] = useRegisterMutation();
   const [login, { isLoading: isLoginLoad }] = useLoginMutation();
 
@@ -58,6 +68,13 @@ const Register = () => {
       checkEmail(debouncedEmail.trim());
     }
   }, [checkEmail, debouncedEmail]);
+
+  const debouncedUsername = useDebounce(form.username, 350);
+  useEffect(() => {
+    if (debouncedUsername.trim().length) {
+      checkUsername(debouncedUsername.trim());
+    }
+  }, [checkUsername, debouncedUsername]);
 
   const onEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -119,6 +136,7 @@ const Register = () => {
               isLoading={isCheckLoading}
               description={isEmailTaken ? EmailInfoState.TAKEN : emailInfo}
               placeholder="john_biden@gmail.com"
+              maxLength={emailMaxLength}
             />
             <CustomInput
               type="text"
@@ -127,14 +145,22 @@ const Register = () => {
               label="Name"
               description="Your name (you can change it later)"
               placeholder="John Biden"
+              maxLength={nameMaxLength}
             />
             <CustomInput
               type="text"
               value={form.username}
               onChange={(e) => changeForm("username", e.target.value)}
               label="Username"
-              description="Create username (you can change it later)"
+              description={
+                isUsernameTaken
+                  ? "This username is already taken!"
+                  : "Create username (you can change it later)"
+              }
               placeholder="j_biden"
+              isError={isUsernameTaken}
+              isLoading={isUCheckLoading}
+              maxLength={usernameMaxLength}
             />
             <ConfirmPassword
               description="At least 4 characters"

@@ -6,6 +6,7 @@ import { EntityState, createEntityAdapter } from "@reduxjs/toolkit";
 interface PostUser {
   id: string;
   username: string;
+  name: string;
 }
 
 interface PostsResponse {
@@ -85,7 +86,7 @@ export const postApi = api.injectEndpoints({
             postsAdapter.addOne(draft.posts, {
               id: data.id,
               text,
-              user: { id: user.id, username: user.username },
+              user,
               createdAt: new Date().toISOString(),
               updatedAt: null,
               originalId: parentId || null,

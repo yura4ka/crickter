@@ -51,7 +51,8 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
       </Avatar>
       <div className="grow">
         <p className="mb-1 flex items-baseline gap-2 align-bottom text-sm text-muted-foreground">
-          <span className="text-base font-bold text-foreground">{p.user.username}</span>•
+          <span className="text-base font-bold text-foreground">{p.user.name}</span>
+          <span>@{p.user.username}</span>•
           <span>{formatTimeAgo(new Date(p.createdAt))}</span>
           {p.updatedAt !== null && (
             <>
