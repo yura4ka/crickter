@@ -8,36 +8,57 @@ import (
 )
 
 func GetComments(c *fiber.Ctx) error {
-	postId := c.Params("postId")
 	userId, _ := c.Locals("userId").(string)
+	page := c.QueryInt("page", 0)
+	postId := c.Query("postId")
 
-	return c.JSON(fiber.Map{
-		"id":     postId,
-		"userId": userId,
-	})
-}
-
-func PostComment(c *fiber.Ctx) error {
-	type Input struct {
-		Text     string  `json:"text"`
-		ParentId *string `json:"parentId"`
-	}
-
-	input := new(Input)
-	if err := c.BodyParser(input); err != nil {
+	comments, err := services.GetPosts(&services.QueryParams{UserId: userId, CommentsToId: postId, Page: page, OrderBy: services.SortPopular})
+	if err != nil {
+		log.Print(err)
 		return c.SendStatus(400)
 	}
 
-	postId := c.Params("postId")
-	userId, _ := c.Locals("userId").(string)
-
-	id, err := services.CreateComment(postId, userId, input.Text, input.ParentId)
+	total, hasMore, err := services.CountComments(postId, page)
 	if err != nil {
 		log.Print(err)
 		return c.SendStatus(400)
 	}
 
 	return c.JSON(fiber.Map{
-		"id": id,
+		"comments": comments,
+		"total":    total,
+		"hasMore":  hasMore,
+	})
+}
+
+func GetResponses(c *fiber.Ctx) error {
+	commentId := c.Params("commentId")
+	userId, _ := c.Locals("userId").(string)
+	page := c.QueryInt("page", 0)
+	postId := c.Query("postId")
+
+	comments, err := services.GetPosts(&services.QueryParams{UserId: userId, ResponseToId: commentId, Page: page, OrderBy: services.SortOld})
+	if err != nil {
+		log.Print(err)
+		return c.SendStatus(400)
+	}
+
+	total, hasMore, err := services.CountResponses(commentId, page)
+	if err != nil {
+		log.Print(err)
+		return c.SendStatus(400)
+	}
+
+	totalComments, _, err := services.CountComments(postId, page)
+	if err != nil {
+		log.Print(err)
+		return c.SendStatus(400)
+	}
+
+	return c.JSON(fiber.Map{
+		"comments":      comments,
+		"total":         total,
+		"hasMore":       hasMore,
+		"totalComments": totalComments,
 	})
 }

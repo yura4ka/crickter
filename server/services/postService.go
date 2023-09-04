@@ -3,12 +3,13 @@ package services
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/yura4ka/crickter/db"
 )
 
-const POSTS_PER_PAGE = 5
+const POSTS_PER_PAGE = 10
 
 type Post struct {
 	Id, UserId, Text       string
@@ -16,14 +17,14 @@ type Post struct {
 	created_at, updated_at time.Time
 }
 
-func CreatePost(userId, text string, parentId *string) (string, error) {
+func CreatePost(userId, text string, originalId, commentToId, responseToId *string) (string, error) {
 	var postId string
 
 	err := db.Client.QueryRow(`
-		INSERT INTO posts (text, user_id, parent_id)
-		VALUES ($1, $2, $3)
+		INSERT INTO posts (text, user_id, original_id, comment_to_id, response_to_id)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id;
-	`, text, userId, ToNullString(parentId)).Scan(&postId)
+	`, text, userId, ToNullString(originalId), ToNullString(commentToId), ToNullString(responseToId)).Scan(&postId)
 
 	if err != nil {
 		return "", err
@@ -69,51 +70,89 @@ type postBase struct {
 	User      postUser `json:"user"`
 	CreatedAt string   `json:"createdAt"`
 	UpdatedAt *string  `json:"updatedAt"`
-	Comments  int      `json:"comments"`
 }
 
 type PostsResult struct {
 	postBase
-	Original *string `json:"originalId"`
-	Likes    int     `json:"likes"`
-	Dislikes int     `json:"dislikes"`
-	Reaction int     `json:"reaction"`
+	OriginalId  *string `json:"originalId"`
+	CommentToId *string `json:"commentToId"`
+	ReplyToId   *string `json:"replyToId"`
+	Likes       int     `json:"likes"`
+	Dislikes    int     `json:"dislikes"`
+	Reaction    int     `json:"reaction"`
+	Comments    int     `json:"comments"`
+	Reposts     int     `json:"reposts"`
 }
 
-func buildPostQuery(id, userId string, page int) (string, []interface{}) {
-	limit := POSTS_PER_PAGE
-	offset := POSTS_PER_PAGE * (page - 1)
+type TSortBy int
 
-	args := []interface{}{ToNullString(&userId)}
+const (
+	SortNone TSortBy = iota
+	SortNew
+	SortOld
+	SortPopular
+)
+
+type QueryParams struct {
+	PostId, CommentsToId, ResponseToId, UserId string
+	Page                                       int
+	OrderBy                                    TSortBy
+}
+
+func buildPostQuery(params *QueryParams) (string, []interface{}) {
+	limit := POSTS_PER_PAGE
+	offset := POSTS_PER_PAGE * (params.Page - 1)
+
+	args := []interface{}{ToNullString(&params.UserId)}
 
 	query := `
 		SELECT p.id, p.text, p.created_at, p.updated_at,
 			u.id as "userId", u.username, u.name,
-			o.id as "parentId",
+			o.id as "originalId", c.id as "commentToId", r.id as "responseToId",
 			SUM(case when pr.liked = true then 1 else 0 end) AS likes,
 			SUM(case when pr.liked = false then 1 else 0 end) AS dislikes,
 			SUM(case
 				when pr.user_id != $1 then 0
 				when pr.liked = true then 1
 				when pr.liked = false then -1 end) AS reaction,
-			COUNT(c.id) AS comments
+			COUNT(pc.id) AS comments, COUNT(post_r.id) AS responses, COUNT(reposts.id) AS "repostsCount"
 		FROM posts as p
 		LEFT JOIN users as u ON p.user_id = u.id
-		LEFT JOIN posts as o ON p.parent_id = o.id
-		LEFT JOIN post_reactions as pr ON p.id = pr.post_id
-		LEFT JOIN comments as c ON p.id = c.post_id`
+		LEFT JOIN posts as o ON p.original_id = o.id
+		LEFT JOIN posts as c ON p.comment_to_id = c.id
+		LEFT JOIN posts as r ON p.response_to_id = r.id
+		LEFT JOIN posts as pc ON p.id = pc.comment_to_id
+		LEFT JOIN posts as post_r ON p.id = post_r.response_to_id
+		LEFT JOIN posts as reposts ON reposts.original_id = p.id
+		LEFT JOIN post_reactions as pr ON p.id = pr.post_id`
 
-	if id != "" {
+	if params.PostId != "" {
 		query += "\nWHERE p.id = $2\n"
-		args = append(args, id)
+		args = append(args, params.PostId)
+	} else if params.CommentsToId != "" {
+		query += "\nWHERE p.comment_to_id = $2 AND p.response_to_id is NULL\n"
+		args = append(args, params.CommentsToId)
+	} else if params.ResponseToId != "" {
+		query += "\nWHERE p.response_to_id = $2\n"
+		args = append(args, params.ResponseToId)
+	} else {
+		query += "\nWHERE p.comment_to_id IS NULL\n"
 	}
 
-	query += `
-		GROUP BY p.id, u.id, o.id, c.id
-		ORDER BY p.created_at DESC`
+	query += "GROUP BY p.id, u.id, o.id, c.id, r.id\n"
 
-	if id == "" {
-		query += "\nLIMIT $2 OFFSET $3"
+	switch params.OrderBy {
+	case SortNew:
+		query += "ORDER BY p.created_at DESC\n"
+	case SortOld:
+		query += "ORDER BY p.created_at ASC\n"
+	case SortPopular:
+		query += "ORDER BY p.created_at DESC\n"
+	}
+
+	if params.PostId == "" {
+		count := len(args) + 1
+		query += fmt.Sprintf("LIMIT $%v OFFSET $%v", count, count+1)
 		args = append(args, limit, offset)
 	}
 
@@ -121,18 +160,18 @@ func buildPostQuery(id, userId string, page int) (string, []interface{}) {
 	return query, args
 }
 
-func parsePosts(rows *sql.Rows) ([]PostsResult, error) {
+func parsePosts(rows *sql.Rows, isComment bool) ([]PostsResult, error) {
 	result := make([]PostsResult, 0)
 	for rows.Next() {
 		var id, text, createdAt, updatedAt, userId, username, name string
-		var parentId *string
-		var likes, dislikes, comments int
+		var originalId, commentToId, replyToId *string
+		var likes, dislikes, comments, responses, reposts int
 		var reaction *int
 		err := rows.Scan(
 			&id, &text, &createdAt, &updatedAt,
 			&userId, &username, &name,
-			&parentId,
-			&likes, &dislikes, &reaction, &comments,
+			&originalId, &commentToId, &replyToId,
+			&likes, &dislikes, &reaction, &comments, &responses, &reposts,
 		)
 		if err != nil {
 			return nil, err
@@ -144,12 +183,12 @@ func parsePosts(rows *sql.Rows) ([]PostsResult, error) {
 				CreatedAt: createdAt,
 				User:      postUser{Id: userId, Username: username, Name: name},
 			},
-			Likes:    likes,
-			Dislikes: dislikes,
-		}
-
-		if parentId != nil {
-			row.Original = parentId
+			Likes:       likes,
+			Dislikes:    dislikes,
+			OriginalId:  originalId,
+			CommentToId: commentToId,
+			ReplyToId:   replyToId,
+			Reposts:     reposts,
 		}
 
 		if reaction != nil {
@@ -161,35 +200,33 @@ func parsePosts(rows *sql.Rows) ([]PostsResult, error) {
 		if updatedAt != createdAt {
 			row.UpdatedAt = &updatedAt
 		}
+
+		if isComment {
+			row.Comments = responses
+		} else {
+			row.Comments = comments
+		}
 		result = append(result, row)
 	}
 
 	return result, nil
 }
 
-func GetPosts(userId string, page int) ([]PostsResult, bool, error) {
-	query, args := buildPostQuery("", userId, page)
+func GetPosts(params *QueryParams) ([]PostsResult, error) {
+	query, args := buildPostQuery(params)
 	rows, err := db.Client.Query(query, args...)
 
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	defer rows.Close()
 
-	result, err := parsePosts(rows)
+	result, err := parsePosts(rows, params.CommentsToId != "" || params.ResponseToId != "")
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
-
-	var total int
-	err = db.Client.QueryRow(`SELECT COUNT(*) FROM posts;`).Scan(&total)
-
-	if err != nil {
-		return nil, false, err
-	}
-
-	return result, total > page*POSTS_PER_PAGE, err
+	return result, err
 }
 
 type PostReaction struct {
@@ -234,7 +271,7 @@ func ProcessReaction(userId, postId string, liked bool) error {
 }
 
 func QueryPostById(postId, userId string) (*PostsResult, error) {
-	query, args := buildPostQuery(postId, userId, 0)
+	query, args := buildPostQuery(&QueryParams{PostId: postId, UserId: userId})
 	rows, err := db.Client.Query(query, args...)
 
 	if err != nil {
@@ -243,7 +280,7 @@ func QueryPostById(postId, userId string) (*PostsResult, error) {
 
 	defer rows.Close()
 
-	result, err := parsePosts(rows)
+	result, err := parsePosts(rows, false)
 	if err != nil {
 		return nil, err
 	}
@@ -253,4 +290,36 @@ func QueryPostById(postId, userId string) (*PostsResult, error) {
 	}
 
 	return &result[0], nil
+}
+
+func HasMorePosts(page int) (bool, error) {
+	var total int
+	err := db.Client.QueryRow(`SELECT COUNT(*) FROM posts WHERE comment_to_id IS NULL;`).Scan(&total)
+	if err != nil {
+		return false, err
+	}
+	return total > page*POSTS_PER_PAGE, nil
+}
+
+func CountComments(postId string, page int) (int, bool, error) {
+	var total, filtered int
+	err := db.Client.QueryRow(`
+		SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE response_to_id IS NULL) AS filtered 
+		FROM posts WHERE comment_to_id = $1;
+	`, postId).Scan(&total, &filtered)
+
+	if err != nil {
+		return 0, false, err
+	}
+
+	return total, filtered > page*POSTS_PER_PAGE, nil
+}
+
+func CountResponses(commentId string, page int) (int, bool, error) {
+	var total int
+	err := db.Client.QueryRow(`SELECT COUNT(*) FROM posts WHERE response_to_id = $1;`, commentId).Scan(&total)
+	if err != nil {
+		return 0, false, err
+	}
+	return total, total > page*POSTS_PER_PAGE, nil
 }

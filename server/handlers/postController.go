@@ -9,8 +9,10 @@ import (
 
 func CreatePost(c *fiber.Ctx) error {
 	type Input struct {
-		Text     string  `json:"text"`
-		ParentId *string `json:"parentId"`
+		Text         string  `json:"text"`
+		OriginalId   *string `json:"originalId"`
+		CommentToId  *string `json:"commentToId"`
+		ResponseToId *string `json:"responseToId"`
 	}
 
 	input := new(Input)
@@ -20,7 +22,7 @@ func CreatePost(c *fiber.Ctx) error {
 	}
 	userId := c.Locals("userId").(string)
 
-	postId, err := services.CreatePost(userId, input.Text, input.ParentId)
+	postId, err := services.CreatePost(userId, input.Text, input.OriginalId, input.CommentToId, input.ResponseToId)
 	if err != nil {
 		log.Print(err)
 		return c.SendStatus(400)
@@ -68,8 +70,14 @@ func UpdatePost(c *fiber.Ctx) error {
 func GetPosts(c *fiber.Ctx) error {
 	userId, _ := c.Locals("userId").(string)
 	page := c.QueryInt("page", 0)
-	posts, hasMore, err := services.GetPosts(userId, page)
 
+	posts, err := services.GetPosts(&services.QueryParams{UserId: userId, Page: page, OrderBy: services.SortNew})
+	if err != nil {
+		log.Print(err)
+		return c.SendStatus(400)
+	}
+
+	hasMore, err := services.HasMorePosts(page)
 	if err != nil {
 		log.Print(err)
 		return c.SendStatus(400)
