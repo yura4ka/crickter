@@ -21,15 +21,20 @@ export interface Post {
   createdAt: string;
   updatedAt: string | null;
   originalId: string | null;
+  commentToId: string | null;
+  responseToId: string | null;
   likes: number;
   dislikes: number;
   comments: number;
+  reposts: number;
   reaction: -1 | 0 | 1;
 }
 
-interface CreatePostRequest {
+export interface CreatePostRequest {
   text: string;
-  parentId?: string;
+  originalId?: string;
+  commentToId?: string;
+  responseToId?: string;
 }
 
 interface ReactionRequest {
@@ -76,7 +81,10 @@ export const postApi = api.injectEndpoints({
     }),
     createPost: builder.mutation<{ id: string }, CreatePostRequest>({
       query: (body) => ({ url: "post", method: "POST", body }),
-      async onQueryStarted({ text, parentId }, { dispatch, queryFulfilled, getState }) {
+      async onQueryStarted(
+        { text, originalId, responseToId, commentToId },
+        { dispatch, queryFulfilled, getState }
+      ) {
         const user = (getState() as RootState).auth.user;
         if (!user) return;
 
@@ -89,10 +97,13 @@ export const postApi = api.injectEndpoints({
               user,
               createdAt: new Date().toISOString(),
               updatedAt: null,
-              originalId: parentId || null,
+              originalId: originalId || null,
+              responseToId: responseToId || null,
+              commentToId: commentToId || null,
               comments: 0,
               likes: 0,
               dislikes: 0,
+              reposts: 0,
               reaction: 0,
             });
           })

@@ -6,8 +6,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { FC, useRef, useState } from "react";
 import { useCreatePostMutation } from "./postsApiSlice";
 import SubmitButton from "@/components/SubmitButton";
-
-const MAX_LENGTH = 512;
+import { cn } from "@/lib/utils";
+import { PostType } from "./utils";
+import { Input } from "@/components/ui/input";
 
 const placeholders = [
   "Maxwell's equations",
@@ -25,10 +26,24 @@ const placeholders = [
 ];
 
 interface Props {
+  type?: PostType;
   onPostCreated?: (text: string, parentId?: string) => void;
+  commentToId?: string;
+  responseToId?: string;
+  originalId?: string;
+  className?: string;
 }
 
-const CreatePost: FC<Props> = ({ onPostCreated }) => {
+const CreatePost: FC<Props> = ({
+  onPostCreated,
+  commentToId,
+  responseToId,
+  originalId,
+  type = "post",
+  className,
+}) => {
+  const MAX_LENGTH = type === "post" ? 512 : 256;
+
   const { isAuth, isLoading, user } = useAuth();
 
   const [value, setValue] = useState("");
@@ -40,8 +55,7 @@ const CreatePost: FC<Props> = ({ onPostCreated }) => {
     e.preventDefault();
     const v = value.trim();
     if (v.length === 0 || v.length > MAX_LENGTH) return;
-
-    await createPost({ text: v }).unwrap();
+    await createPost({ text: v, commentToId, responseToId, originalId }).unwrap();
     setValue("");
     onPostCreated?.(v);
   };
@@ -54,6 +68,8 @@ const CreatePost: FC<Props> = ({ onPostCreated }) => {
     );
   }
 
+  if (!isAuth && type === "response") return <></>;
+
   if (!isAuth) {
     return (
       <div className="rounded border p-4">
@@ -64,40 +80,54 @@ const CreatePost: FC<Props> = ({ onPostCreated }) => {
         <Link to={"/register"} className="link">
           Sign up
         </Link>{" "}
-        to make a post.
+        to {type === "post" ? "make a post" : "comment"}.
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} ref={formRef} className="flex gap-2">
+    <form onSubmit={handleSubmit} ref={formRef} className={cn("flex gap-2", className)}>
       <Avatar>
         <AvatarFallback>{user.username[0]}</AvatarFallback>
       </Avatar>
-      <div className="w-full">
-        <Textarea
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder={
-            "Your opinion on " +
-            placeholders[Math.floor(Math.random() * placeholders.length)]
-          }
-          maxLength={MAX_LENGTH}
-          className={`scrollbar resize-none ${
-            isError ? "border-destructive focus-visible:ring-destructive" : ""
-          }`}
-          onInput={(e) => {
-            e.currentTarget.style.height = "";
-            e.currentTarget.style.height = e.currentTarget.scrollHeight + "px";
-          }}
-          onKeyDown={(e) => {
-            if (e.key !== "Enter" || e.shiftKey) return;
-            formRef.current?.requestSubmit();
-            e.preventDefault();
-          }}
-        />
-        <div className="mt-2 flex justify-between gap-1">
-          <div className="flex gap-1 divide-x">
+      <div className={cn("w-full", type === "response" && "flex items-center gap-2")}>
+        {type !== "response" ? (
+          <Textarea
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder={
+              type === "comment"
+                ? "Add a comment..."
+                : "Your opinion on " +
+                  placeholders[Math.floor(Math.random() * placeholders.length)]
+            }
+            maxLength={MAX_LENGTH}
+            className={cn(
+              "scrollbar resize-none",
+              isError && "border-destructive focus-visible:ring-destructive"
+            )}
+            onInput={(e) => {
+              e.currentTarget.style.height = "";
+              e.currentTarget.style.height = e.currentTarget.scrollHeight + "px";
+            }}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter" || e.shiftKey) return;
+              formRef.current?.requestSubmit();
+              e.preventDefault();
+            }}
+          />
+        ) : (
+          <Input
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="Add a reply..."
+            maxLength={MAX_LENGTH}
+            className={cn(isError && "border-destructive focus-visible:ring-destructive")}
+          />
+        )}
+
+        <div className={cn("flex justify-between gap-1", type !== "response" && "mt-2")}>
+          <div className={cn("flex gap-1 divide-x", type === "response" && "hidden")}>
             {value.length !== 0 && (
               <p className="text-xs text-muted-foreground">
                 {value.length}/{MAX_LENGTH}
@@ -108,7 +138,7 @@ const CreatePost: FC<Props> = ({ onPostCreated }) => {
             isLoading={isCreating}
             disabled={value.trim().length === 0 || value.length > MAX_LENGTH}
           >
-            Post
+            {type === "post" ? "Post" : type === "response" ? "Reply" : "Comment"}
           </SubmitButton>
         </div>
       </div>

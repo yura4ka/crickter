@@ -28,3 +28,5 @@ export function getReactionChanges(post: Post | undefined, liked: boolean) {
   }
   return changes;
 }
+
+export type PostType = "post" | "comment" | "response";

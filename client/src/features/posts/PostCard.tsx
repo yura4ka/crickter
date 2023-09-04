@@ -5,16 +5,45 @@ import { Button } from "@/components/ui/button";
 import { MessageSquare, ThumbsDown, ThumbsUp } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
-import { forwardRef } from "react";
+import { FC, forwardRef } from "react";
+import { PostType } from "./utils";
+
+const MinimalOriginal: FC<{ post: Post | undefined }> = ({ post }) => {
+  if (!post)
+    return (
+      <div>
+        <Skeleton className="mb-1 h-3 w-[250px]" />
+        <Skeleton className="mb-1 h-3 w-[200px]" />
+      </div>
+    );
+
+  return (
+    <a
+      href={"#" + post.id}
+      className="my-2 block border-l-4 pl-2 transition hover:bg-border"
+    >
+      <div className="font-medium">@{post.user.username}</div>
+      <div className="line-clamp-1">{post.text}</div>
+    </a>
+  );
+};
 
 interface Props {
   post: Post | undefined;
   fetchOriginal?: boolean;
   className?: string;
+  onCommentClick?: () => void;
+  type?: PostType;
 }
 
 const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
-  const { post: p, fetchOriginal = true, className } = props;
+  const {
+    post: p,
+    fetchOriginal = true,
+    className,
+    onCommentClick,
+    type = "post",
+  } = props;
 
   const { data: original } = useGetPostByIdQuery(p?.originalId || "", {
     skip: !(fetchOriginal && !!p?.originalId),
@@ -43,6 +72,7 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
 
   return (
     <article
+      id={p.id}
       ref={ref}
       className={cn("flex gap-3 py-4 pr-2 sm:gap-4 sm:py-6 sm:pr-0", className)}
     >
@@ -60,10 +90,11 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
             </>
           )}
         </p>
+        {p.originalId && type !== "post" && <MinimalOriginal post={original} />}
         <p style={{ wordBreak: "break-word" }} className="pb-1">
           {p.text}
         </p>
-        {p.originalId && (
+        {p.originalId && type === "post" && (
           <PostCard
             post={original}
             fetchOriginal={false}
@@ -93,11 +124,23 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
             />
             {p.dislikes}
           </Button>
-          <Button asChild size={"icon"} variant={"ghost"}>
-            <Link to={"/post/" + p.id}>
-              <MessageSquare className="mr-2 h-4 w-4" />
-              {p.comments}
-            </Link>
+          <Button
+            onClick={onCommentClick}
+            asChild={!onCommentClick}
+            size={"icon"}
+            variant={"ghost"}
+          >
+            {onCommentClick !== undefined ? (
+              <>
+                <MessageSquare className="mr-2 h-4 w-4" />
+                {type === "response" ? p.reposts : p.comments}
+              </>
+            ) : (
+              <Link to={"/post/" + p.id}>
+                <MessageSquare className="mr-2 h-4 w-4" />
+                {type === "response" ? p.reposts : p.comments}
+              </Link>
+            )}
           </Button>
         </div>
       </div>
