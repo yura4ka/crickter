@@ -87,10 +87,10 @@ const CreatePost: FC<Props> = ({
 
   return (
     <form onSubmit={handleSubmit} ref={formRef} className={cn("flex gap-2", className)}>
-      <Avatar>
+      <Avatar className={cn(type === "response" && "hidden sm:block")}>
         <AvatarFallback>{user.username[0]}</AvatarFallback>
       </Avatar>
-      <div className={cn("w-full", type === "response" && "flex items-center gap-2")}>
+      <div className={cn("w-full", type === "response" && "items-center gap-2 sm:flex")}>
         {type !== "response" ? (
           <Textarea
             value={value}
@@ -126,8 +126,13 @@ const CreatePost: FC<Props> = ({
           />
         )}
 
-        <div className={cn("flex justify-between gap-1", type !== "response" && "mt-2")}>
-          <div className={cn("flex gap-1 divide-x", type === "response" && "hidden")}>
+        <div
+          className={cn(
+            "mt-2 flex justify-between gap-1",
+            type === "response" && "sm:mt-0"
+          )}
+        >
+          <div className={cn("flex gap-1 divide-x", type === "response" && "")}>
             {value.length !== 0 && (
               <p className="text-xs text-muted-foreground">
                 {value.length}/{MAX_LENGTH}

@@ -47,7 +47,7 @@ const CommentsCard: FC<CommentsCardProps> = ({
         onCommentClick={() => setIsResponseShown((prev) => !prev)}
         type={originalId ? "response" : "comment"}
       />
-      <div className={cn("ml-16 divide-y", !isResponseShown && "hidden")}>
+      <div className={cn("ml-8 divide-y sm:ml-16", !isResponseShown && "hidden")}>
         <CreatePost
           type="response"
           commentToId={postId}
@@ -106,8 +106,8 @@ const PostPage = () => {
   }
 
   return (
-    <main className="sm:container">
-      <PostCard post={post} className="my-2 border-b px-4" />
+    <main className="overflow-x-hidden px-2 pb-4 sm:container">
+      <PostCard post={post} className="my-2 border-b" />
       <div className="pt-2">
         <h3 className="pb-4 text-lg">{post?.comments} comments</h3>
         <CreatePost type="comment" commentToId={postId} />

@@ -57,7 +57,7 @@ function App() {
           <p className="link">Show more</p>
         </div>
       </aside>
-      <main className="px-2 py-4 sm:w-3/4 sm:border-r sm:pl-0 sm:pr-4">
+      <main className="overflow-x-hidden px-2 py-4 sm:w-3/4 sm:border-r sm:pl-0 sm:pr-4">
         <CreatePost />
         <hr className="mt-6" />
         <Feed />

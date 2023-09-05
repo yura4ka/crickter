@@ -76,6 +76,9 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
     );
   }
 
+  const created = formatTimeAgo(new Date(p.createdAt));
+  const updated = p.updatedAt && formatTimeAgo(new Date(p.updatedAt));
+
   return (
     <article
       id={p.id}
@@ -86,13 +89,14 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
         <AvatarFallback>{p.user.username[0]}</AvatarFallback>
       </Avatar>
       <div className="grow">
-        <p className="mb-1 flex items-baseline gap-2 align-bottom text-sm text-muted-foreground">
-          <span className="text-base font-bold text-foreground">{p.user.name}</span>
-          <span>@{p.user.username}</span>•
-          <span>{formatTimeAgo(new Date(p.createdAt))}</span>
-          {p.updatedAt !== null && (
+        <p className="mb-1 flex flex-wrap items-baseline gap-x-2 align-bottom text-sm text-muted-foreground">
+          <span className="break-all text-base font-bold text-foreground">
+            {p.user.name}
+          </span>
+          <span className="break-all">@{p.user.username}</span>•<span>{created}</span>
+          {updated && (
             <>
-              •<span>ed. {formatTimeAgo(new Date(p.updatedAt))}</span>
+              •<span className="">ed. {updated}</span>
             </>
           )}
         </p>
