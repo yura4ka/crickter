@@ -118,6 +118,7 @@ func GetPostById(c *fiber.Ctx) error {
 	post, err := services.QueryPostById(id, userId)
 
 	if err != nil {
+		log.Print(err)
 		return c.SendStatus(400)
 	}
 

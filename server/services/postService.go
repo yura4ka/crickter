@@ -74,14 +74,14 @@ type postBase struct {
 
 type PostsResult struct {
 	postBase
-	OriginalId  *string `json:"originalId"`
-	CommentToId *string `json:"commentToId"`
-	ReplyToId   *string `json:"replyToId"`
-	Likes       int     `json:"likes"`
-	Dislikes    int     `json:"dislikes"`
-	Reaction    int     `json:"reaction"`
-	Comments    int     `json:"comments"`
-	Reposts     int     `json:"reposts"`
+	OriginalId   *string `json:"originalId"`
+	CommentToId  *string `json:"commentToId"`
+	ResponseToId *string `json:"responseToId"`
+	Likes        int     `json:"likes"`
+	Dislikes     int     `json:"dislikes"`
+	Reaction     int     `json:"reaction"`
+	Comments     int     `json:"comments"`
+	Reposts      int     `json:"reposts"`
 }
 
 type TSortBy int
@@ -102,19 +102,18 @@ type QueryParams struct {
 func buildPostQuery(params *QueryParams) (string, []interface{}) {
 	limit := POSTS_PER_PAGE
 	offset := POSTS_PER_PAGE * (params.Page - 1)
+	userId := params.UserId
+	if userId == "" {
+		userId = "00000000-0000-0000-0000-000000000000"
+	}
 
-	args := []interface{}{ToNullString(&params.UserId)}
+	args := []interface{}{userId}
 
 	query := `
 		SELECT p.id, p.text, p.created_at, p.updated_at,
 			u.id as "userId", u.username, u.name,
 			o.id as "originalId", c.id as "commentToId", r.id as "responseToId",
-			SUM(case when pr.liked = true then 1 else 0 end) AS likes,
-			SUM(case when pr.liked = false then 1 else 0 end) AS dislikes,
-			SUM(case
-				when pr.user_id != $1 then 0
-				when pr.liked = true then 1
-				when pr.liked = false then -1 end) AS reaction,
+			COALESCE(pr.likes, 0), COALESCE(pr.dislikes, 0), COALESCE(pr.reaction, 0),
 			COUNT(pc.id) AS comments, COUNT(post_r.id) AS responses, COUNT(reposts.id) AS "repostsCount"
 		FROM posts as p
 		LEFT JOIN users as u ON p.user_id = u.id
@@ -124,7 +123,18 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 		LEFT JOIN posts as pc ON p.id = pc.comment_to_id
 		LEFT JOIN posts as post_r ON p.id = post_r.response_to_id
 		LEFT JOIN posts as reposts ON reposts.original_id = p.id
-		LEFT JOIN post_reactions as pr ON p.id = pr.post_id`
+		LEFT JOIN (
+			SELECT post_id,
+				SUM(case when liked = true then 1 else 0 end) AS likes,
+				SUM(case when liked = false then 1 else 0 end) AS dislikes,
+				SUM(case
+					when user_id != $1 then 0
+					when liked = true then 1
+					when liked = false then -1 
+				end) AS reaction
+			FROM post_reactions
+			GROUP BY post_id
+		) pr ON p.id = pr.post_id`
 
 	if params.PostId != "" {
 		query += "\nWHERE p.id = $2\n"
@@ -139,7 +149,7 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 		query += "\nWHERE p.comment_to_id IS NULL\n"
 	}
 
-	query += "GROUP BY p.id, u.id, o.id, c.id, r.id\n"
+	query += "GROUP BY p.id, u.id, o.id, c.id, r.id, pr.likes, pr.dislikes, pr.reaction\n"
 
 	switch params.OrderBy {
 	case SortNew:
@@ -164,13 +174,12 @@ func parsePosts(rows *sql.Rows, isComment bool) ([]PostsResult, error) {
 	result := make([]PostsResult, 0)
 	for rows.Next() {
 		var id, text, createdAt, updatedAt, userId, username, name string
-		var originalId, commentToId, replyToId *string
-		var likes, dislikes, comments, responses, reposts int
-		var reaction *int
+		var originalId, commentToId, responseToId *string
+		var likes, dislikes, comments, responses, reposts, reaction int
 		err := rows.Scan(
 			&id, &text, &createdAt, &updatedAt,
 			&userId, &username, &name,
-			&originalId, &commentToId, &replyToId,
+			&originalId, &commentToId, &responseToId,
 			&likes, &dislikes, &reaction, &comments, &responses, &reposts,
 		)
 		if err != nil {
@@ -183,18 +192,13 @@ func parsePosts(rows *sql.Rows, isComment bool) ([]PostsResult, error) {
 				CreatedAt: createdAt,
 				User:      postUser{Id: userId, Username: username, Name: name},
 			},
-			Likes:       likes,
-			Dislikes:    dislikes,
-			OriginalId:  originalId,
-			CommentToId: commentToId,
-			ReplyToId:   replyToId,
-			Reposts:     reposts,
-		}
-
-		if reaction != nil {
-			row.Reaction = *reaction
-		} else {
-			row.Reaction = 0
+			Likes:        likes,
+			Dislikes:     dislikes,
+			Reaction:     reaction,
+			OriginalId:   originalId,
+			CommentToId:  commentToId,
+			ResponseToId: responseToId,
+			Reposts:      reposts,
 		}
 
 		if updatedAt != createdAt {
