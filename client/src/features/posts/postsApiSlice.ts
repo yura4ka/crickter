@@ -2,6 +2,7 @@ import { api } from "@/app/api/apiSlice";
 import { getReactionChanges } from "./utils";
 import { RootState } from "@/app/store";
 import { EntityState, createEntityAdapter } from "@reduxjs/toolkit";
+import { commentApi, commentsAdapter, commentsSelector } from "./commentsApiSlice";
 
 interface PostUser {
   id: string;
@@ -40,6 +41,8 @@ export interface CreatePostRequest {
 interface ReactionRequest {
   postId: string;
   liked: boolean;
+  commentToId?: string;
+  responseToId?: string;
 }
 
 export const postsAdapter = createEntityAdapter<Post>({
@@ -112,24 +115,64 @@ export const postApi = api.injectEndpoints({
     }),
     processReaction: builder.mutation<undefined, ReactionRequest>({
       query: (body) => ({ url: "post/reaction", method: "POST", body }),
-      async onQueryStarted({ postId, liked }, { dispatch, queryFulfilled }) {
-        const patchResult1 = dispatch(
-          postApi.util.updateQueryData("getPosts", 0, (draft) => {
-            const post = postsSelector.selectById(draft.posts, postId);
-            const changes = getReactionChanges(post, liked);
-            postsAdapter.updateOne(draft.posts, { id: postId, changes });
-          })
-        );
-        const patchResult2 = dispatch(
-          postApi.util.updateQueryData("getPostById", postId, (draft) =>
-            Object.assign(draft, getReactionChanges(draft, liked))
-          )
-        );
+      async onQueryStarted(
+        { postId, liked, commentToId, responseToId },
+        { dispatch, queryFulfilled }
+      ) {
+        const patches = [
+          dispatch(
+            postApi.util.updateQueryData("getPosts", 0, (draft) => {
+              const post = postsSelector.selectById(draft.posts, postId);
+              const changes = getReactionChanges(post, liked);
+              postsAdapter.updateOne(draft.posts, { id: postId, changes });
+            })
+          ),
+          dispatch(
+            postApi.util.updateQueryData("getPostById", postId, (draft) =>
+              Object.assign(draft, getReactionChanges(draft, liked))
+            )
+          ),
+          commentToId &&
+            dispatch(
+              commentApi.util.updateQueryData(
+                "getComments",
+                { page: 0, postId: commentToId },
+                (draft) => {
+                  const comment = commentsSelector.selectById(draft.comments, postId);
+                  const changes = getReactionChanges(comment, liked);
+                  commentsAdapter.updateOne(draft.comments, { id: postId, changes });
+                }
+              )
+            ),
+          responseToId &&
+            commentToId &&
+            dispatch(
+              commentApi.util.updateQueryData(
+                "getComments",
+                { page: 0, postId: commentToId },
+                (draft) => {
+                  const comment = commentsSelector.selectById(
+                    draft.comments,
+                    responseToId
+                  );
+                  if (!comment) return;
+                  const changes = {
+                    responses: comment.responses.map((r) =>
+                      r.id === postId ? { ...r, ...getReactionChanges(r, liked) } : r
+                    ),
+                  };
+                  commentsAdapter.updateOne(draft.comments, {
+                    id: responseToId,
+                    changes,
+                  });
+                }
+              )
+            ),
+        ];
         try {
           await queryFulfilled;
         } catch {
-          patchResult1.undo();
-          patchResult2.undo();
+          patches.forEach((p) => p && p.undo());
         }
       },
     }),

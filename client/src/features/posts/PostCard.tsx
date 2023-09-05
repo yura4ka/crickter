@@ -51,8 +51,14 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
 
   const [handleReaction] = useProcessReactionMutation();
 
-  const onReactionClick = (postId: string, liked: boolean) => {
-    handleReaction({ postId, liked });
+  const onReactionClick = (liked: boolean) => {
+    if (!p) return;
+    handleReaction({
+      postId: p.id,
+      liked,
+      commentToId: p.commentToId ?? undefined,
+      responseToId: p.responseToId ?? undefined,
+    });
   };
 
   if (p === undefined) {
@@ -102,22 +108,14 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
           />
         )}
         <div className="flex gap-4">
-          <Button
-            onClick={() => onReactionClick(p.id, true)}
-            size={"icon"}
-            variant={"ghost"}
-          >
+          <Button onClick={() => onReactionClick(true)} size={"icon"} variant={"ghost"}>
             <ThumbsUp
               className="mr-2 h-4 w-4"
               {...(p.reaction === 1 && { fill: "hsl(var(--reaction))" })}
             />
             {p.likes}
           </Button>
-          <Button
-            onClick={() => onReactionClick(p.id, false)}
-            size={"icon"}
-            variant={"ghost"}
-          >
+          <Button onClick={() => onReactionClick(false)} size={"icon"} variant={"ghost"}>
             <ThumbsDown
               className="mr-2 h-4 w-4"
               {...(p.reaction === -1 && { fill: "hsl(var(--reaction))" })}

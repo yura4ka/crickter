@@ -47,7 +47,7 @@ export const authApi = api.injectEndpoints({
         method: "GET",
         responseHandler: (response) => response.text(),
       }),
-      invalidatesTags: [{ type: "Posts" }],
+      invalidatesTags: [{ type: "Posts" }, { type: "Comments" }],
     }),
     checkUsername: builder.mutation<undefined, string>({
       query: (username) => ({
