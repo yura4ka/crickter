@@ -114,7 +114,7 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 			u.id as "userId", u.username, u.name,
 			o.id as "originalId", c.id as "commentToId", r.id as "responseToId",
 			COALESCE(pr.likes, 0), COALESCE(pr.dislikes, 0), COALESCE(pr.reaction, 0),
-			COUNT(pc.id) AS comments, COUNT(post_r.id) AS responses, COUNT(reposts.id) AS "repostsCount"
+			COUNT(pc.id) AS comments, COUNT(post_r.id) AS responses, COALESCE(reposts.count, 0)
 		FROM posts as p
 		LEFT JOIN users as u ON p.user_id = u.id
 		LEFT JOIN posts as o ON p.original_id = o.id
@@ -122,7 +122,11 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 		LEFT JOIN posts as r ON p.response_to_id = r.id
 		LEFT JOIN posts as pc ON p.id = pc.comment_to_id
 		LEFT JOIN posts as post_r ON p.id = post_r.response_to_id
-		LEFT JOIN posts as reposts ON reposts.original_id = p.id
+		LEFT JOIN (
+			SELECT original_id, COUNT(id) as count
+			FROM posts
+			GROUP BY original_id
+		) reposts ON reposts.original_id = p.id
 		LEFT JOIN (
 			SELECT post_id,
 				SUM(case when liked = true then 1 else 0 end) AS likes,
@@ -149,7 +153,7 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 		query += "\nWHERE p.comment_to_id IS NULL\n"
 	}
 
-	query += "GROUP BY p.id, u.id, o.id, c.id, r.id, pr.likes, pr.dislikes, pr.reaction\n"
+	query += "GROUP BY p.id, u.id, o.id, c.id, r.id, pr.likes, pr.dislikes, pr.reaction, reposts.count\n"
 
 	switch params.OrderBy {
 	case SortNew:

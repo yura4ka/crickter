@@ -2,7 +2,7 @@ import { Post, useGetPostByIdQuery, useProcessReactionMutation } from "./postsAp
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn, formatTimeAgo } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, ThumbsDown, ThumbsUp } from "lucide-react";
+import { MessageSquare, ThumbsDown, ThumbsUp, Repeat } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 import { FC, forwardRef } from "react";
@@ -32,8 +32,10 @@ interface Props {
   post: Post | undefined;
   fetchOriginal?: boolean;
   className?: string;
-  onCommentClick?: () => void;
   type?: PostType;
+  hideControls?: boolean;
+  onCommentClick?: () => void;
+  onRepostClick?: () => void;
 }
 
 const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
@@ -43,6 +45,8 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
     className,
     onCommentClick,
     type = "post",
+    hideControls,
+    onRepostClick,
   } = props;
 
   const { data: original } = useGetPostByIdQuery(p?.originalId || "", {
@@ -100,18 +104,20 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
             </>
           )}
         </p>
-        {p.originalId && type !== "post" && <MinimalOriginal post={original} />}
+        {fetchOriginal && p.originalId && type !== "post" && (
+          <MinimalOriginal post={original} />
+        )}
         <p style={{ wordBreak: "break-word" }} className="pb-1">
           {p.text}
         </p>
-        {p.originalId && type === "post" && (
+        {fetchOriginal && p.originalId && type === "post" && (
           <PostCard
             post={original}
             fetchOriginal={false}
             className="my-2 rounded border p-2 sm:p-4 "
           />
         )}
-        <div className="flex gap-4">
+        <div className={cn("flex gap-4", hideControls && "hidden")}>
           <Button onClick={() => onReactionClick(true)} size={"icon"} variant={"ghost"}>
             <ThumbsUp
               className="mr-2 h-4 w-4"
@@ -144,6 +150,12 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
               </Link>
             )}
           </Button>
+          {type === "post" && (
+            <Button onClick={onRepostClick} size={"icon"} variant={"ghost"}>
+              <Repeat className="mr-2 h-4 w-4" />
+              {p.reposts}
+            </Button>
+          )}
         </div>
       </div>
     </article>

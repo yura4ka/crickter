@@ -4,11 +4,12 @@ import { Link } from "react-router-dom";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { FC, useRef, useState } from "react";
-import { useCreatePostMutation } from "./postsApiSlice";
+import { Post, useCreatePostMutation } from "./postsApiSlice";
 import SubmitButton from "@/components/SubmitButton";
 import { cn } from "@/lib/utils";
 import { PostType } from "./utils";
 import { Input } from "@/components/ui/input";
+import PostCard from "./PostCard";
 
 const placeholders = [
   "Maxwell's equations",
@@ -32,6 +33,7 @@ interface Props {
   responseToId?: string;
   originalId?: string;
   className?: string;
+  repostOf?: Post;
 }
 
 const CreatePost: FC<Props> = ({
@@ -41,6 +43,7 @@ const CreatePost: FC<Props> = ({
   originalId,
   type = "post",
   className,
+  repostOf,
 }) => {
   const MAX_LENGTH = type === "post" ? 512 : 256;
 
@@ -104,7 +107,9 @@ const CreatePost: FC<Props> = ({
             maxLength={MAX_LENGTH}
             className={cn(
               "scrollbar resize-none",
-              isError && "border-destructive focus-visible:ring-destructive"
+              isError && "border-destructive focus-visible:ring-destructive",
+              repostOf &&
+                "min-h-[20px] border-0 ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
             )}
             onInput={(e) => {
               e.currentTarget.style.height = "";
@@ -123,6 +128,16 @@ const CreatePost: FC<Props> = ({
             placeholder="Add a reply..."
             maxLength={MAX_LENGTH}
             className={cn(isError && "border-destructive focus-visible:ring-destructive")}
+          />
+        )}
+
+        {repostOf && (
+          <PostCard
+            post={repostOf}
+            fetchOriginal={false}
+            hideControls={true}
+            className="mb-4 rounded border pl-1"
+            type="response"
           />
         )}
 

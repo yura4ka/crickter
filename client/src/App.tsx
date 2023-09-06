@@ -3,11 +3,13 @@ import { useAuth } from "./features/auth/useAuth";
 import CreatePost from "./features/posts/CreatePost";
 import PostCard from "./features/posts/PostCard";
 import {
+  Post,
   postsAdapter,
   postsSelector,
   useGetPostsQuery,
 } from "./features/posts/postsApiSlice";
 import { useInfiniteScroll } from "./lib/hooks";
+import RepostModal from "./features/posts/RepostModal";
 
 const Feed = () => {
   const { isLoading: isAuthLoading } = useAuth();
@@ -28,15 +30,30 @@ const Feed = () => {
     }
   });
 
+  const [currentRepost, setCurrentRepost] = useState<Post | null>(null);
+  const [isRepostShown, setIsRepostShown] = useState(false);
+
   return (
     <div className="divide-y">
       {posts.map((p) => (
-        <PostCard key={p.id} post={p} />
+        <PostCard
+          key={p.id}
+          post={p}
+          onRepostClick={() => {
+            setCurrentRepost(p);
+            setIsRepostShown(true);
+          }}
+        />
       ))}
       <PostCard
         ref={loaderDiv}
         post={undefined}
         className={hasMore || isFetching ? "" : "hidden"}
+      />
+      <RepostModal
+        post={currentRepost}
+        isOpen={isRepostShown}
+        setOpen={setIsRepostShown}
       />
     </div>
   );

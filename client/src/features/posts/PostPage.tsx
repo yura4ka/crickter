@@ -12,6 +12,7 @@ import { FC, useRef, useState } from "react";
 import { useAuth } from "../auth/useAuth";
 import { useInfiniteScroll } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
+import RepostModal from "./RepostModal";
 
 interface CommentsCardProps {
   comment: Post & { responses?: Post[] };
@@ -101,13 +102,19 @@ const PostPage = () => {
     }
   });
 
+  const [isRepostVisible, setIsRepostVisible] = useState(false);
+
   if (!postId) {
     return navigate("/");
   }
 
   return (
     <main className="overflow-x-hidden px-2 pb-4 sm:container">
-      <PostCard post={post} className="my-2 border-b" />
+      <PostCard
+        post={post}
+        onRepostClick={() => setIsRepostVisible(true)}
+        className="my-2 border-b"
+      />
       <div className="pt-2">
         <h3 className="pb-4 text-lg">{post?.comments} comments</h3>
         <CreatePost type="comment" commentToId={postId} />
@@ -122,6 +129,11 @@ const PostPage = () => {
           />
         </div>
       </div>
+      <RepostModal
+        post={post ?? null}
+        isOpen={isRepostVisible}
+        setOpen={setIsRepostVisible}
+      />
     </main>
   );
 };
