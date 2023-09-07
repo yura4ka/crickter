@@ -1,5 +1,5 @@
 import { api } from "@/app/api/apiSlice";
-import { getReactionChanges } from "./utils";
+import { getReactionChanges, updatePost } from "./utils";
 import { RootState } from "@/app/store";
 import { EntityState, createEntityAdapter } from "@reduxjs/toolkit";
 import { commentApi, commentsAdapter, commentsSelector } from "./commentsApiSlice";
@@ -111,6 +111,9 @@ export const postApi = api.injectEndpoints({
             });
           })
         );
+        if (originalId) {
+          updatePost(dispatch, originalId, (post) => ({ reposts: post.reposts + 1 }));
+        }
       },
     }),
     processReaction: builder.mutation<undefined, ReactionRequest>({
@@ -120,18 +123,7 @@ export const postApi = api.injectEndpoints({
         { dispatch, queryFulfilled }
       ) {
         const patches = [
-          dispatch(
-            postApi.util.updateQueryData("getPosts", 0, (draft) => {
-              const post = postsSelector.selectById(draft.posts, postId);
-              const changes = getReactionChanges(post, liked);
-              postsAdapter.updateOne(draft.posts, { id: postId, changes });
-            })
-          ),
-          dispatch(
-            postApi.util.updateQueryData("getPostById", postId, (draft) =>
-              Object.assign(draft, getReactionChanges(draft, liked))
-            )
-          ),
+          ...updatePost(dispatch, postId, (post) => getReactionChanges(post, liked)),
           commentToId &&
             dispatch(
               commentApi.util.updateQueryData(
