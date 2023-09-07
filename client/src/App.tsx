@@ -33,17 +33,16 @@ const Feed = () => {
   const [currentRepost, setCurrentRepost] = useState<Post | null>(null);
   const [isRepostShown, setIsRepostShown] = useState(false);
 
+  const handleRepostClick = (post: Post | undefined) => {
+    if (!post) return;
+    setCurrentRepost(post);
+    setIsRepostShown(true);
+  };
+
   return (
     <div className="divide-y">
       {posts.map((p) => (
-        <PostCard
-          key={p.id}
-          post={p}
-          onRepostClick={() => {
-            setCurrentRepost(p);
-            setIsRepostShown(true);
-          }}
-        />
+        <PostCard key={p.id} post={p} onRepostClick={handleRepostClick} />
       ))}
       <PostCard
         ref={loaderDiv}

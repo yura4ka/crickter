@@ -75,7 +75,7 @@ const CreatePost: FC<Props> = ({
 
   if (!isAuth) {
     return (
-      <div className="rounded border p-4">
+      <div className={cn("rounded p-4", !repostOf && "border")}>
         <Link to={"/login"} className="link">
           Login
         </Link>{" "}
@@ -99,7 +99,7 @@ const CreatePost: FC<Props> = ({
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder={
-              type === "comment"
+              type === "comment" || repostOf
                 ? "Add a comment..."
                 : "Your opinion on " +
                   placeholders[Math.floor(Math.random() * placeholders.length)]
@@ -158,7 +158,11 @@ const CreatePost: FC<Props> = ({
             isLoading={isCreating}
             disabled={value.trim().length === 0 || value.length > MAX_LENGTH}
           >
-            {type === "post" ? "Post" : type === "response" ? "Reply" : "Comment"}
+            {type === "comment" || repostOf
+              ? "Comment"
+              : type === "response"
+              ? "Reply"
+              : "Post"}
           </SubmitButton>
         </div>
       </div>

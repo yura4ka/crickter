@@ -102,7 +102,14 @@ const PostPage = () => {
     }
   });
 
+  const [repost, setRepost] = useState(post);
   const [isRepostVisible, setIsRepostVisible] = useState(false);
+
+  const handleRepostClick = (post: Post | undefined) => {
+    if (!post) return;
+    setRepost(post);
+    setIsRepostVisible(true);
+  };
 
   if (!postId) {
     return navigate("/");
@@ -110,11 +117,7 @@ const PostPage = () => {
 
   return (
     <main className="overflow-x-hidden px-2 pb-4 sm:container">
-      <PostCard
-        post={post}
-        onRepostClick={() => setIsRepostVisible(true)}
-        className="my-2 border-b"
-      />
+      <PostCard post={post} onRepostClick={handleRepostClick} className="my-2 border-b" />
       <div className="pt-2">
         <h3 className="pb-4 text-lg">{post?.comments} comments</h3>
         <CreatePost type="comment" commentToId={postId} />
@@ -130,7 +133,7 @@ const PostPage = () => {
         </div>
       </div>
       <RepostModal
-        post={post ?? null}
+        post={repost ?? null}
         isOpen={isRepostVisible}
         setOpen={setIsRepostVisible}
       />

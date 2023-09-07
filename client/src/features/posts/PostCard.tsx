@@ -35,7 +35,7 @@ interface Props {
   type?: PostType;
   hideControls?: boolean;
   onCommentClick?: () => void;
-  onRepostClick?: () => void;
+  onRepostClick?: (post: Post | undefined) => void;
 }
 
 const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
@@ -114,7 +114,8 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
           <PostCard
             post={original}
             fetchOriginal={false}
-            className="my-2 rounded border p-2 sm:p-4 "
+            className="my-2 rounded border p-2 sm:p-4"
+            onRepostClick={() => onRepostClick?.(original)}
           />
         )}
         <div className={cn("flex gap-4", hideControls && "hidden")}>
@@ -151,7 +152,7 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
             )}
           </Button>
           {type === "post" && (
-            <Button onClick={onRepostClick} size={"icon"} variant={"ghost"}>
+            <Button onClick={() => onRepostClick?.(p)} size={"icon"} variant={"ghost"}>
               <Repeat className="mr-2 h-4 w-4" />
               {p.reposts}
             </Button>
