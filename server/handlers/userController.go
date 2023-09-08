@@ -18,7 +18,7 @@ func GetUserInfo(c *fiber.Ctx) error {
 }
 
 func GetUserPosts(c *fiber.Ctx) error {
-	userId := c.Params("id")
+	userId := c.Params("userId")
 	requestUserId, _ := c.Locals("userId").(string)
 	page := c.QueryInt("page", 1)
 
@@ -38,4 +38,34 @@ func GetUserPosts(c *fiber.Ctx) error {
 		"posts":   posts,
 		"hasMore": hasMore,
 	})
+}
+
+func FollowHandler(c *fiber.Ctx, follow bool) error {
+	userId := c.Params("userId")
+	followerId, _ := c.Locals("userId").(string)
+	if userId == followerId {
+		return c.SendStatus(400)
+	}
+
+	var err error
+	if follow {
+		err = services.HandleFollow(userId, followerId)
+	} else {
+		err = services.HandleUnFollow(userId, followerId)
+	}
+
+	if err != nil {
+		log.Print(err)
+		return c.SendStatus(400)
+	}
+
+	return c.SendStatus(200)
+}
+
+func HandleFollow(c *fiber.Ctx) error {
+	return FollowHandler(c, true)
+}
+
+func HandleUnFollow(c *fiber.Ctx) error {
+	return FollowHandler(c, false)
 }

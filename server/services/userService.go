@@ -105,12 +105,16 @@ func GetUserInfo(id string) (*UserInfo, error) {
 	var u UserInfo
 	err := db.Client.QueryRow(`
 		SELECT u.id, u.created_at, u.name, u.username, u.is_private,
-			COALESCE(COUNT(f1.*), 0) AS followers, COALESCE(COUNT(f2.*), 0) AS following
+			COALESCE(COUNT(f1.*), 0) AS followers, COALESCE(f2.count, 0) AS following
 		FROM users AS u
 		LEFT JOIN users_followers AS f1 ON u.id = f1.user_id
-		LEFT JOIN users_followers AS f2 ON u.id = f2.follower_id
+		LEFT JOIN (
+			SELECT follower_id, COUNT(*) AS count
+			FROM users_followers
+			GROUP BY follower_id
+		) f2 ON u.id = f2.follower_id
 		WHERE u.id = $1
-		GROUP BY u.id, u.created_at, u.name, u.username;
+		GROUP BY u.id, u.created_at, u.name, u.username, f2.count;
 	`, &id).Scan(&u.ID, &u.CreatedAt, &u.Name, &u.Username, &u.IsPrivate, &u.Followers, &u.Following)
 	if err != nil {
 		return nil, err
@@ -126,4 +130,19 @@ func HasUserMorePosts(userId string, page int) (bool, error) {
 		return false, err
 	}
 	return total > page*POSTS_PER_PAGE, nil
+}
+
+func HandleFollow(userId, followerId string) error {
+	_, err := db.Client.Exec(`
+		INSERT INTO users_followers (user_id, follower_id)
+		VALUES ($1, $2);
+	`, &userId, &followerId)
+	return err
+}
+
+func HandleUnFollow(userId, followerId string) error {
+	_, err := db.Client.Exec(`
+		DELETE FROM users_followers WHERE user_id = $1 AND follower_id = $2;
+	`, &userId, &followerId)
+	return err
 }
