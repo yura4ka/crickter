@@ -69,9 +69,9 @@ func UpdatePost(c *fiber.Ctx) error {
 
 func GetPosts(c *fiber.Ctx) error {
 	userId, _ := c.Locals("userId").(string)
-	page := c.QueryInt("page", 0)
+	page := c.QueryInt("page", 1)
 
-	posts, err := services.GetPosts(&services.QueryParams{UserId: userId, Page: page, OrderBy: services.SortNew})
+	posts, err := services.GetPosts(&services.QueryParams{RequestUserId: userId, Page: page, OrderBy: services.SortNew})
 	if err != nil {
 		log.Print(err)
 		return c.SendStatus(400)

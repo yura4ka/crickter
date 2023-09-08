@@ -36,10 +36,18 @@ func CreateUser(user *NewUser) (string, error) {
 	return id, err
 }
 
+type BaseUser struct {
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Username  string    `json:"username"`
+	CreatedAt time.Time `json:"createdAt"`
+	IsPrivate bool      `json:"isPrivate"`
+}
+
 type User struct {
-	ID, Email, Password, Name, Username string
-	CreatedAt                           time.Time
-	IsPrivate                           bool
+	BaseUser
+	Password string `json:"password"`
+	Email    string `json:"email"`
 }
 
 func GetUserByEmail(email string) (*User, error) {
@@ -85,4 +93,37 @@ func GetUserByUsername(username string) (*User, error) {
 	}
 
 	return &user, nil
+}
+
+type UserInfo struct {
+	BaseUser
+	Followers int `json:"followers"`
+	Following int `json:"following"`
+}
+
+func GetUserInfo(id string) (*UserInfo, error) {
+	var u UserInfo
+	err := db.Client.QueryRow(`
+		SELECT u.id, u.created_at, u.name, u.username, u.is_private,
+			COALESCE(COUNT(f1.*), 0) AS followers, COALESCE(COUNT(f2.*), 0) AS following
+		FROM users AS u
+		LEFT JOIN users_followers AS f1 ON u.id = f1.user_id
+		LEFT JOIN users_followers AS f2 ON u.id = f2.follower_id
+		WHERE u.id = $1
+		GROUP BY u.id, u.created_at, u.name, u.username;
+	`, &id).Scan(&u.ID, &u.CreatedAt, &u.Name, &u.Username, &u.IsPrivate, &u.Followers, &u.Following)
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
+func HasUserMorePosts(userId string, page int) (bool, error) {
+	var total int
+	err := db.Client.QueryRow(`SELECT COUNT(*) FROM posts WHERE user_id = $1 AND comment_to_id IS NULL;`, &userId).
+		Scan(&total)
+	if err != nil {
+		return false, err
+	}
+	return total > page*POSTS_PER_PAGE, nil
 }

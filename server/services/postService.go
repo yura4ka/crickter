@@ -94,15 +94,15 @@ const (
 )
 
 type QueryParams struct {
-	PostId, CommentsToId, ResponseToId, UserId string
-	Page                                       int
-	OrderBy                                    TSortBy
+	PostId, CommentsToId, ResponseToId, RequestUserId, UserId string
+	Page                                                      int
+	OrderBy                                                   TSortBy
 }
 
 func buildPostQuery(params *QueryParams) (string, []interface{}) {
 	limit := POSTS_PER_PAGE
 	offset := POSTS_PER_PAGE * (params.Page - 1)
-	userId := params.UserId
+	userId := params.RequestUserId
 	if userId == "" {
 		userId = "00000000-0000-0000-0000-000000000000"
 	}
@@ -149,6 +149,9 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 	} else if params.ResponseToId != "" {
 		query += "\nWHERE p.response_to_id = $2\n"
 		args = append(args, params.ResponseToId)
+	} else if params.UserId != "" {
+		query += "\nWHERE p.comment_to_id IS NULL AND u.id = $2\n"
+		args = append(args, params.UserId)
 	} else {
 		query += "\nWHERE p.comment_to_id IS NULL\n"
 	}
@@ -279,7 +282,7 @@ func ProcessReaction(userId, postId string, liked bool) error {
 }
 
 func QueryPostById(postId, userId string) (*PostsResult, error) {
-	query, args := buildPostQuery(&QueryParams{PostId: postId, UserId: userId})
+	query, args := buildPostQuery(&QueryParams{PostId: postId, RequestUserId: userId})
 	rows, err := db.Client.Query(query, args...)
 
 	if err != nil {

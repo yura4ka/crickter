@@ -6,4 +6,5 @@ func SetupRouter(app *fiber.App) {
 	addAuthRouter(app)
 	addPostRouter(app)
 	addCommentRouter(app)
+	addUserRouter(app)
 }

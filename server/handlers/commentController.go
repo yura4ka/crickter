@@ -9,10 +9,12 @@ import (
 
 func GetComments(c *fiber.Ctx) error {
 	userId, _ := c.Locals("userId").(string)
-	page := c.QueryInt("page", 0)
+	page := c.QueryInt("page", 1)
 	postId := c.Query("postId")
 
-	comments, err := services.GetPosts(&services.QueryParams{UserId: userId, CommentsToId: postId, Page: page, OrderBy: services.SortPopular})
+	comments, err := services.GetPosts(&services.QueryParams{
+		RequestUserId: userId, CommentsToId: postId, Page: page, OrderBy: services.SortPopular,
+	})
 	if err != nil {
 		log.Print(err)
 		return c.SendStatus(400)
@@ -34,10 +36,12 @@ func GetComments(c *fiber.Ctx) error {
 func GetResponses(c *fiber.Ctx) error {
 	commentId := c.Params("commentId")
 	userId, _ := c.Locals("userId").(string)
-	page := c.QueryInt("page", 0)
+	page := c.QueryInt("page", 1)
 	postId := c.Query("postId")
 
-	comments, err := services.GetPosts(&services.QueryParams{UserId: userId, ResponseToId: commentId, Page: page, OrderBy: services.SortOld})
+	comments, err := services.GetPosts(&services.QueryParams{
+		RequestUserId: userId, ResponseToId: commentId, Page: page, OrderBy: services.SortOld,
+	})
 	if err != nil {
 		log.Print(err)
 		return c.SendStatus(400)
