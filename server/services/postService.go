@@ -257,7 +257,7 @@ func ProcessReaction(userId, postId string, liked bool) error {
 		_, err = db.Client.Exec(`
 			INSERT INTO post_reactions (liked, post_id, user_id)
 			VALUES ($1, $2, $3);
-		`, &liked, &postId, &userId)
+		`, liked, postId, userId)
 		return err
 	}
 
@@ -269,14 +269,14 @@ func ProcessReaction(userId, postId string, liked bool) error {
 		_, err := db.Client.Exec(`
 			UPDATE post_reactions SET liked = $1 
 			WHERE post_id = $2 AND user_id = $3;
-		`, &liked, &postId, &userId)
+		`, liked, postId, userId)
 		return err
 	}
 
 	_, err = db.Client.Exec(`
 		DELETE FROM post_reactions
 		WHERE post_id = $1 AND user_id = $2;
-	`, &postId, &userId)
+	`, postId, userId)
 
 	return err
 }

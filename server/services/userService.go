@@ -1,10 +1,16 @@
 package services
 
 import (
+	"database/sql"
+	"strconv"
 	"time"
 
 	"github.com/yura4ka/crickter/db"
 	"golang.org/x/crypto/bcrypt"
+)
+
+const (
+	USERS_PER_PAGE = 20
 )
 
 type NewUser struct {
@@ -115,7 +121,7 @@ func GetUserInfo(id string) (*UserInfo, error) {
 		) f2 ON u.id = f2.follower_id
 		WHERE u.id = $1
 		GROUP BY u.id, u.created_at, u.name, u.username, f2.count;
-	`, &id).Scan(&u.ID, &u.CreatedAt, &u.Name, &u.Username, &u.IsPrivate, &u.Followers, &u.Following)
+	`, id).Scan(&u.ID, &u.CreatedAt, &u.Name, &u.Username, &u.IsPrivate, &u.Followers, &u.Following)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +130,7 @@ func GetUserInfo(id string) (*UserInfo, error) {
 
 func HasUserMorePosts(userId string, page int) (bool, error) {
 	var total int
-	err := db.Client.QueryRow(`SELECT COUNT(*) FROM posts WHERE user_id = $1 AND comment_to_id IS NULL;`, &userId).
+	err := db.Client.QueryRow(`SELECT COUNT(*) FROM posts WHERE user_id = $1 AND comment_to_id IS NULL;`, userId).
 		Scan(&total)
 	if err != nil {
 		return false, err
@@ -136,13 +142,132 @@ func HandleFollow(userId, followerId string) error {
 	_, err := db.Client.Exec(`
 		INSERT INTO users_followers (user_id, follower_id)
 		VALUES ($1, $2);
-	`, &userId, &followerId)
+	`, userId, followerId)
 	return err
 }
 
 func HandleUnFollow(userId, followerId string) error {
 	_, err := db.Client.Exec(`
 		DELETE FROM users_followers WHERE user_id = $1 AND follower_id = $2;
-	`, &userId, &followerId)
+	`, userId, followerId)
 	return err
+}
+
+type FollowInfo struct {
+	BaseUser
+	IsSubscribed bool `json:"is_subscribed"`
+}
+
+func getIsSubscribeMap(userId string) (map[string]bool, error) {
+	isSubscribed := make(map[string]bool)
+	if userId == "" {
+		return isSubscribed, nil
+	}
+	requestFollowing, err := GetFollowing(userId, "", 0)
+	if err != nil {
+		return nil, err
+	}
+	for _, u := range requestFollowing {
+		isSubscribed[u.ID] = true
+	}
+	return isSubscribed, nil
+}
+
+func parseFollowInfo(rows *sql.Rows, isSubscribed map[string]bool) ([]FollowInfo, error) {
+	result := make([]FollowInfo, 0)
+
+	for rows.Next() {
+		row := FollowInfo{}
+		err := rows.Scan(&row.ID, &row.Name, &row.Username, &row.CreatedAt, &row.IsPrivate)
+		if err != nil {
+			return nil, err
+		}
+		row.IsSubscribed = isSubscribed[row.ID]
+		result = append(result, row)
+	}
+
+	return result, nil
+}
+
+func GetFollowing(userId, requestUserId string, page int) ([]FollowInfo, error) {
+	isSubscribed, err := getIsSubscribeMap(requestUserId)
+	if err != nil {
+		return nil, err
+	}
+
+	var offset int
+	limit := ""
+	if page != 0 {
+		limit = strconv.Itoa(USERS_PER_PAGE)
+		offset = USERS_PER_PAGE * (page - 1)
+	}
+
+	rows, err := db.Client.Query(`
+		SELECT u.id, u.name, u.username, u.created_at, u.is_private
+		FROM users_followers AS f
+		INNER JOIN users AS u ON f.user_id = u.id
+		WHERE f.follower_id = $1
+		ORDER BY u.username
+		LIMIT $2 OFFSET $3;
+	`, userId, ToNullString(&limit), offset)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	return parseFollowInfo(rows, isSubscribed)
+}
+
+func GetFollowers(userId, requestUserId string, page int) ([]FollowInfo, error) {
+	isSubscribed, err := getIsSubscribeMap(requestUserId)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := db.Client.Query(`
+		SELECT u.id, u.name, u.username, u.created_at, u.is_private
+		FROM users_followers AS f
+		INNER JOIN users AS u ON f.follower_id = u.id
+		WHERE f.user_id = $1
+		ORDER BY u.username
+		LIMIT $2 OFFSET $3;
+	`, userId, USERS_PER_PAGE, USERS_PER_PAGE*(page-1))
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	return parseFollowInfo(rows, isSubscribed)
+}
+
+func HasMoreFollowing(userId string, page int) (bool, error) {
+	var count int
+	err := db.Client.QueryRow(`
+		SELECT COUNT(u.*) 
+		FROM users_followers AS f
+		INNER JOIN users AS u ON f.follower_id = u.id
+		WHERE f.user_id = $1;
+	`, userId).Scan(&count)
+	if err != nil {
+		return false, nil
+	}
+	return count > page*USERS_PER_PAGE, nil
+}
+
+func HasMoreFollowers(userId string, page int) (bool, error) {
+	var count int
+	err := db.Client.QueryRow(`
+		SELECT COUNT(u.*) 
+		FROM users_followers AS f
+		INNER JOIN users AS u ON f.user_id = u.id
+		WHERE f.follower_id = $1;
+	`, userId).Scan(&count)
+	if err != nil {
+		return false, nil
+	}
+	return count > page*USERS_PER_PAGE, nil
 }
