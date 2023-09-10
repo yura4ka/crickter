@@ -89,7 +89,7 @@ const PostPage = () => {
         comments: commentsSelector.selectAll(
           data?.comments ?? commentsAdapter.getInitialState()
         ),
-        hasMore: (data?.total ?? 0) > (post?.comments ?? 0),
+        hasMore: data?.hasMore,
         ...other,
       }),
     }
@@ -112,7 +112,8 @@ const PostPage = () => {
   };
 
   if (!postId) {
-    return navigate("/");
+    navigate("/");
+    return <></>;
   }
 
   return (

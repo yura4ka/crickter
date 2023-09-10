@@ -147,7 +147,7 @@ const CreatePost: FC<Props> = ({
             type === "response" && "sm:mt-0"
           )}
         >
-          <div className={cn("flex gap-1 divide-x", type === "response" && "")}>
+          <div className={cn("flex gap-1 divide-x", type === "response" && "hidden")}>
             {value.length !== 0 && (
               <p className="text-xs text-muted-foreground">
                 {value.length}/{MAX_LENGTH}

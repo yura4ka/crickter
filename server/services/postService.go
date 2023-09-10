@@ -164,7 +164,7 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 	case SortOld:
 		query += "ORDER BY p.created_at ASC\n"
 	case SortPopular:
-		query += "ORDER BY p.created_at DESC\n"
+		query += "ORDER BY pr.likes + pr.dislikes ASC, p.created_at ASC\n"
 	}
 
 	if params.PostId == "" {

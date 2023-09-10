@@ -1,10 +1,10 @@
 import { EntityState, createEntityAdapter } from "@reduxjs/toolkit";
-import { CreatePostRequest, Post, postApi, postsAdapter } from "./postsApiSlice";
+import { Post, postApi, postsAdapter } from "./postsApiSlice";
 import { api } from "@/app/api/apiSlice";
-import { RootState } from "@/app/store";
 
 export interface IComment extends Post {
   responses: Post[];
+  isNew?: boolean;
 }
 
 interface CommentsResponse {
@@ -20,7 +20,11 @@ interface DataResponse {
 }
 
 export const commentsAdapter = createEntityAdapter<IComment>({
-  sortComparer: (a, b) => b.dislikes + b.likes - a.dislikes - a.likes,
+  sortComparer: (a, b) => {
+    if (a.isNew && !b.isNew) return -1;
+    if (!a.isNew && b.isNew) return 1;
+    return 0;
+  },
 });
 export const commentsSelector = commentsAdapter.getSelectors();
 
@@ -47,6 +51,7 @@ export const commentApi = api.injectEndpoints({
           commentsSelector.selectAll(newItems.comments)
         );
         currentCache.total = newItems.total;
+        currentCache.hasMore = newItems.hasMore;
       },
       forceRefetch({ currentArg, previousArg }) {
         return (
@@ -76,47 +81,6 @@ export const commentApi = api.injectEndpoints({
           postApi.util.updateQueryData("getPostById", postId, (draft) =>
             Object.assign(draft, { comments: data.total })
           )
-        );
-      },
-    }),
-
-    createComment: builder.mutation<
-      { id: string },
-      CreatePostRequest & { postId: string }
-    >({
-      query: ({ postId, ...body }) => ({
-        url: `comment/${postId}`,
-        method: "POST",
-        body,
-      }),
-
-      async onQueryStarted(
-        { text, originalId, commentToId, responseToId, postId },
-        { dispatch, queryFulfilled, getState }
-      ) {
-        const user = (getState() as RootState).auth.user;
-        if (!user) return;
-
-        const { data } = await queryFulfilled;
-        dispatch(
-          commentApi.util.updateQueryData("getComments", { postId, page: 0 }, (draft) => {
-            commentsAdapter.addOne(draft.comments, {
-              id: data.id,
-              text,
-              user,
-              createdAt: new Date().toISOString(),
-              updatedAt: null,
-              originalId: originalId || null,
-              commentToId: commentToId || null,
-              responseToId: responseToId || null,
-              comments: 0,
-              likes: 0,
-              dislikes: 0,
-              reposts: 0,
-              reaction: 0,
-              responses: [],
-            });
-          })
         );
       },
     }),
@@ -163,8 +127,4 @@ export const commentApi = api.injectEndpoints({
   }),
 });
 
-export const {
-  useGetCommentsQuery,
-  useCreateCommentMutation,
-  useGetCommentResponsesMutation,
-} = commentApi;
+export const { useGetCommentsQuery, useGetCommentResponsesMutation } = commentApi;

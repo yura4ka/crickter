@@ -71,7 +71,7 @@ const Navbar = () => {
               </>
             ))}
           <Button variant="ghost" size="icon" asChild>
-            <a href="https://github.com/yura4ka/">
+            <a href="https://github.com/yura4ka/crickter" target="_blank">
               <Github />
             </a>
           </Button>

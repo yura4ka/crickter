@@ -2,7 +2,12 @@ import { api } from "@/app/api/apiSlice";
 import { getReactionChanges, updatePost } from "./utils";
 import { RootState } from "@/app/store";
 import { EntityState, createEntityAdapter } from "@reduxjs/toolkit";
-import { commentApi, commentsAdapter, commentsSelector } from "./commentsApiSlice";
+import {
+  IComment,
+  commentApi,
+  commentsAdapter,
+  commentsSelector,
+} from "./commentsApiSlice";
 
 interface PostUser {
   id: string;
@@ -92,27 +97,61 @@ export const postApi = api.injectEndpoints({
         if (!user) return;
 
         const { data } = await queryFulfilled;
+        const newPost = {
+          id: data.id,
+          text,
+          user,
+          createdAt: new Date().toISOString(),
+          updatedAt: null,
+          originalId: originalId || null,
+          responseToId: responseToId || null,
+          commentToId: commentToId || null,
+          comments: 0,
+          likes: 0,
+          dislikes: 0,
+          reposts: 0,
+          reaction: 0,
+        };
         dispatch(
           postApi.util.updateQueryData("getPosts", 0, (draft) => {
-            postsAdapter.addOne(draft.posts, {
-              id: data.id,
-              text,
-              user,
-              createdAt: new Date().toISOString(),
-              updatedAt: null,
-              originalId: originalId || null,
-              responseToId: responseToId || null,
-              commentToId: commentToId || null,
-              comments: 0,
-              likes: 0,
-              dislikes: 0,
-              reposts: 0,
-              reaction: 0,
-            });
+            postsAdapter.addOne(draft.posts, newPost as Post);
           })
         );
         if (originalId) {
           updatePost(dispatch, originalId, (post) => ({ reposts: post.reposts + 1 }));
+        }
+        if (commentToId && !responseToId) {
+          (newPost as unknown as IComment).responses = [];
+          (newPost as unknown as IComment).isNew = true;
+          dispatch(
+            commentApi.util.updateQueryData(
+              "getComments",
+              { page: 0, postId: commentToId },
+              (draft) => {
+                commentsAdapter.addOne(draft.comments, newPost as unknown as IComment);
+                draft.total++;
+              }
+            )
+          );
+        }
+        if (responseToId && commentToId) {
+          dispatch(
+            commentApi.util.updateQueryData(
+              "getComments",
+              { page: 0, postId: commentToId },
+              (draft) => {
+                const comment = commentsSelector.selectById(draft.comments, responseToId);
+                if (!comment) return;
+                const changes = {
+                  responses: [newPost as Post, ...comment.responses],
+                };
+                commentsAdapter.updateOne(draft.comments, {
+                  id: responseToId,
+                  changes,
+                });
+              }
+            )
+          );
         }
       },
     }),
