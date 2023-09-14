@@ -103,15 +103,18 @@ func GetUserByUsername(username string) (*User, error) {
 
 type UserInfo struct {
 	BaseUser
-	Followers int `json:"followers"`
-	Following int `json:"following"`
+	Followers    int  `json:"followers"`
+	Following    int  `json:"following"`
+	IsSubscribed bool `json:"isSubscribed"`
+	PostCount    int  `json:"postCount"`
 }
 
-func GetUserInfo(id string) (*UserInfo, error) {
+func GetUserInfo(id, requestUserId string) (*UserInfo, error) {
 	var u UserInfo
 	err := db.Client.QueryRow(`
 		SELECT u.id, u.created_at, u.name, u.username, u.is_private,
-			COALESCE(COUNT(f1.*), 0) AS followers, COALESCE(f2.count, 0) AS following
+			COALESCE(COUNT(f1.*), 0) AS followers, COALESCE(f2.count, 0) AS following,
+			COALESCE(p.count, 0) AS post_count
 		FROM users AS u
 		LEFT JOIN users_followers AS f1 ON u.id = f1.user_id
 		LEFT JOIN (
@@ -119,12 +122,30 @@ func GetUserInfo(id string) (*UserInfo, error) {
 			FROM users_followers
 			GROUP BY follower_id
 		) f2 ON u.id = f2.follower_id
+		LEFT JOIN (
+			SELECT user_id, COUNT(*) AS count
+			FROM posts
+			WHERE comment_to_id IS NULL
+			GROUP BY user_id
+		) p ON u.id = p.user_id
 		WHERE u.id = $1
-		GROUP BY u.id, u.created_at, u.name, u.username, f2.count;
-	`, id).Scan(&u.ID, &u.CreatedAt, &u.Name, &u.Username, &u.IsPrivate, &u.Followers, &u.Following)
+		GROUP BY u.id, u.created_at, u.name, u.username, f2.count, p.count;
+	`, id).Scan(&u.ID, &u.CreatedAt, &u.Name, &u.Username, &u.IsPrivate, &u.Followers, &u.Following, &u.PostCount)
 	if err != nil {
 		return nil, err
 	}
+
+	if requestUserId != "" && id != requestUserId {
+		err := db.Client.QueryRow(`
+			SELECT CASE WHEN uf IS NOT NULL THEN true ELSE false END is_subscribed
+			FROM users_followers uf
+			WHERE user_id = $1 AND follower_id = $2;
+		`, id, requestUserId).Scan(&u.IsSubscribed)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &u, nil
 }
 
