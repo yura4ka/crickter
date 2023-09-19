@@ -57,12 +57,7 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
 
   const onReactionClick = (liked: boolean) => {
     if (!p) return;
-    handleReaction({
-      postId: p.id,
-      liked,
-      commentToId: p.commentToId ?? undefined,
-      responseToId: p.responseToId ?? undefined,
-    });
+    handleReaction({ post: p, liked });
   };
 
   if (p === undefined) {
@@ -89,15 +84,23 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
       ref={ref}
       className={cn("flex gap-3 py-4 pr-2 sm:gap-4 sm:py-6 sm:pr-0", className)}
     >
-      <Avatar>
-        <AvatarFallback>{p.user.username[0]}</AvatarFallback>
-      </Avatar>
+      <Link to={`/user/${p.user.id}`}>
+        <Avatar>
+          <AvatarFallback>{p.user.username[0]}</AvatarFallback>
+        </Avatar>
+      </Link>
       <div className="grow">
         <p className="mb-1 flex flex-wrap items-baseline gap-x-2 align-bottom text-sm text-muted-foreground">
-          <span className="break-all text-base font-bold text-foreground">
+          <Link
+            to={`/user/${p.user.id}`}
+            className="break-all text-base font-bold text-foreground hover:underline"
+          >
             {p.user.name}
-          </span>
-          <span className="break-all">@{p.user.username}</span>•<span>{created}</span>
+          </Link>
+          <Link to={`/user/${p.user.id}`} className="break-all hover:underline">
+            @{p.user.username}
+          </Link>
+          •<span>{created}</span>
           {updated && (
             <>
               •<span className="">ed. {updated}</span>

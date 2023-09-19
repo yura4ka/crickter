@@ -14,7 +14,7 @@ import Layout from "./components/Layout.tsx";
 import AuthLayout from "./features/auth/AuthLayout.tsx";
 import Login from "./features/auth/Login.tsx";
 import Register from "./features/auth/Register.tsx";
-import Profile from "./features/profile/Profile.tsx";
+import UserPage from "./features/user/UserPage.tsx";
 import { ThemeProvider } from "./lib/ThemeContext.tsx";
 import PostPage from "./features/posts/PostPage.tsx";
 
@@ -25,10 +25,9 @@ const router = createBrowserRouter(
       <Route path="register" element={<Register />} />
       <Route index element={<App />} />
       <Route path="post/:postId" element={<PostPage />} />
+      <Route path="user/:userId" element={<UserPage />} />
 
-      <Route element={<AuthLayout />}>
-        <Route path="profile" element={<Profile />} />
-      </Route>
+      <Route element={<AuthLayout />}></Route>
     </Route>
   )
 );

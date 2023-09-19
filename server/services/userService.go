@@ -137,7 +137,7 @@ func GetUserInfo(id, requestUserId string) (*UserInfo, error) {
 
 	if requestUserId != "" && id != requestUserId {
 		err := db.Client.QueryRow(`
-			SELECT CASE WHEN uf IS NOT NULL THEN true ELSE false END is_subscribed
+			SELECT CASE WHEN COUNT(uf) != 0 THEN true ELSE false END is_subscribed
 			FROM users_followers uf
 			WHERE user_id = $1 AND follower_id = $2;
 		`, id, requestUserId).Scan(&u.IsSubscribed)

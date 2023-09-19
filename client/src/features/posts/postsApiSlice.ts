@@ -8,6 +8,7 @@ import {
   commentsAdapter,
   commentsSelector,
 } from "./commentsApiSlice";
+import { userApi, userPostsAdapter, userPostsSelector } from "../user/userApiSlice";
 
 interface PostUser {
   id: string;
@@ -15,7 +16,7 @@ interface PostUser {
   name: string;
 }
 
-interface PostsResponse {
+export interface PostsResponse {
   posts: EntityState<Post>;
   hasMore: boolean;
 }
@@ -44,10 +45,8 @@ export interface CreatePostRequest {
 }
 
 interface ReactionRequest {
-  postId: string;
+  post: Post;
   liked: boolean;
-  commentToId?: string;
-  responseToId?: string;
 }
 
 export const postsAdapter = createEntityAdapter<Post>({
@@ -156,22 +155,29 @@ export const postApi = api.injectEndpoints({
       },
     }),
     processReaction: builder.mutation<undefined, ReactionRequest>({
-      query: (body) => ({ url: "post/reaction", method: "POST", body }),
-      async onQueryStarted(
-        { postId, liked, commentToId, responseToId },
-        { dispatch, queryFulfilled }
-      ) {
+      query: ({ post, liked }) => ({
+        url: "post/reaction",
+        method: "POST",
+        body: {
+          postId: post.id,
+          liked,
+          commentToId: post.commentToId,
+          responseToId: post.responseToId,
+        },
+      }),
+      async onQueryStarted({ post, liked }, { dispatch, queryFulfilled }) {
+        const { commentToId, responseToId, id } = post;
         const patches = [
-          ...updatePost(dispatch, postId, (post) => getReactionChanges(post, liked)),
+          ...updatePost(dispatch, id, (post) => getReactionChanges(post, liked)),
           commentToId &&
             dispatch(
               commentApi.util.updateQueryData(
                 "getComments",
                 { page: 0, postId: commentToId },
                 (draft) => {
-                  const comment = commentsSelector.selectById(draft.comments, postId);
+                  const comment = commentsSelector.selectById(draft.comments, id);
                   const changes = getReactionChanges(comment, liked);
-                  commentsAdapter.updateOne(draft.comments, { id: postId, changes });
+                  commentsAdapter.updateOne(draft.comments, { id, changes });
                 }
               )
             ),
@@ -189,7 +195,7 @@ export const postApi = api.injectEndpoints({
                   if (!comment) return;
                   const changes = {
                     responses: comment.responses.map((r) =>
-                      r.id === postId ? { ...r, ...getReactionChanges(r, liked) } : r
+                      r.id === id ? { ...r, ...getReactionChanges(r, liked) } : r
                     ),
                   };
                   commentsAdapter.updateOne(draft.comments, {
@@ -199,6 +205,17 @@ export const postApi = api.injectEndpoints({
                 }
               )
             ),
+          dispatch(
+            userApi.util.updateQueryData(
+              "getUserPosts",
+              { page: 0, id: post.user.id },
+              (draft) => {
+                const p = userPostsSelector.selectById(draft.posts, id);
+                const changes = getReactionChanges(p, liked);
+                userPostsAdapter.updateOne(draft.posts, { id, changes });
+              }
+            )
+          ),
         ];
         try {
           await queryFulfilled;
