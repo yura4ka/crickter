@@ -1,24 +1,38 @@
 import { api } from "@/app/api/apiSlice";
 import { Post, PostsResponse } from "../posts/postsApiSlice";
-import { createEntityAdapter } from "@reduxjs/toolkit";
+import { EntityState, createEntityAdapter } from "@reduxjs/toolkit";
 import { RootState } from "@/app/store";
 
-interface User {
+export interface BaseUser {
   id: string;
   name: string;
   username: string;
   createdAt: string;
   isPrivate: boolean;
+  isSubscribed: boolean;
+}
+
+interface User extends BaseUser {
   followers: number;
   following: number;
   postCount: number;
-  isSubscribed: boolean;
+}
+
+interface UsersResponse {
+  users: EntityState<BaseUser>;
+  hasMore: boolean;
 }
 
 export const userPostsAdapter = createEntityAdapter<Post>({
   sortComparer: (a, b) => Number(new Date(b.createdAt)) - Number(new Date(a.createdAt)),
 });
 export const userPostsSelector = userPostsAdapter.getSelectors();
+
+export const followersAdapter = createEntityAdapter<BaseUser>();
+export const followersSelector = followersAdapter.getSelectors();
+
+export const followingAdapter = createEntityAdapter<BaseUser>();
+export const followingSelector = followingAdapter.getSelectors();
 
 export const userApi = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -36,24 +50,25 @@ export const userApi = api.injectEndpoints({
       async onQueryStarted(id, { dispatch, queryFulfilled, getState }) {
         const user = (getState() as RootState).auth.user;
         if (!user) return;
-        const patch1 = dispatch(
-          userApi.util.updateQueryData("getUser", id, (draft) => {
-            draft.followers++;
-            draft.isSubscribed = true;
-          })
-        );
-        const patch2 = dispatch(
-          userApi.util.updateQueryData(
-            "getUser",
-            user.id,
-            (draft) => void draft.following++
-          )
-        );
+        const patches = [
+          dispatch(
+            userApi.util.updateQueryData("getUser", id, (draft) => {
+              draft.followers++;
+              draft.isSubscribed = true;
+            })
+          ),
+          dispatch(
+            userApi.util.updateQueryData(
+              "getUser",
+              user.id,
+              (draft) => void draft.following++
+            )
+          ),
+        ];
         try {
           await queryFulfilled;
         } catch {
-          patch1.undo();
-          patch2.undo();
+          patches.forEach((p) => p.undo());
         }
       },
     }),
@@ -120,6 +135,53 @@ export const userApi = api.injectEndpoints({
             ]
           : [{ type: "Posts", userId: id }],
     }),
+    getFollowers: builder.query<UsersResponse, { id: string; page: number }>({
+      query: ({ page, id }) => ({ url: `user/${id}/followers?page=${page}` }),
+      keepUnusedDataFor: 0,
+      transformResponse: (r: { users: BaseUser[]; hasMore: boolean }) => ({
+        users: followersAdapter.addMany(followersAdapter.getInitialState(), r.users),
+        hasMore: r.hasMore,
+      }),
+      serializeQueryArgs: ({ endpointName, queryArgs }) => {
+        return endpointName + queryArgs.id;
+      },
+      merge: (currentCache, newItems) => {
+        followersAdapter.addMany(
+          currentCache.users,
+          followersSelector.selectAll(newItems.users)
+        );
+        currentCache.hasMore = newItems.hasMore;
+      },
+      forceRefetch({ currentArg, previousArg }) {
+        return (
+          currentArg?.page !== previousArg?.page || currentArg?.id !== previousArg?.id
+        );
+      },
+    }),
+
+    getFollowing: builder.query<UsersResponse, { id: string; page: number }>({
+      query: ({ page, id }) => ({ url: `user/${id}/following?page=${page}` }),
+      keepUnusedDataFor: 0,
+      transformResponse: (r: { users: BaseUser[]; hasMore: boolean }) => ({
+        users: followingAdapter.addMany(followingAdapter.getInitialState(), r.users),
+        hasMore: r.hasMore,
+      }),
+      serializeQueryArgs: ({ endpointName, queryArgs }) => {
+        return endpointName + queryArgs.id;
+      },
+      merge: (currentCache, newItems) => {
+        followingAdapter.addMany(
+          currentCache.users,
+          followingSelector.selectAll(newItems.users)
+        );
+        currentCache.hasMore = newItems.hasMore;
+      },
+      forceRefetch({ currentArg, previousArg }) {
+        return (
+          currentArg?.page !== previousArg?.page || currentArg?.id !== previousArg?.id
+        );
+      },
+    }),
   }),
 });
 
@@ -128,4 +190,6 @@ export const {
   useGetUserPostsQuery,
   useFollowMutation,
   useUnfollowMutation,
+  useGetFollowersQuery,
+  useGetFollowingQuery,
 } = userApi;

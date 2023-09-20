@@ -1,42 +1,28 @@
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
 import {
-  useFollowMutation,
   useGetUserPostsQuery,
   useGetUserQuery,
-  useUnfollowMutation,
   userPostsAdapter,
   userPostsSelector,
 } from "./userApiSlice";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { FC, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Post } from "../posts/postsApiSlice";
 import { useInfiniteScroll } from "@/lib/hooks";
 import PostCard from "../posts/PostCard";
 import RepostModal from "../posts/RepostModal";
 import { cn } from "@/lib/utils";
-
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  size: "sm" | "lg";
-  isSubscribed: boolean;
-  userId: string;
-}
-
-const SubscribeButton: FC<ButtonProps> = ({ isSubscribed, size, userId, ...rest }) => {
-  const [follow] = useFollowMutation();
-  const [unfollow] = useUnfollowMutation();
-
-  return isSubscribed ? (
-    <Button onClick={() => unfollow(userId)} size={size} variant="secondary" {...rest}>
-      Following
-    </Button>
-  ) : (
-    <Button onClick={() => follow(userId)} size={size} {...rest}>
-      Follow
-    </Button>
-  );
-};
+import SubscribeButton from "./SubscribeButton";
+import {
+  Dialog,
+  DialogHeader,
+  DialogTrigger,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import FollowersCard from "./FollowersCard";
+import FollowingCard from "./FollowingCard";
 
 const UserInfo = ({ id }: { id: string }) => {
   const { data: user, isLoading } = useGetUserQuery(id);
@@ -52,12 +38,33 @@ const UserInfo = ({ id }: { id: string }) => {
         <p>
           <span className="font-bold">{user.postCount}</span> posts
         </p>
-        <Link to={`/user/${id}/followers`} className="hover:underline">
-          <span className="font-bold">{user.followers}</span> followers
-        </Link>
-        <Link to={`/user/${id}/following`} className="hover:underline">
-          <span className="font-bold">{user.following}</span> following
-        </Link>
+        <Dialog>
+          <DialogTrigger asChild>
+            <button className="hover:underline">
+              <span className="font-bold">{user.followers}</span> followers
+            </button>
+          </DialogTrigger>
+          <DialogContent className="scrollbar max-h-[100vh] overflow-y-scroll sm:m-4 sm:max-w-xl">
+            <DialogHeader>
+              <DialogTitle>Followers</DialogTitle>
+            </DialogHeader>
+            <FollowersCard userId={id} authId={auth?.id} />
+          </DialogContent>
+        </Dialog>
+
+        <Dialog>
+          <DialogTrigger asChild>
+            <button className="hover:underline">
+              <span className="font-bold">{user.following}</span> following
+            </button>
+          </DialogTrigger>
+          <DialogContent className="scrollbar max-h-[100vh] overflow-y-scroll sm:m-4 sm:max-w-xl">
+            <DialogHeader>
+              <DialogTitle>Following</DialogTitle>
+            </DialogHeader>
+            <FollowingCard userId={id} authId={auth?.id} />
+          </DialogContent>
+        </Dialog>
       </div>
       <p className="text-base text-muted-foreground">Add bio</p>
       <p className="text-base">

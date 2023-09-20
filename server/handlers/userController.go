@@ -89,8 +89,8 @@ func GetFollowing(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"following": following,
-		"hasMore":   hasMore,
+		"users":   following,
+		"hasMore": hasMore,
 	})
 }
 
@@ -112,7 +112,7 @@ func GetFollowers(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"followers": followers,
-		"hasMore":   hasMore,
+		"users":   followers,
+		"hasMore": hasMore,
 	})
 }

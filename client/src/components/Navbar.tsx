@@ -39,13 +39,13 @@ const Navbar = () => {
                     <p className="text-sm text-muted-foreground">{user.email}</p>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <Link to="/profile">
+                  <Link to={`/user/${user.id}`}>
                     <DropdownMenuItem className="cursor-pointer">
                       <User className="mr-2 h-4 w-4" />
                       <span>Profile</span>
                     </DropdownMenuItem>
                   </Link>
-                  <Link to="/profile">
+                  <Link to={`/user/${user.id}`}>
                     <DropdownMenuItem className="cursor-pointer">
                       <Settings className="mr-2 h-4 w-4" />
                       <span>Settings</span>

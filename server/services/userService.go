@@ -176,7 +176,7 @@ func HandleUnFollow(userId, followerId string) error {
 
 type FollowInfo struct {
 	BaseUser
-	IsSubscribed bool `json:"is_subscribed"`
+	IsSubscribed bool `json:"isSubscribed"`
 }
 
 func getIsSubscribeMap(userId string) (map[string]bool, error) {
