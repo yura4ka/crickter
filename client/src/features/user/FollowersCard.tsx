@@ -13,9 +13,10 @@ import { useAppDispatch } from "@/app/hooks";
 interface Props {
   userId: string;
   authId: string | undefined;
+  setModal: (open: boolean) => void;
 }
 
-const FollowersCard: FC<Props> = ({ userId, authId }) => {
+const FollowersCard: FC<Props> = ({ userId, authId, setModal }) => {
   const dispatch = useAppDispatch();
   const [page, setPage] = useState(1);
   const { users, hasMore, isFetching } = useGetFollowersQuery(
@@ -57,6 +58,7 @@ const FollowersCard: FC<Props> = ({ userId, authId }) => {
           user={u}
           hidden={u.id === authId}
           handleSubscribe={handleSubscribe}
+          onLinkClick={() => setModal(false)}
         />
       ))}
       {isFetching && (

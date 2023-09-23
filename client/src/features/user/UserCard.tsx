@@ -8,12 +8,17 @@ interface Props {
   user: BaseUser;
   hidden: boolean;
   handleSubscribe?: (id: string, follow: boolean) => void;
+  onLinkClick?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 }
 
-const UserCard: FC<Props> = ({ user, hidden, handleSubscribe }) => {
+const UserCard: FC<Props> = ({ user, hidden, handleSubscribe, onLinkClick }) => {
   return (
     <section className="flex items-center justify-between gap-1">
-      <Link to={`/user/${user.id}`} className="group flex flex-1 items-center gap-4">
+      <Link
+        to={`/user/${user.id}`}
+        onClick={onLinkClick}
+        className="group flex flex-1 items-center gap-4"
+      >
         <Avatar>
           <AvatarFallback>{user.username[0]}</AvatarFallback>
         </Avatar>

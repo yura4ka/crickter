@@ -23,13 +23,21 @@ import {
 } from "@/components/ui/dialog";
 import FollowersCard from "./FollowersCard";
 import FollowingCard from "./FollowingCard";
+import { Loader2 } from "lucide-react";
 
 const UserInfo = ({ id }: { id: string }) => {
   const { data: user, isLoading } = useGetUserQuery(id);
   const { isLoading: isAuthLoading, user: auth } = useAuth();
 
+  const [followersOpen, setFollowersOpen] = useState(false);
+  const [followingOpen, setFollowingOpen] = useState(false);
+
   if (!user || isLoading || isAuthLoading) {
-    return <section></section>;
+    return (
+      <section className="grid place-content-center">
+        <Loader2 className="h-10 w-10 animate-spin" />
+      </section>
+    );
   }
 
   const secondary = (
@@ -38,7 +46,7 @@ const UserInfo = ({ id }: { id: string }) => {
         <p>
           <span className="font-bold">{user.postCount}</span> posts
         </p>
-        <Dialog>
+        <Dialog open={followersOpen} onOpenChange={setFollowersOpen}>
           <DialogTrigger asChild>
             <button className="hover:underline">
               <span className="font-bold">{user.followers}</span> followers
@@ -48,11 +56,11 @@ const UserInfo = ({ id }: { id: string }) => {
             <DialogHeader>
               <DialogTitle>Followers</DialogTitle>
             </DialogHeader>
-            <FollowersCard userId={id} authId={auth?.id} />
+            <FollowersCard userId={id} authId={auth?.id} setModal={setFollowersOpen} />
           </DialogContent>
         </Dialog>
 
-        <Dialog>
+        <Dialog open={followingOpen} onOpenChange={setFollowingOpen}>
           <DialogTrigger asChild>
             <button className="hover:underline">
               <span className="font-bold">{user.following}</span> following
@@ -62,7 +70,7 @@ const UserInfo = ({ id }: { id: string }) => {
             <DialogHeader>
               <DialogTitle>Following</DialogTitle>
             </DialogHeader>
-            <FollowingCard userId={id} authId={auth?.id} />
+            <FollowingCard userId={id} authId={auth?.id} setModal={setFollowingOpen} />
           </DialogContent>
         </Dialog>
       </div>
