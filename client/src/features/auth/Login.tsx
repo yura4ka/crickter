@@ -8,14 +8,22 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useState } from "react";
+import { FC, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useLoginMutation } from "./authApiSlice";
-import { emailRegexp, validatePassword } from "@/lib/utils";
+import { cn, emailRegexp, validatePassword } from "@/lib/utils";
 import SubmitButton from "@/components/SubmitButton";
+import { useLoginModal } from "../loginModal/useLoginModal";
 
-const Login = () => {
+interface Props {
+  className?: string;
+  outerClass?: string;
+  redirect?: boolean;
+}
+
+const Login: FC<Props> = ({ className, outerClass, redirect = true }) => {
   const navigate = useNavigate();
+  const { hideModal } = useLoginModal();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -40,21 +48,25 @@ const Login = () => {
     e.preventDefault();
     try {
       await login({ email: email.trim(), password: password.trim() }).unwrap();
-      navigate("/");
+      if (redirect) navigate("/");
+      hideModal();
     } catch {
       setIsError(true);
     }
   };
 
   return (
-    <div className="grid p-4 sm:place-content-center sm:p-2">
-      <Card className="mt-8 h-min p-4 sm:mt-0 sm:min-w-[420px] sm:border">
+    <div className={cn("grid p-4 sm:place-content-center sm:p-2", outerClass)}>
+      <Card
+        className={cn("mt-8 h-min p-4 sm:mt-0 sm:min-w-[420px] sm:border", className)}
+      >
         <CardHeader className="px-0 sm:p-6">
           <CardTitle>Log in</CardTitle>
           <CardDescription>
             Don't have an account?{" "}
             <Link
               to={"/register"}
+              onClick={hideModal}
               className="font-semibold text-cyan-600 transition-all hover:text-cyan-700 hover:underline dark:text-cyan-700 dark:hover:text-cyan-800"
             >
               Sign up

@@ -7,6 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 import { FC, forwardRef } from "react";
 import { PostType } from "./utils";
+import { useAuth } from "../auth/useAuth";
+import { useLoginModal } from "../loginModal/useLoginModal";
 
 const MinimalOriginal: FC<{ post: Post | undefined }> = ({ post }) => {
   if (!post)
@@ -49,6 +51,9 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
     onRepostClick,
   } = props;
 
+  const { isAuth } = useAuth();
+  const { showModal } = useLoginModal();
+
   const { data: original } = useGetPostByIdQuery(p?.originalId || "", {
     skip: !(fetchOriginal && !!p?.originalId),
   });
@@ -57,6 +62,10 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
 
   const onReactionClick = (liked: boolean) => {
     if (!p) return;
+    if (!isAuth) {
+      showModal();
+      return;
+    }
     handleReaction({ post: p, liked });
   };
 
