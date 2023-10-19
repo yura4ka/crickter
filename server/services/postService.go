@@ -59,17 +59,21 @@ func UpdatePost(id, text string) error {
 }
 
 type postUser struct {
-	Id       string `json:"id"`
-	Username string `json:"username"`
-	Name     string `json:"name"`
+	Id        *string `json:"id"`
+	Username  *string `json:"username"`
+	Name      *string `json:"name"`
+	AvatarUrl *string `json:"avatarUrl"`
+	IsDeleted bool    `json:"isDeleted"`
 }
 
 type postBase struct {
-	Id        string   `json:"id"`
-	Text      string   `json:"text"`
-	User      postUser `json:"user"`
-	CreatedAt string   `json:"createdAt"`
-	UpdatedAt *string  `json:"updatedAt"`
+	Id         string   `json:"id"`
+	Text       string   `json:"text"`
+	User       postUser `json:"user"`
+	CreatedAt  string   `json:"createdAt"`
+	UpdatedAt  *string  `json:"updatedAt"`
+	CanComment bool     `json:"canComment"`
+	IsDeleted  bool     `json:"isDeleted"`
 }
 
 type PostsResult struct {
@@ -110,8 +114,8 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 	args := []interface{}{userId}
 
 	query := `
-		SELECT p.id, p.text, p.created_at, p.updated_at,
-			u.id as "userId", u.username, u.name,
+		SELECT p.id, p.text, p.created_at, p.updated_at, p.can_comment, p.is_deleted,
+			u.id as "userId", u.username, u.name, u.avatar_url, u.is_deleted as "userDeleted",
 			o.id as "originalId", c.id as "commentToId", r.id as "responseToId",
 			COALESCE(pr.likes, 0), COALESCE(pr.dislikes, 0), COALESCE(pr.reaction, 0),
 			COUNT(pc.id) AS comments, COUNT(post_r.id) AS responses, COALESCE(reposts.count, 0)
@@ -180,12 +184,13 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 func parsePosts(rows *sql.Rows, isComment bool) ([]PostsResult, error) {
 	result := make([]PostsResult, 0)
 	for rows.Next() {
-		var id, text, createdAt, updatedAt, userId, username, name string
-		var originalId, commentToId, responseToId *string
+		var id, text, createdAt, updatedAt string
+		var originalId, commentToId, responseToId, avatar_url, userId, username, name *string
 		var likes, dislikes, comments, responses, reposts, reaction int
+		var canComment, isDeleted, isUserDeleted bool
 		err := rows.Scan(
-			&id, &text, &createdAt, &updatedAt,
-			&userId, &username, &name,
+			&id, &text, &createdAt, &updatedAt, &canComment, &isDeleted,
+			&userId, &username, &name, &avatar_url, &isUserDeleted,
 			&originalId, &commentToId, &responseToId,
 			&likes, &dislikes, &reaction, &comments, &responses, &reposts,
 		)
@@ -194,10 +199,11 @@ func parsePosts(rows *sql.Rows, isComment bool) ([]PostsResult, error) {
 		}
 		row := PostsResult{
 			postBase: postBase{
-				Id:        id,
-				Text:      text,
-				CreatedAt: createdAt,
-				User:      postUser{Id: userId, Username: username, Name: name},
+				Id:         id,
+				Text:       text,
+				CreatedAt:  createdAt,
+				CanComment: canComment,
+				IsDeleted:  isDeleted,
 			},
 			Likes:        likes,
 			Dislikes:     dislikes,
@@ -206,6 +212,12 @@ func parsePosts(rows *sql.Rows, isComment bool) ([]PostsResult, error) {
 			CommentToId:  commentToId,
 			ResponseToId: responseToId,
 			Reposts:      reposts,
+		}
+
+		if isUserDeleted {
+			row.User = postUser{IsDeleted: true}
+		} else {
+			row.User = postUser{Id: userId, Username: username, Name: name, IsDeleted: isUserDeleted}
 		}
 
 		if updatedAt != createdAt {

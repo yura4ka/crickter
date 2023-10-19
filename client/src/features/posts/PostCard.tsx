@@ -24,7 +24,9 @@ const MinimalOriginal: FC<{ post: Post | undefined }> = ({ post }) => {
       href={"#" + post.id}
       className="my-2 block border-l-4 pl-2 transition hover:bg-border"
     >
-      <div className="font-medium">@{post.user.username}</div>
+      <div className="font-medium">
+        {post.user.isDeleted ? "Deleted user" : `@${post.user.username}`}
+      </div>
       <div className="line-clamp-1">{post.text}</div>
     </a>
   );
@@ -87,29 +89,44 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
   const created = formatTimeAgo(new Date(p.createdAt));
   const updated = p.updatedAt && formatTimeAgo(new Date(p.updatedAt));
 
+  const avatar = p.user.isDeleted ? (
+    <Avatar>
+      <AvatarFallback>U</AvatarFallback>
+    </Avatar>
+  ) : (
+    <Link to={`/user/${p.user.id}`}>
+      <Avatar>
+        <AvatarFallback>{p.user.username[0]}</AvatarFallback>
+      </Avatar>
+    </Link>
+  );
+
+  const userData = p.user.isDeleted ? (
+    <p className="text-base font-bold">Deleted User</p>
+  ) : (
+    <>
+      <Link
+        to={`/user/${p.user.id}`}
+        className="break-all text-base font-bold text-foreground hover:underline"
+      >
+        {p.user.name}
+      </Link>
+      <Link to={`/user/${p.user.id}`} className="break-all hover:underline">
+        @{p.user.username}
+      </Link>
+    </>
+  );
+
   return (
     <article
       id={p.id}
       ref={ref}
       className={cn("flex gap-3 py-4 pr-2 sm:gap-4 sm:py-6 sm:pr-0", className)}
     >
-      <Link to={`/user/${p.user.id}`}>
-        <Avatar>
-          <AvatarFallback>{p.user.username[0]}</AvatarFallback>
-        </Avatar>
-      </Link>
+      {avatar}
       <div className="grow">
         <p className="mb-1 flex flex-wrap items-baseline gap-x-2 align-bottom text-sm text-muted-foreground">
-          <Link
-            to={`/user/${p.user.id}`}
-            className="break-all text-base font-bold text-foreground hover:underline"
-          >
-            {p.user.name}
-          </Link>
-          <Link to={`/user/${p.user.id}`} className="break-all hover:underline">
-            @{p.user.username}
-          </Link>
-          •<span>{created}</span>
+          {userData}•<span>{created}</span>
           {updated && (
             <>
               •<span className="">ed. {updated}</span>

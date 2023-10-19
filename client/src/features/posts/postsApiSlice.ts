@@ -10,11 +10,17 @@ import {
 } from "./commentsApiSlice";
 import { userApi, userPostsAdapter, userPostsSelector } from "../user/userApiSlice";
 
-interface PostUser {
-  id: string;
-  username: string;
-  name: string;
-}
+type PostUser =
+  | {
+      id: string;
+      username: string;
+      name: string;
+      avatarUrl: string | null;
+      isDeleted: false;
+    }
+  | {
+      isDeleted: true;
+    };
 
 export interface PostsResponse {
   posts: EntityState<Post>;
@@ -99,7 +105,7 @@ export const postApi = api.injectEndpoints({
         const newPost = {
           id: data.id,
           text,
-          user,
+          user: { ...user, isDeleted: false },
           createdAt: new Date().toISOString(),
           updatedAt: null,
           originalId: originalId || null,
@@ -205,17 +211,18 @@ export const postApi = api.injectEndpoints({
                 }
               )
             ),
-          dispatch(
-            userApi.util.updateQueryData(
-              "getUserPosts",
-              { page: 0, id: post.user.id },
-              (draft) => {
-                const p = userPostsSelector.selectById(draft.posts, id);
-                const changes = getReactionChanges(p, liked);
-                userPostsAdapter.updateOne(draft.posts, { id, changes });
-              }
-            )
-          ),
+          !post.user.isDeleted &&
+            dispatch(
+              userApi.util.updateQueryData(
+                "getUserPosts",
+                { page: 0, id: post.user.id },
+                (draft) => {
+                  const p = userPostsSelector.selectById(draft.posts, id);
+                  const changes = getReactionChanges(p, liked);
+                  userPostsAdapter.updateOne(draft.posts, { id, changes });
+                }
+              )
+            ),
         ];
         try {
           await queryFulfilled;
