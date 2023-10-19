@@ -45,15 +45,19 @@ func CreateUser(user *NewUser) (string, error) {
 type BaseUser struct {
 	ID        string    `json:"id"`
 	Name      string    `json:"name"`
-	Username  string    `json:"username"`
+	Username  *string   `json:"username"`
 	CreatedAt time.Time `json:"createdAt"`
 	IsPrivate bool      `json:"isPrivate"`
+	AvatarUrl *string   `json:"avatarUrl"`
 }
 
 type User struct {
 	BaseUser
-	Password string `json:"password"`
-	Email    string `json:"email"`
+	Password  string    `json:"password"`
+	Email     *string   `json:"email"`
+	IsDeleted bool      `json:"isDeleted"`
+	Bio       *string   `json:"Bio"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 func GetUserByEmail(email string) (*User, error) {
@@ -62,7 +66,8 @@ func GetUserByEmail(email string) (*User, error) {
 	err := db.Client.QueryRow(`
 		SELECT * FROM users
 		WHERE email = $1;
-	`, email).Scan(&user.ID, &user.CreatedAt, &user.Email, &user.Password, &user.Name, &user.Username, &user.IsPrivate)
+	`, email).Scan(&user.ID, &user.CreatedAt, &user.Email, &user.Password, &user.Name,
+		&user.Username, &user.IsPrivate, &user.UpdatedAt, &user.AvatarUrl, &user.Bio, &user.IsDeleted)
 
 	if err != nil {
 		return nil, err
@@ -77,7 +82,8 @@ func GetUserById(id string) (*User, error) {
 	err := db.Client.QueryRow(`
 		SELECT * FROM users
 		WHERE id = $1;
-	`, id).Scan(&user.ID, &user.CreatedAt, &user.Email, &user.Password, &user.Name, &user.Username, &user.IsPrivate)
+	`, id).Scan(&user.ID, &user.CreatedAt, &user.Email, &user.Password, &user.Name,
+		&user.Username, &user.IsPrivate, &user.UpdatedAt, &user.AvatarUrl, &user.Bio, &user.IsDeleted)
 
 	if err != nil {
 		return nil, err

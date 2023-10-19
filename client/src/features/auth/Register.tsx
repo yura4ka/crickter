@@ -96,17 +96,16 @@ const Register = () => {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await register({
+      const { id: userId } = await register({
         email: form.email.trim(),
         password: form.password.trim(),
         username: form.username.trim(),
         name: form.name.trim(),
       }).unwrap();
       await login({ email: form.email.trim(), password: form.password.trim() }).unwrap();
+      navigate("/user/" + userId);
     } catch {
       navigate("/");
-    } finally {
-      navigate("/profile");
     }
   };
 

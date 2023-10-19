@@ -61,10 +61,11 @@ func Login(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"token": access,
 		"user": fiber.Map{
-			"id":       user.ID,
-			"email":    user.Email,
-			"username": user.Username,
-			"name":     user.Name,
+			"id":        user.ID,
+			"email":     user.Email,
+			"username":  user.Username,
+			"name":      user.Name,
+			"avatarUrl": user.AvatarUrl,
 		},
 	})
 }
@@ -80,6 +81,9 @@ func Refresh(c *fiber.Ctx) error {
 	user, err := services.GetUserById(payload.Id)
 	if err != nil {
 		log.Print(err)
+	}
+
+	if err != nil || user.IsDeleted {
 		c.Cookie(services.ClearRefreshCookie())
 		return c.SendStatus(400)
 	}
@@ -95,10 +99,11 @@ func Refresh(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"token": newAccess,
 		"user": fiber.Map{
-			"id":       user.ID,
-			"email":    user.Email,
-			"username": user.Username,
-			"name":     user.Name,
+			"id":        user.ID,
+			"email":     user.Email,
+			"username":  user.Username,
+			"name":      user.Name,
+			"avatarUrl": user.AvatarUrl,
 		},
 	})
 }
