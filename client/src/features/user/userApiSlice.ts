@@ -10,12 +10,14 @@ export interface BaseUser {
   createdAt: string;
   isPrivate: boolean;
   isSubscribed: boolean;
+  avatarUrl: string | null;
 }
 
 interface User extends BaseUser {
   followers: number;
   following: number;
   postCount: number;
+  bio: string | null;
 }
 
 interface UsersResponse {

@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Github, LogOut, Settings, User } from "lucide-react";
-import { Avatar, AvatarFallback } from "./ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Link } from "react-router-dom";
 import { Button } from "./ui/button";
 import ModeToggle from "./ui/ModeToggle";
@@ -30,6 +30,7 @@ const Navbar = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger>
                   <Avatar className="mr-2 sm:mx-4">
+                    {user.avatarUrl && <AvatarImage src={user.avatarUrl} />}
                     <AvatarFallback>{user.username[0]}</AvatarFallback>
                   </Avatar>
                 </DropdownMenuTrigger>

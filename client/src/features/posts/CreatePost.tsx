@@ -2,7 +2,7 @@ import { Loader2 } from "lucide-react";
 import { useAuth } from "../auth/useAuth";
 import { Link } from "react-router-dom";
 import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FC, useRef, useState } from "react";
 import { Post, useCreatePostMutation } from "./postsApiSlice";
 import SubmitButton from "@/components/SubmitButton";
@@ -91,6 +91,7 @@ const CreatePost: FC<Props> = ({
   return (
     <form onSubmit={handleSubmit} ref={formRef} className={cn("flex gap-2", className)}>
       <Avatar className={cn(type === "response" && "hidden sm:block")}>
+        {user.avatarUrl && <AvatarImage src={user.avatarUrl} />}
         <AvatarFallback>{user.username[0]}</AvatarFallback>
       </Avatar>
       <div className={cn("w-full", type === "response" && "items-center gap-2 sm:flex")}>

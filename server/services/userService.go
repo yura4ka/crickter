@@ -109,16 +109,18 @@ func GetUserByUsername(username string) (*User, error) {
 
 type UserInfo struct {
 	BaseUser
-	Followers    int  `json:"followers"`
-	Following    int  `json:"following"`
-	IsSubscribed bool `json:"isSubscribed"`
-	PostCount    int  `json:"postCount"`
+	Followers    int     `json:"followers"`
+	Following    int     `json:"following"`
+	IsSubscribed bool    `json:"isSubscribed"`
+	PostCount    int     `json:"postCount"`
+	Bio          *string `json:"bio"`
 }
 
 func GetUserInfo(id, requestUserId string) (*UserInfo, error) {
 	var u UserInfo
+	var isDeleted bool
 	err := db.Client.QueryRow(`
-		SELECT u.id, u.created_at, u.name, u.username, u.is_private,
+		SELECT u.id, u.created_at, u.name, u.username, u.is_private, u.avatar_url, u.bio, u.is_deleted,
 			COALESCE(COUNT(f1.*), 0) AS followers, COALESCE(f2.count, 0) AS following,
 			COALESCE(p.count, 0) AS post_count
 		FROM users AS u
@@ -136,9 +138,15 @@ func GetUserInfo(id, requestUserId string) (*UserInfo, error) {
 		) p ON u.id = p.user_id
 		WHERE u.id = $1
 		GROUP BY u.id, u.created_at, u.name, u.username, f2.count, p.count;
-	`, id).Scan(&u.ID, &u.CreatedAt, &u.Name, &u.Username, &u.IsPrivate, &u.Followers, &u.Following, &u.PostCount)
+	`, id).
+		Scan(&u.ID, &u.CreatedAt, &u.Name, &u.Username, &u.IsPrivate, &u.AvatarUrl, &u.Bio,
+			&isDeleted, &u.Followers, &u.Following, &u.PostCount)
 	if err != nil {
 		return nil, err
+	}
+
+	if isDeleted {
+		return nil, ErrDeletedUser
 	}
 
 	if requestUserId != "" && id != requestUserId {
@@ -205,7 +213,7 @@ func parseFollowInfo(rows *sql.Rows, isSubscribed map[string]bool) ([]FollowInfo
 
 	for rows.Next() {
 		row := FollowInfo{}
-		err := rows.Scan(&row.ID, &row.Name, &row.Username, &row.CreatedAt, &row.IsPrivate)
+		err := rows.Scan(&row.ID, &row.Name, &row.Username, &row.CreatedAt, &row.IsPrivate, &row.AvatarUrl)
 		if err != nil {
 			return nil, err
 		}
@@ -230,10 +238,10 @@ func GetFollowing(userId, requestUserId string, page int) ([]FollowInfo, error) 
 	}
 
 	rows, err := db.Client.Query(`
-		SELECT u.id, u.name, u.username, u.created_at, u.is_private
+		SELECT u.id, u.name, u.username, u.created_at, u.is_private, u.avatar_url
 		FROM users_followers AS f
 		INNER JOIN users AS u ON f.user_id = u.id
-		WHERE f.follower_id = $1
+		WHERE f.follower_id = $1 AND u.is_deleted = FALSE
 		ORDER BY u.username
 		LIMIT $2 OFFSET $3;
 	`, userId, ToNullString(&limit), offset)
@@ -254,10 +262,10 @@ func GetFollowers(userId, requestUserId string, page int) ([]FollowInfo, error) 
 	}
 
 	rows, err := db.Client.Query(`
-		SELECT u.id, u.name, u.username, u.created_at, u.is_private
+		SELECT u.id, u.name, u.username, u.created_at, u.is_private, u.avatar_url
 		FROM users_followers AS f
 		INNER JOIN users AS u ON f.follower_id = u.id
-		WHERE f.user_id = $1
+		WHERE f.user_id = $1 AND u.is_deleted = FALSE
 		ORDER BY u.username
 		LIMIT $2 OFFSET $3;
 	`, userId, USERS_PER_PAGE, USERS_PER_PAGE*(page-1))
@@ -277,7 +285,7 @@ func HasMoreFollowing(userId string, page int) (bool, error) {
 		SELECT COUNT(u.*) 
 		FROM users_followers AS f
 		INNER JOIN users AS u ON f.follower_id = u.id
-		WHERE f.user_id = $1;
+		WHERE f.user_id = $1 AND u.is_deleted = FALSE;
 	`, userId).Scan(&count)
 	if err != nil {
 		return false, nil
@@ -291,7 +299,7 @@ func HasMoreFollowers(userId string, page int) (bool, error) {
 		SELECT COUNT(u.*) 
 		FROM users_followers AS f
 		INNER JOIN users AS u ON f.user_id = u.id
-		WHERE f.follower_id = $1;
+		WHERE f.follower_id = $1 AND u.is_deleted = FALSE;
 	`, userId).Scan(&count)
 	if err != nil {
 		return false, nil

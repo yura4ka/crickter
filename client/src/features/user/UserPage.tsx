@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
 import {
   useGetUserPostsQuery,
@@ -6,7 +6,7 @@ import {
   userPostsAdapter,
   userPostsSelector,
 } from "./userApiSlice";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useRef, useState } from "react";
 import { Post } from "../posts/postsApiSlice";
 import { useInfiniteScroll } from "@/lib/hooks";
@@ -48,7 +48,10 @@ const UserInfo = ({ id }: { id: string }) => {
         </p>
         <Dialog open={followersOpen} onOpenChange={setFollowersOpen}>
           <DialogTrigger asChild>
-            <button className="hover:underline">
+            <button
+              className="[&:not(:disabled)]:hover:underline"
+              disabled={user.followers === 0}
+            >
               <span className="font-bold">{user.followers}</span> followers
             </button>
           </DialogTrigger>
@@ -62,7 +65,10 @@ const UserInfo = ({ id }: { id: string }) => {
 
         <Dialog open={followingOpen} onOpenChange={setFollowingOpen}>
           <DialogTrigger asChild>
-            <button className="hover:underline">
+            <button
+              className="[&:not(:disabled)]:hover:underline"
+              disabled={user.following === 0}
+            >
               <span className="font-bold">{user.following}</span> following
             </button>
           </DialogTrigger>
@@ -74,7 +80,15 @@ const UserInfo = ({ id }: { id: string }) => {
           </DialogContent>
         </Dialog>
       </div>
-      <p className="text-base text-muted-foreground">Add bio</p>
+      <p className="text-base text-muted-foreground">
+        {user.bio
+          ? user.bio
+          : user.id === auth?.id && (
+              <Link to="/settings" className="underline hover:text-foreground">
+                Add bio
+              </Link>
+            )}
+      </p>
       <p className="text-base">
         Joined on{" "}
         {new Date(user.createdAt).toLocaleDateString(undefined, {
@@ -88,7 +102,11 @@ const UserInfo = ({ id }: { id: string }) => {
     <>
       <header className="mx-auto flex max-w-xl sm:max-w-4xl">
         <div className="pr-4 sm:py-4 sm:pr-10 md:pr-20">
-          <Avatar className="h-20 w-20 text-2xl sm:h-40 sm:w-40 sm:text-4xl">
+          <Avatar
+            key={user.id}
+            className="h-20 w-20 text-2xl sm:h-40 sm:w-40 sm:text-4xl"
+          >
+            {user.avatarUrl && <AvatarImage src={user.avatarUrl} />}
             <AvatarFallback>{user.username[0]}</AvatarFallback>
           </Avatar>
         </div>
@@ -174,15 +192,11 @@ const Feed = ({ id }: { id: string }) => {
 
 const UserPage = () => {
   const navigate = useNavigate();
-  const { isLoading: isAuthLoading } = useAuth();
   const { userId } = useParams();
+  const { isError } = useGetUserQuery(userId ?? "");
 
-  if (!userId) {
+  if (!userId || isError) {
     navigate("/");
-    return <></>;
-  }
-
-  if (isAuthLoading) {
     return <></>;
   }
 

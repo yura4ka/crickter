@@ -9,6 +9,7 @@ import { FC, forwardRef } from "react";
 import { PostType } from "./utils";
 import { useAuth } from "../auth/useAuth";
 import { useLoginModal } from "../loginModal/useLoginModal";
+import { AvatarImage } from "@radix-ui/react-avatar";
 
 const MinimalOriginal: FC<{ post: Post | undefined }> = ({ post }) => {
   if (!post)
@@ -96,6 +97,7 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
   ) : (
     <Link to={`/user/${p.user.id}`}>
       <Avatar>
+        {p.user.avatarUrl && <AvatarImage src={p.user.avatarUrl} />}
         <AvatarFallback>{p.user.username[0]}</AvatarFallback>
       </Avatar>
     </Link>
@@ -125,14 +127,14 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
     >
       {avatar}
       <div className="grow">
-        <p className="mb-1 flex flex-wrap items-baseline gap-x-2 align-bottom text-sm text-muted-foreground">
+        <div className="mb-1 flex flex-wrap items-baseline gap-x-2 align-bottom text-sm text-muted-foreground">
           {userData}•<span>{created}</span>
           {updated && (
             <>
               •<span className="">ed. {updated}</span>
             </>
           )}
-        </p>
+        </div>
         {fetchOriginal && p.originalId && type !== "post" && (
           <MinimalOriginal post={original} />
         )}

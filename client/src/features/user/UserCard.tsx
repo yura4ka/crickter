@@ -1,7 +1,7 @@
 import { FC } from "react";
 import { BaseUser } from "./userApiSlice";
 import SubscribeButton from "./SubscribeButton";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Link } from "react-router-dom";
 
 interface Props {
@@ -20,6 +20,7 @@ const UserCard: FC<Props> = ({ user, hidden, handleSubscribe, onLinkClick }) => 
         className="group flex flex-1 items-center gap-4"
       >
         <Avatar>
+          {user.avatarUrl && <AvatarImage src={user.avatarUrl} />}
           <AvatarFallback>{user.username[0]}</AvatarFallback>
         </Avatar>
         <div>
