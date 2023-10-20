@@ -151,8 +151,6 @@ func GetFavoritePosts(c *fiber.Ctx) error {
 	userId, _ := c.Locals("userId").(string)
 	page := c.QueryInt("page", 1)
 
-	log.Println("userId: ", userId)
-
 	posts, err := services.GetFavoritePosts(userId, page)
 	if err != nil {
 		log.Print(err)

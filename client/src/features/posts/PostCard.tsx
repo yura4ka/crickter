@@ -1,8 +1,13 @@
-import { Post, useGetPostByIdQuery, useProcessReactionMutation } from "./postsApiSlice";
+import {
+  Post,
+  useGetPostByIdQuery,
+  useHandleFavoriteMutation,
+  useProcessReactionMutation,
+} from "./postsApiSlice";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn, formatTimeAgo } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, ThumbsDown, ThumbsUp, Repeat } from "lucide-react";
+import { MessageSquare, ThumbsDown, ThumbsUp, Repeat, Bookmark } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 import { FC, forwardRef } from "react";
@@ -62,6 +67,7 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
   });
 
   const [handleReaction] = useProcessReactionMutation();
+  const [handleFavorite] = useHandleFavoriteMutation();
 
   const onReactionClick = (liked: boolean) => {
     if (!p) return;
@@ -70,6 +76,15 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
       return;
     }
     handleReaction({ post: p, liked });
+  };
+
+  const onFavoriteClick = () => {
+    if (!p) return;
+    if (!isAuth) {
+      showModal();
+      return;
+    }
+    handleFavorite(p);
   };
 
   if (p === undefined) {
@@ -186,6 +201,14 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
             <Button onClick={() => onRepostClick?.(p)} size={"icon"} variant={"ghost"}>
               <Repeat className="mr-2 h-4 w-4" />
               {p.reposts}
+            </Button>
+          )}
+          {type === "post" && (
+            <Button onClick={onFavoriteClick} size={"icon"} variant={"ghost"}>
+              <Bookmark
+                className="h-4 w-4"
+                {...(p.isFavorite && { fill: "hsl(var(--reaction))" })}
+              />
             </Button>
           )}
         </div>

@@ -8,7 +8,6 @@ import {
   commentsAdapter,
   commentsSelector,
 } from "./commentsApiSlice";
-import { userApi, userPostsAdapter, userPostsSelector } from "../user/userApiSlice";
 
 type PostUser =
   | {
@@ -41,6 +40,7 @@ export interface Post {
   comments: number;
   reposts: number;
   reaction: -1 | 0 | 1;
+  isFavorite: boolean;
 }
 
 export interface CreatePostRequest {
@@ -116,6 +116,7 @@ export const postApi = api.injectEndpoints({
           dislikes: 0,
           reposts: 0,
           reaction: 0,
+          isFavorite: false,
         };
         dispatch(
           postApi.util.updateQueryData("getPosts", 0, (draft) => {
@@ -139,7 +140,7 @@ export const postApi = api.injectEndpoints({
             )
           );
         }
-        if (responseToId && commentToId) {
+        if (responseToId && commentToId)
           dispatch(
             commentApi.util.updateQueryData(
               "getComments",
@@ -157,7 +158,6 @@ export const postApi = api.injectEndpoints({
               }
             )
           );
-        }
       },
     }),
     processReaction: builder.mutation<undefined, ReactionRequest>({
@@ -174,7 +174,7 @@ export const postApi = api.injectEndpoints({
       async onQueryStarted({ post, liked }, { dispatch, queryFulfilled }) {
         const { commentToId, responseToId, id } = post;
         const patches = [
-          ...updatePost(dispatch, id, (post) => getReactionChanges(post, liked)),
+          ...updatePost(dispatch, id, getReactionChanges(post, liked)),
           commentToId &&
             dispatch(
               commentApi.util.updateQueryData(
@@ -211,18 +211,58 @@ export const postApi = api.injectEndpoints({
                 }
               )
             ),
-          !post.user.isDeleted &&
-            dispatch(
-              userApi.util.updateQueryData(
-                "getUserPosts",
-                { page: 0, id: post.user.id },
-                (draft) => {
-                  const p = userPostsSelector.selectById(draft.posts, id);
-                  const changes = getReactionChanges(p, liked);
-                  userPostsAdapter.updateOne(draft.posts, { id, changes });
-                }
-              )
-            ),
+        ];
+        try {
+          await queryFulfilled;
+        } catch {
+          patches.forEach((p) => p && p.undo());
+        }
+      },
+    }),
+
+    getFavoritePosts: builder.query<PostsResponse, number>({
+      query: (page) => ({ url: `post/favorite?page=${page}` }),
+      keepUnusedDataFor: 0,
+      transformResponse: ({ posts, hasMore }: { posts: Post[]; hasMore: boolean }) => {
+        return {
+          posts: postsAdapter.addMany(postsAdapter.getInitialState(), posts),
+          hasMore,
+        };
+      },
+      serializeQueryArgs: ({ endpointName }) => {
+        return endpointName;
+      },
+      merge: (currentCache, newItems) => {
+        postsAdapter.addMany(currentCache.posts, postsSelector.selectAll(newItems.posts));
+        currentCache.hasMore = newItems.hasMore;
+      },
+      forceRefetch({ currentArg, previousArg }) {
+        return currentArg !== previousArg;
+      },
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.posts.ids.map((id) => ({ type: "Posts" as const, id })),
+              { type: "Favorite", id: "LIST" },
+            ]
+          : [{ type: "Favorite", id: "LIST" }],
+    }),
+
+    handleFavorite: builder.mutation<undefined, Post>({
+      query: ({ id }) => ({ url: "post/favorite", method: "POST", body: { postId: id } }),
+      async onQueryStarted(post, { dispatch, queryFulfilled, getState }) {
+        const user = (getState() as RootState).auth.user;
+        if (!user) return;
+
+        const patches = [
+          dispatch(
+            postApi.util.updateQueryData("getFavoritePosts", 0, (draft) => {
+              if (!post.isFavorite) postsAdapter.addOne(draft.posts, post);
+            })
+          ),
+          ...updatePost(dispatch, post.id, (post) => ({
+            isFavorite: !post.isFavorite,
+          })),
         ];
         try {
           await queryFulfilled;
@@ -239,4 +279,6 @@ export const {
   useGetPostsQuery,
   useProcessReactionMutation,
   useGetPostByIdQuery,
+  useGetFavoritePostsQuery,
+  useHandleFavoriteMutation,
 } = postApi;

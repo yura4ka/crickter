@@ -17,6 +17,7 @@ import Register from "./features/auth/Register.tsx";
 import UserPage from "./features/user/UserPage.tsx";
 import { ThemeProvider } from "./lib/ThemeContext.tsx";
 import PostPage from "./features/posts/PostPage.tsx";
+import FavoritePostsPage from "./features/posts/FavoritePostsPage.tsx";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -27,7 +28,9 @@ const router = createBrowserRouter(
       <Route path="post/:postId" element={<PostPage />} />
       <Route path="user/:userId" element={<UserPage />} />
 
-      <Route element={<AuthLayout />}></Route>
+      <Route element={<AuthLayout />}>
+        <Route path="favorite" element={<FavoritePostsPage />} />
+      </Route>
     </Route>
   )
 );

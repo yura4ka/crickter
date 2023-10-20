@@ -21,7 +21,12 @@ export const authApi = api.injectEndpoints({
         method: "POST",
         body: credentials,
       }),
-      invalidatesTags: [{ type: "Posts" }, { type: "Comments" }, { type: "Users" }],
+      invalidatesTags: [
+        { type: "Posts" },
+        { type: "Comments" },
+        { type: "Users" },
+        { type: "Favorite" },
+      ],
     }),
     register: builder.mutation<{ id: string }, RegisterRequest>({
       query: (credentials) => ({
@@ -41,7 +46,7 @@ export const authApi = api.injectEndpoints({
         responseHandler: (response) => response.text(),
       }),
     }),
-    logout: builder.mutation({
+    logout: builder.mutation<undefined, void>({
       query: () => ({
         url: "auth/logout",
         method: "GET",

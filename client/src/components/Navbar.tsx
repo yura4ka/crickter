@@ -7,9 +7,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { Github, LogOut, Settings, User } from "lucide-react";
+import { Bookmark, Github, LogOut, Settings, User } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import ModeToggle from "./ui/ModeToggle";
 import { useLogoutMutation } from "@/features/auth/authApiSlice";
@@ -17,6 +17,11 @@ import { useLogoutMutation } from "@/features/auth/authApiSlice";
 const Navbar = () => {
   const { isAuth, isLoading, user } = useAuth();
   const [logout] = useLogoutMutation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout().then(() => navigate(0));
+  };
 
   return (
     <header className="supports-backdrop-blur:bg-background/60 sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
@@ -52,8 +57,14 @@ const Navbar = () => {
                       <span>Settings</span>
                     </DropdownMenuItem>
                   </Link>
+                  <Link to={`/favorite`}>
+                    <DropdownMenuItem className="cursor-pointer">
+                      <Bookmark className="mr-2 h-4 w-4" />
+                      <span>Favorite posts</span>
+                    </DropdownMenuItem>
+                  </Link>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="cursor-pointer" onClick={logout}>
+                  <DropdownMenuItem className="cursor-pointer" onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                   </DropdownMenuItem>

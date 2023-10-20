@@ -86,6 +86,7 @@ type PostsResult struct {
 	Reaction     int     `json:"reaction"`
 	Comments     int     `json:"comments"`
 	Reposts      int     `json:"reposts"`
+	IsFavorite   bool    `json:"isFavorite"`
 }
 
 type TSortBy int
@@ -119,7 +120,8 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 			u.id as "userId", u.username, u.name, u.avatar_url, u.is_deleted as "userDeleted",
 			o.id as "originalId", c.id as "commentToId", r.id as "responseToId",
 			COALESCE(pr.likes, 0), COALESCE(pr.dislikes, 0), COALESCE(pr.reaction, 0),
-			COUNT(pc.id) AS comments, COUNT(post_r.id) AS responses, COALESCE(reposts.count, 0)
+			COUNT(pc.id) as comments, COUNT(post_r.id) as responses, COALESCE(reposts.count, 0),
+			CASE WHEN fp.post_id IS NOT NULL THEN TRUE ELSE FALSE END as favorite
 		FROM posts as p
 		LEFT JOIN users as u ON p.user_id = u.id
 		LEFT JOIN posts as o ON p.original_id = o.id
@@ -143,7 +145,8 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 				end) AS reaction
 			FROM post_reactions
 			GROUP BY post_id
-		) pr ON p.id = pr.post_id`
+		) pr ON p.id = pr.post_id
+		LEFT JOIN favorite_posts as fp ON p.id = fp.post_id AND fp.user_id = $1`
 
 	if params.PostId != "" {
 		query += "\nWHERE p.id = $2\n"
@@ -158,13 +161,12 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 		query += "\nWHERE p.comment_to_id IS NULL AND u.id = $2\n"
 		args = append(args, params.UserId)
 	} else if params.IsFavorite {
-		query += "\nINNER JOIN favorite_posts AS fp ON p.id = fp.post_id AND fp.user_id = $2\n"
-		args = append(args, params.RequestUserId)
+		query += "\nWHERE fp.post_id IS NOT NULL\n"
 	} else {
 		query += "\nWHERE p.comment_to_id IS NULL\n"
 	}
 
-	query += "GROUP BY p.id, u.id, o.id, c.id, r.id, pr.likes, pr.dislikes, pr.reaction, reposts.count\n"
+	query += "GROUP BY p.id, u.id, o.id, c.id, r.id, pr.likes, pr.dislikes, pr.reaction, reposts.count, fp.post_id\n"
 
 	switch params.OrderBy {
 	case SortNew:
@@ -191,12 +193,12 @@ func parsePosts(rows *sql.Rows, isComment bool) ([]PostsResult, error) {
 		var id, text, createdAt, updatedAt string
 		var originalId, commentToId, responseToId, avatarUrl, userId, username, name *string
 		var likes, dislikes, comments, responses, reposts, reaction int
-		var canComment, isDeleted, isUserDeleted bool
+		var canComment, isDeleted, isUserDeleted, isFavorite bool
 		err := rows.Scan(
 			&id, &text, &createdAt, &updatedAt, &canComment, &isDeleted,
 			&userId, &username, &name, &avatarUrl, &isUserDeleted,
 			&originalId, &commentToId, &responseToId,
-			&likes, &dislikes, &reaction, &comments, &responses, &reposts,
+			&likes, &dislikes, &reaction, &comments, &responses, &reposts, &isFavorite,
 		)
 		if err != nil {
 			return nil, err
@@ -216,6 +218,7 @@ func parsePosts(rows *sql.Rows, isComment bool) ([]PostsResult, error) {
 			CommentToId:  commentToId,
 			ResponseToId: responseToId,
 			Reposts:      reposts,
+			IsFavorite:   isFavorite,
 		}
 
 		if isUserDeleted {

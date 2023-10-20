@@ -1,5 +1,12 @@
 import { AnyAction, ThunkDispatch } from "@reduxjs/toolkit";
-import { Post, postApi, postsAdapter, postsSelector } from "./postsApiSlice";
+import {
+  Post,
+  PostsResponse,
+  postApi,
+  postsAdapter,
+  postsSelector,
+} from "./postsApiSlice";
+import { userApi, userPostsAdapter, userPostsSelector } from "../user/userApiSlice";
 
 export function getReactionChanges(post: Post | undefined, liked: boolean) {
   const r = liked ? 1 : -1;
@@ -38,20 +45,43 @@ export function updatePost(
   postId: string,
   changes: Partial<Post> | ((post: Post) => Partial<Post>)
 ) {
-  return [
-    dispatch(
-      postApi.util.updateQueryData("getPosts", 0, (draft) => {
-        const post = postsSelector.selectById(draft.posts, postId);
-        if (!post) return;
+  let postData = null as Post | null;
 
-        if (typeof changes === "function") changes = changes(post);
-        postsAdapter.updateOne(draft.posts, { id: postId, changes });
-      })
-    ),
+  function updateRecipe(draft: PostsResponse) {
+    const post = postsSelector.selectById(draft.posts, postId);
+    if (!post) return;
+    postData = post;
+
+    if (typeof changes === "function") changes = changes(post);
+    postsAdapter.updateOne(draft.posts, { id: postId, changes });
+  }
+
+  const result = [
+    dispatch(postApi.util.updateQueryData("getPosts", 0, updateRecipe)),
     dispatch(
       postApi.util.updateQueryData("getPostById", postId, (draft) =>
         Object.assign(draft, changes)
       )
     ),
+    dispatch(postApi.util.updateQueryData("getFavoritePosts", 0, updateRecipe)),
   ];
+
+  if (postData && !postData.user.isDeleted)
+    result.push(
+      dispatch(
+        userApi.util.updateQueryData(
+          "getUserPosts",
+          { page: 0, id: postData.user.id },
+          (draft) => {
+            const p = userPostsSelector.selectById(draft.posts, postId);
+            if (!p) return;
+
+            if (typeof changes === "function") changes = changes(p);
+            userPostsAdapter.updateOne(draft.posts, { id: p.id, changes });
+          }
+        )
+      )
+    );
+
+  return result;
 }
