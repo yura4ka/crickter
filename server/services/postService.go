@@ -101,6 +101,7 @@ type QueryParams struct {
 	PostId, CommentsToId, ResponseToId, RequestUserId, UserId string
 	Page                                                      int
 	OrderBy                                                   TSortBy
+	IsFavorite                                                bool
 }
 
 func buildPostQuery(params *QueryParams) (string, []interface{}) {
@@ -156,6 +157,9 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 	} else if params.UserId != "" {
 		query += "\nWHERE p.comment_to_id IS NULL AND u.id = $2\n"
 		args = append(args, params.UserId)
+	} else if params.IsFavorite {
+		query += "\nINNER JOIN favorite_posts AS fp ON p.id = fp.post_id AND fp.user_id = $2\n"
+		args = append(args, params.RequestUserId)
 	} else {
 		query += "\nWHERE p.comment_to_id IS NULL\n"
 	}
@@ -345,4 +349,47 @@ func CountResponses(commentId string, page int) (int, bool, error) {
 		return 0, false, err
 	}
 	return total, total > page*POSTS_PER_PAGE, nil
+}
+
+func ProcessFavorite(postId, userId string) error {
+	result, err := db.Client.Exec(
+		"DELETE FROM favorite_posts WHERE post_id = $1 AND user_id = $2",
+		postId, userId)
+
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 1 {
+		return nil
+	}
+
+	_, err = db.Client.Exec(
+		"INSERT INTO favorite_posts (post_id, user_id) VALUES ($1, $2);",
+		postId, userId)
+
+	return err
+}
+
+func GetFavoritePosts(userId string, page int) ([]PostsResult, error) {
+	query, args := buildPostQuery(&QueryParams{RequestUserId: userId, IsFavorite: true, Page: page})
+	rows, err := db.Client.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	return parsePosts(rows, false)
+}
+
+func HasMoreFavorite(userId string, page int) (bool, error) {
+	var total int
+	err := db.Client.QueryRow("SELECT COUNT(*) FROM favorite_posts WHERE user_id = $1;", userId).Scan(&total)
+	if err != nil {
+		return false, err
+	}
+	return total > page*POSTS_PER_PAGE, nil
 }
