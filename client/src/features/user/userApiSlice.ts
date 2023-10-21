@@ -1,5 +1,5 @@
 import { api } from "@/app/api/apiSlice";
-import { Post, PostsResponse } from "../posts/postsApiSlice";
+import { Post, PostsResponse, postsAdapter, postsSelector } from "../posts/postsApiSlice";
 import { EntityState, createEntityAdapter } from "@reduxjs/toolkit";
 import { RootState } from "@/app/store";
 
@@ -25,16 +25,8 @@ interface UsersResponse {
   hasMore: boolean;
 }
 
-export const userPostsAdapter = createEntityAdapter<Post>({
-  sortComparer: (a, b) => Number(new Date(b.createdAt)) - Number(new Date(a.createdAt)),
-});
-export const userPostsSelector = userPostsAdapter.getSelectors();
-
 export const followersAdapter = createEntityAdapter<BaseUser>();
 export const followersSelector = followersAdapter.getSelectors();
-
-export const followingAdapter = createEntityAdapter<BaseUser>();
-export const followingSelector = followingAdapter.getSelectors();
 
 export const userApi = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -110,7 +102,7 @@ export const userApi = api.injectEndpoints({
       query: ({ page, id }) => ({ url: `user/${id}/posts?page=${page}` }),
       transformResponse: ({ posts, hasMore }: { posts: Post[]; hasMore: boolean }) => {
         return {
-          posts: userPostsAdapter.addMany(userPostsAdapter.getInitialState(), posts),
+          posts: postsAdapter.setMany(postsAdapter.getInitialState(), posts),
           hasMore,
         };
       },
@@ -118,10 +110,7 @@ export const userApi = api.injectEndpoints({
         return endpointName + queryArgs.id;
       },
       merge: (currentCache, newItems) => {
-        userPostsAdapter.addMany(
-          currentCache.posts,
-          userPostsSelector.selectAll(newItems.posts)
-        );
+        postsAdapter.setMany(currentCache.posts, postsSelector.selectAll(newItems.posts));
         currentCache.hasMore = newItems.hasMore;
       },
       forceRefetch({ currentArg, previousArg }) {
@@ -141,14 +130,14 @@ export const userApi = api.injectEndpoints({
       query: ({ page, id }) => ({ url: `user/${id}/followers?page=${page}` }),
       keepUnusedDataFor: 0,
       transformResponse: (r: { users: BaseUser[]; hasMore: boolean }) => ({
-        users: followersAdapter.addMany(followersAdapter.getInitialState(), r.users),
+        users: followersAdapter.setMany(followersAdapter.getInitialState(), r.users),
         hasMore: r.hasMore,
       }),
       serializeQueryArgs: ({ endpointName, queryArgs }) => {
         return endpointName + queryArgs.id;
       },
       merge: (currentCache, newItems) => {
-        followersAdapter.addMany(
+        followersAdapter.setMany(
           currentCache.users,
           followersSelector.selectAll(newItems.users)
         );
@@ -165,16 +154,16 @@ export const userApi = api.injectEndpoints({
       query: ({ page, id }) => ({ url: `user/${id}/following?page=${page}` }),
       keepUnusedDataFor: 0,
       transformResponse: (r: { users: BaseUser[]; hasMore: boolean }) => ({
-        users: followingAdapter.addMany(followingAdapter.getInitialState(), r.users),
+        users: followersAdapter.setMany(followersAdapter.getInitialState(), r.users),
         hasMore: r.hasMore,
       }),
       serializeQueryArgs: ({ endpointName, queryArgs }) => {
         return endpointName + queryArgs.id;
       },
       merge: (currentCache, newItems) => {
-        followingAdapter.addMany(
+        followersAdapter.setMany(
           currentCache.users,
-          followingSelector.selectAll(newItems.users)
+          followersSelector.selectAll(newItems.users)
         );
         currentCache.hasMore = newItems.hasMore;
       },

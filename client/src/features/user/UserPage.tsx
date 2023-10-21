@@ -1,14 +1,9 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
-import {
-  useGetUserPostsQuery,
-  useGetUserQuery,
-  userPostsAdapter,
-  userPostsSelector,
-} from "./userApiSlice";
+import { useGetUserPostsQuery, useGetUserQuery } from "./userApiSlice";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useRef, useState } from "react";
-import { Post } from "../posts/postsApiSlice";
+import { Post, postsAdapter, postsSelector } from "../posts/postsApiSlice";
 import { useInfiniteScroll } from "@/lib/hooks";
 import PostCard from "../posts/PostCard";
 import RepostModal from "../posts/RepostModal";
@@ -147,9 +142,7 @@ const Feed = ({ id }: { id: string }) => {
     { page, id },
     {
       selectFromResult: ({ data, ...other }) => ({
-        posts: userPostsSelector.selectAll(
-          data?.posts ?? userPostsAdapter.getInitialState()
-        ),
+        posts: postsSelector.selectAll(data?.posts ?? postsAdapter.getInitialState()),
         hasMore: data?.hasMore,
         ...other,
       }),

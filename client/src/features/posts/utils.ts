@@ -6,7 +6,8 @@ import {
   postsAdapter,
   postsSelector,
 } from "./postsApiSlice";
-import { userApi, userPostsAdapter, userPostsSelector } from "../user/userApiSlice";
+import { userApi } from "../user/userApiSlice";
+import { commentApi, commentsAdapter, commentsSelector } from "./commentsApiSlice";
 
 export function getReactionChanges(post: Post | undefined, liked: boolean) {
   const r = liked ? 1 : -1;
@@ -39,47 +40,84 @@ export function getReactionChanges(post: Post | undefined, liked: boolean) {
 
 export type PostType = "post" | "comment" | "response";
 
+type TPostData = Pick<Post, "id"> &
+  Partial<Pick<Post, "commentToId" | "responseToId" | "user">>;
+
 export function updatePost(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   dispatch: ThunkDispatch<any, any, AnyAction>,
-  postId: string,
+  post: TPostData,
   changes: Partial<Post> | ((post: Post) => Partial<Post>)
 ) {
-  let postData = null as Post | null;
+  let user = post.user;
 
   function updateRecipe(draft: PostsResponse) {
-    const post = postsSelector.selectById(draft.posts, postId);
-    if (!post) return;
-    postData = post;
+    const p = postsSelector.selectById(draft.posts, post.id);
+    if (!p) return;
 
-    if (typeof changes === "function") changes = changes(post);
-    postsAdapter.updateOne(draft.posts, { id: postId, changes });
+    if (!user) user = p.user;
+
+    if (typeof changes === "function") changes = changes(p);
+    postsAdapter.updateOne(draft.posts, { id: post.id, changes });
   }
 
   const result = [
     dispatch(postApi.util.updateQueryData("getPosts", 0, updateRecipe)),
     dispatch(
-      postApi.util.updateQueryData("getPostById", postId, (draft) =>
+      postApi.util.updateQueryData("getPostById", post.id, (draft) =>
         Object.assign(draft, changes)
       )
     ),
     dispatch(postApi.util.updateQueryData("getFavoritePosts", 0, updateRecipe)),
   ];
 
-  if (postData && !postData.user.isDeleted)
+  if (user && !user.isDeleted)
     result.push(
       dispatch(
         userApi.util.updateQueryData(
           "getUserPosts",
-          { page: 0, id: postData.user.id },
-          (draft) => {
-            const p = userPostsSelector.selectById(draft.posts, postId);
-            if (!p) return;
-
-            if (typeof changes === "function") changes = changes(p);
-            userPostsAdapter.updateOne(draft.posts, { id: p.id, changes });
-          }
+          { page: 0, id: user.id },
+          updateRecipe
         )
+      )
+    );
+
+  if (post.commentToId)
+    dispatch(
+      commentApi.util.updateQueryData(
+        "getComments",
+        { page: 0, postId: post.commentToId },
+        (draft) => {
+          if (post.responseToId) {
+            const comment = commentsSelector.selectById(
+              draft.comments,
+              post.responseToId
+            );
+            if (!comment) return;
+            const commentChanges = {
+              responses: comment.responses.map((r) => {
+                if (r.id === post.id)
+                  return {
+                    ...r,
+                    ...(typeof changes === "function" ? changes(r) : changes),
+                  };
+                return r;
+              }),
+            };
+            commentsAdapter.updateOne(draft.comments, {
+              id: post.responseToId,
+              changes: commentChanges,
+            });
+
+            return;
+          }
+
+          const comment = commentsSelector.selectById(draft.comments, post.id);
+          if (!comment) return;
+
+          if (typeof changes === "function") changes = changes(comment);
+          commentsAdapter.updateOne(draft.comments, { id: post.id, changes });
+        }
       )
     );
 

@@ -1,6 +1,7 @@
 import { EntityState, createEntityAdapter } from "@reduxjs/toolkit";
-import { Post, postApi, postsAdapter } from "./postsApiSlice";
+import { Post } from "./postsApiSlice";
 import { api } from "@/app/api/apiSlice";
+import { updatePost } from "./utils";
 
 export interface IComment extends Post {
   responses: Post[];
@@ -34,7 +35,7 @@ export const commentApi = api.injectEndpoints({
       query: ({ page, postId }) => ({ url: `comment?postId=${postId}&page=${page}` }),
       transformResponse: ({ comments, total, hasMore }: DataResponse) => {
         return {
-          comments: commentsAdapter.addMany(
+          comments: commentsAdapter.setMany(
             commentsAdapter.getInitialState(),
             comments.map((c) => ({ ...c, responses: [] }))
           ),
@@ -46,7 +47,7 @@ export const commentApi = api.injectEndpoints({
         return endpointName + queryArgs.postId;
       },
       merge: (currentCache, newItems) => {
-        commentsAdapter.addMany(
+        commentsAdapter.setMany(
           currentCache.comments,
           commentsSelector.selectAll(newItems.comments)
         );
@@ -69,19 +70,7 @@ export const commentApi = api.injectEndpoints({
 
       async onQueryStarted({ postId }, { dispatch, queryFulfilled }) {
         const { data } = await queryFulfilled;
-        dispatch(
-          postApi.util.updateQueryData("getPosts", 0, (draft) => {
-            postsAdapter.updateOne(draft.posts, {
-              id: postId,
-              changes: { comments: data.total },
-            });
-          })
-        );
-        dispatch(
-          postApi.util.updateQueryData("getPostById", postId, (draft) =>
-            Object.assign(draft, { comments: data.total })
-          )
-        );
+        updatePost(dispatch, { id: postId }, { comments: data.total });
       },
     }),
 
@@ -109,19 +98,7 @@ export const commentApi = api.injectEndpoints({
             });
           })
         );
-        dispatch(
-          postApi.util.updateQueryData("getPosts", 0, (draft) => {
-            postsAdapter.updateOne(draft.posts, {
-              id: postId,
-              changes: { comments: data.totalComments },
-            });
-          })
-        );
-        dispatch(
-          postApi.util.updateQueryData("getPostById", postId, (draft) =>
-            Object.assign(draft, { comments: data.totalComments })
-          )
-        );
+        updatePost(dispatch, { id: postId }, { comments: data.totalComments });
       },
     }),
   }),

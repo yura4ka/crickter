@@ -8,8 +8,9 @@ import {
   commentsAdapter,
   commentsSelector,
 } from "./commentsApiSlice";
+import { userApi } from "../user/userApiSlice";
 
-type PostUser =
+export type PostUser =
   | {
       id: string;
       username: string;
@@ -70,7 +71,7 @@ export const postApi = api.injectEndpoints({
       query: (page) => ({ url: `post?page=${page}` }),
       transformResponse: ({ posts, hasMore }: { posts: Post[]; hasMore: boolean }) => {
         return {
-          posts: postsAdapter.addMany(postsAdapter.getInitialState(), posts),
+          posts: postsAdapter.setMany(postsAdapter.getInitialState(), posts),
           hasMore,
         };
       },
@@ -78,7 +79,7 @@ export const postApi = api.injectEndpoints({
         return endpointName;
       },
       merge: (currentCache, newItems) => {
-        postsAdapter.addMany(currentCache.posts, postsSelector.selectAll(newItems.posts));
+        postsAdapter.setMany(currentCache.posts, postsSelector.selectAll(newItems.posts));
         currentCache.hasMore = newItems.hasMore;
       },
       forceRefetch({ currentArg, previousArg }) {
@@ -124,7 +125,9 @@ export const postApi = api.injectEndpoints({
           })
         );
         if (originalId) {
-          updatePost(dispatch, originalId, (post) => ({ reposts: post.reposts + 1 }));
+          updatePost(dispatch, { id: originalId }, (post) => ({
+            reposts: post.reposts + 1,
+          }));
         }
         if (commentToId && !responseToId) {
           (newPost as unknown as IComment).responses = [];
@@ -139,8 +142,7 @@ export const postApi = api.injectEndpoints({
               }
             )
           );
-        }
-        if (responseToId && commentToId)
+        } else if (responseToId && commentToId) {
           dispatch(
             commentApi.util.updateQueryData(
               "getComments",
@@ -158,6 +160,17 @@ export const postApi = api.injectEndpoints({
               }
             )
           );
+        } else if (!responseToId && !commentToId) {
+          dispatch(
+            userApi.util.updateQueryData(
+              "getUserPosts",
+              { id: user.id, page: 0 },
+              (draft) => {
+                postsAdapter.addOne(draft.posts, newPost as Post);
+              }
+            )
+          );
+        }
       },
     }),
     processReaction: builder.mutation<undefined, ReactionRequest>({
@@ -172,46 +185,7 @@ export const postApi = api.injectEndpoints({
         },
       }),
       async onQueryStarted({ post, liked }, { dispatch, queryFulfilled }) {
-        const { commentToId, responseToId, id } = post;
-        const patches = [
-          ...updatePost(dispatch, id, getReactionChanges(post, liked)),
-          commentToId &&
-            dispatch(
-              commentApi.util.updateQueryData(
-                "getComments",
-                { page: 0, postId: commentToId },
-                (draft) => {
-                  const comment = commentsSelector.selectById(draft.comments, id);
-                  const changes = getReactionChanges(comment, liked);
-                  commentsAdapter.updateOne(draft.comments, { id, changes });
-                }
-              )
-            ),
-          responseToId &&
-            commentToId &&
-            dispatch(
-              commentApi.util.updateQueryData(
-                "getComments",
-                { page: 0, postId: commentToId },
-                (draft) => {
-                  const comment = commentsSelector.selectById(
-                    draft.comments,
-                    responseToId
-                  );
-                  if (!comment) return;
-                  const changes = {
-                    responses: comment.responses.map((r) =>
-                      r.id === id ? { ...r, ...getReactionChanges(r, liked) } : r
-                    ),
-                  };
-                  commentsAdapter.updateOne(draft.comments, {
-                    id: responseToId,
-                    changes,
-                  });
-                }
-              )
-            ),
-        ];
+        const patches = updatePost(dispatch, post, getReactionChanges(post, liked));
         try {
           await queryFulfilled;
         } catch {
@@ -225,7 +199,7 @@ export const postApi = api.injectEndpoints({
       keepUnusedDataFor: 0,
       transformResponse: ({ posts, hasMore }: { posts: Post[]; hasMore: boolean }) => {
         return {
-          posts: postsAdapter.addMany(postsAdapter.getInitialState(), posts),
+          posts: postsAdapter.setMany(postsAdapter.getInitialState(), posts),
           hasMore,
         };
       },
@@ -233,7 +207,7 @@ export const postApi = api.injectEndpoints({
         return endpointName;
       },
       merge: (currentCache, newItems) => {
-        postsAdapter.addMany(currentCache.posts, postsSelector.selectAll(newItems.posts));
+        postsAdapter.setMany(currentCache.posts, postsSelector.selectAll(newItems.posts));
         currentCache.hasMore = newItems.hasMore;
       },
       forceRefetch({ currentArg, previousArg }) {
@@ -260,7 +234,7 @@ export const postApi = api.injectEndpoints({
               if (!post.isFavorite) postsAdapter.addOne(draft.posts, post);
             })
           ),
-          ...updatePost(dispatch, post.id, (post) => ({
+          ...updatePost(dispatch, post, (post) => ({
             isFavorite: !post.isFavorite,
           })),
         ];
