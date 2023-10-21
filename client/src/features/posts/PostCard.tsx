@@ -15,6 +15,39 @@ import { PostType } from "./utils";
 import { useAuth } from "../auth/useAuth";
 import { useLoginModal } from "../loginModal/useLoginModal";
 import { AvatarImage } from "@radix-ui/react-avatar";
+import React from "react";
+
+const hashtagRegex = /#\w+/;
+const linkRegex = /(?:https?|ftp):\/\/[^\s/$.?#].[^\s]*/;
+
+function formatText(text: string) {
+  return text.split("\n").map((r, j) => (
+    <p key={j}>
+      {r.split(" ").map((s, i) => {
+        const tag = s.match(hashtagRegex);
+        if (tag)
+          return (
+            <React.Fragment key={i}>
+              <a href={`tags/${tag[0]}`} className="link">
+                {s}
+              </a>{" "}
+            </React.Fragment>
+          );
+
+        const url = s.match(linkRegex);
+        if (url)
+          return (
+            <React.Fragment key={i}>
+              <a href={url[0]} target="__blank" className="link">
+                {s}
+              </a>{" "}
+            </React.Fragment>
+          );
+        return <React.Fragment key={i}>{s} </React.Fragment>;
+      })}
+    </p>
+  ));
+}
 
 const MinimalOriginal: FC<{ post: Post | undefined }> = ({ post }) => {
   if (!post)
@@ -33,7 +66,7 @@ const MinimalOriginal: FC<{ post: Post | undefined }> = ({ post }) => {
       <div className="font-medium">
         {post.user.isDeleted ? "Deleted user" : `@${post.user.username}`}
       </div>
-      <div className="line-clamp-1">{post.text}</div>
+      <div className="line-clamp-1">{formatText(post.text)}</div>
     </a>
   );
 };
@@ -153,9 +186,9 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
         {fetchOriginal && p.originalId && type !== "post" && (
           <MinimalOriginal post={original} />
         )}
-        <p style={{ wordBreak: "break-word" }} className="pb-1">
-          {p.text}
-        </p>
+        <div style={{ wordBreak: "break-word" }} className="pb-1">
+          {formatText(p.text)}
+        </div>
         {fetchOriginal && p.originalId && type === "post" && (
           <PostCard
             post={original}
