@@ -1,5 +1,31 @@
 -- +goose Up
 
+-- +goose StatementBegin
+CREATE OR REPLACE FUNCTION on_post_change()
+RETURNS TRIGGER AS $$
+DECLARE
+  tag RECORD;
+  tag_id UUID;
+BEGIN
+  IF NEW.text != OLD.text OR NEW.is_deleted != OLD.is_deleted THEN
+    INSERT INTO post_changes (text, is_deleted, post_id)
+    VALUES (NEW.text, NEW.is_deleted, NEW.id);
+  END IF;
+
+  FOR tag IN
+    SELECT DISTINCT (regexp_matches(NEW.text, '\Y#(\w+)', 'gm'))[1] AS name
+  LOOP
+    SELECT id FROM tags INTO tag_id WHERE name = tag.name;
+    IF tag_id IS NULL THEN
+      INSERT INTO tags (name) VALUES (tag.name) RETURNING id INTO tag_id;
+    END IF;
+    INSERT INTO post_tags (post_id, tag_id) VALUES (NEW.id, tag_id) ON CONFLICT DO NOTHING;
+  END LOOP;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+-- +goose StatementEnd
 
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION check_post()
@@ -83,7 +109,28 @@ BEFORE INSERT ON favorite_posts
 FOR EACH ROW
 EXECUTE PROCEDURE check_favorite();
 
+DROP TRIGGER IF EXISTS post_change ON posts;
+
+CREATE TRIGGER post_change
+AFTER INSERT OR UPDATE ON posts
+FOR EACH ROW
+EXECUTE PROCEDURE on_post_change();
+
 -- +goose Down
+
+-- +goose StatementBegin
+CREATE OR REPLACE FUNCTION on_post_change()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.text != OLD.text OR NEW.is_deleted != OLD.is_deleted THEN
+    INSERT INTO post_changes (text, is_deleted, post_id)
+    VALUES (NEW.text, NEW.is_deleted, NEW.id);
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+-- +goose StatementEnd
 
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION check_post()
@@ -141,3 +188,10 @@ $$ LANGUAGE plpgsql;
 -- +goose StatementEnd
 
 DROP FUNCTION IF EXISTS check_favorite CASCADE;
+
+DROP TRIGGER IF EXISTS post_change ON posts;
+
+CREATE TRIGGER post_change
+BEFORE INSERT OR UPDATE ON posts
+FOR EACH ROW
+EXECUTE PROCEDURE on_post_change();
