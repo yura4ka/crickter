@@ -13,7 +13,7 @@ BEGIN
   END IF;
 
   FOR tag IN
-    SELECT DISTINCT (regexp_matches(NEW.text, '\Y#(\w+)', 'gm'))[1] AS name
+    SELECT DISTINCT lower((regexp_matches(NEW.text, '\Y#(\w+)', 'gm'))[1]) AS name
   LOOP
     SELECT id FROM tags INTO tag_id WHERE name = tag.name;
     IF tag_id IS NULL THEN

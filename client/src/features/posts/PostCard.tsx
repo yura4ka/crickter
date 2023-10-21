@@ -28,7 +28,7 @@ function formatText(text: string) {
         if (tag)
           return (
             <React.Fragment key={i}>
-              <a href={`tags/${tag[0]}`} className="link">
+              <a href={`tags/${tag[0].toLowerCase()}`} className="link">
                 {s}
               </a>{" "}
             </React.Fragment>
@@ -41,6 +41,12 @@ function formatText(text: string) {
               <a href={url[0]} target="__blank" className="link">
                 {s}
               </a>{" "}
+            </React.Fragment>
+          );
+        if (r === "")
+          return (
+            <React.Fragment key={i}>
+              <br />
             </React.Fragment>
           );
         return <React.Fragment key={i}>{s} </React.Fragment>;
