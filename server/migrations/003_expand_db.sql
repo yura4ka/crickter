@@ -12,7 +12,9 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+-- +goose StatementEnd
 
+-- +goose StatementBegin
 CREATE OR REPLACE FUNCTION check_post()
 RETURNS TRIGGER AS $$
 DECLARE
