@@ -166,6 +166,9 @@ const Feed = ({ id }: { id: string }) => {
 
   return (
     <div className="divide-y">
+      {posts.length === 0 && !isFetching && (
+        <div className="pt-4 text-center text-xl">No posts here...</div>
+      )}
       {posts.map((p) => (
         <PostCard key={p.id} post={p} onRepostClick={handleRepostClick} />
       ))}

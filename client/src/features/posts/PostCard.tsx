@@ -206,15 +206,13 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
         <div className={cn("flex gap-4", hideControls && "hidden")}>
           <Button onClick={() => onReactionClick(true)} size={"icon"} variant={"ghost"}>
             <ThumbsUp
-              className="mr-2 h-4 w-4"
-              {...(p.reaction === 1 && { fill: "hsl(var(--reaction))" })}
+              className={cn("mr-2 h-4 w-4", p.reaction === 1 && "fill-reaction")}
             />
             {p.likes}
           </Button>
           <Button onClick={() => onReactionClick(false)} size={"icon"} variant={"ghost"}>
             <ThumbsDown
-              className="mr-2 h-4 w-4"
-              {...(p.reaction === -1 && { fill: "hsl(var(--reaction))" })}
+              className={cn("mr-2 h-4 w-4", p.reaction === -1 && "fill-reaction")}
             />
             {p.dislikes}
           </Button>
@@ -244,10 +242,7 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
           )}
           {type === "post" && (
             <Button onClick={onFavoriteClick} size={"icon"} variant={"ghost"}>
-              <Bookmark
-                className="h-4 w-4"
-                {...(p.isFavorite && { fill: "hsl(var(--reaction))" })}
-              />
+              <Bookmark className={cn("h-4 w-4", p.isFavorite && "fill-reaction")} />
             </Button>
           )}
         </div>

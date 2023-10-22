@@ -12,6 +12,7 @@ import { useInfiniteScroll } from "./lib/hooks";
 import RepostModal from "./features/posts/RepostModal";
 import { useGetPopularTagsQuery } from "./features/tags/tagsApiSlice";
 import { Link } from "react-router-dom";
+import { Skeleton } from "./components/ui/skeleton";
 
 const Feed = () => {
   const { isLoading: isAuthLoading } = useAuth();
@@ -63,22 +64,37 @@ const Feed = () => {
 const Trends = () => {
   const { data: tags, isLoading } = useGetPopularTagsQuery();
 
-  if (isLoading || !tags) return <></>;
-
   return (
     <div className="mt-4 rounded-xl bg-accent text-accent-foreground">
       <h3 className="border-b border-accent-border p-2 text-xl font-bold">Trending</h3>
       <div className="divide-y divide-accent-border">
-        {tags.map((t) => (
-          <Link
-            to={`tags/#${t.name}`}
-            key={t.name}
-            className="block p-2 transition-colors hover:bg-accent-border"
-          >
-            <p className="text-lg font-bold">#{t.name}</p>
-            <p className="text-sm text-muted-foreground">{t.postCount} tweets</p>
-          </Link>
-        ))}
+        {isLoading || !tags ? (
+          <>
+            <div className="p-2">
+              <Skeleton className="mb-1.5 h-[18px] w-[160px] bg-accent-border" />
+              <Skeleton className="h-[14px] w-[60px] bg-accent-border" />
+            </div>
+            <div className="p-2">
+              <Skeleton className="mb-1.5 h-[18px] w-[160px] bg-accent-border" />
+              <Skeleton className="h-[14px] w-[60px] bg-accent-border" />
+            </div>
+            <div className="p-2">
+              <Skeleton className="mb-1.5 h-[18px] w-[160px] bg-accent-border" />
+              <Skeleton className="h-[14px] w-[60px] bg-accent-border" />
+            </div>
+          </>
+        ) : (
+          tags.map((t) => (
+            <Link
+              to={`tags/#${t.name}`}
+              key={t.name}
+              className="block p-2 transition-colors hover:bg-accent-border"
+            >
+              <p className="text-lg font-bold">#{t.name}</p>
+              <p className="text-sm text-muted-foreground">{t.postCount} tweets</p>
+            </Link>
+          ))
+        )}
       </div>
       <Link to="tags" className="link block border-t border-accent-border p-2">
         Show more

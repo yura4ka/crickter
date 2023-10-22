@@ -9,6 +9,7 @@ import {
 import { useInfiniteScroll } from "@/lib/hooks";
 import PostCard from "./PostCard";
 import RepostModal from "./RepostModal";
+import { Bookmark } from "lucide-react";
 
 const FavoritePostsPage = () => {
   const { isLoading: isAuthLoading } = useAuth();
@@ -40,6 +41,15 @@ const FavoritePostsPage = () => {
 
   return (
     <main className="sm:container">
+      <h1 className="flex items-center gap-2 border-b p-4 text-xl font-bold">
+        <Bookmark className="fill-reaction" />
+        favorite posts
+      </h1>
+      {posts.length === 0 && !isFetching && (
+        <div className="pt-4 text-center text-xl">
+          You don't have any favorite posts now...
+        </div>
+      )}
       <div className="divide-y">
         {posts.map((p) => (
           <PostCard key={p.id} post={p} onRepostClick={handleRepostClick} />
