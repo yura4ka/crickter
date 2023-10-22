@@ -10,6 +10,8 @@ import {
 } from "./features/posts/postsApiSlice";
 import { useInfiniteScroll } from "./lib/hooks";
 import RepostModal from "./features/posts/RepostModal";
+import { useGetPopularTagsQuery } from "./features/tags/tagsApiSlice";
+import { Link } from "react-router-dom";
 
 const Feed = () => {
   const { isLoading: isAuthLoading } = useAuth();
@@ -58,20 +60,39 @@ const Feed = () => {
   );
 };
 
+const Trends = () => {
+  const { data: tags, isLoading } = useGetPopularTagsQuery();
+
+  if (isLoading || !tags) return <></>;
+
+  return (
+    <div className="mt-4 rounded-xl bg-accent text-accent-foreground">
+      <h3 className="border-b border-accent-border p-2 text-xl font-bold">Trending</h3>
+      <div className="divide-y divide-accent-border">
+        {tags.map((t) => (
+          <Link
+            to={`tags/#${t.name}`}
+            key={t.name}
+            className="block p-2 transition-colors hover:bg-accent-border"
+          >
+            <p className="text-lg font-bold">#{t.name}</p>
+            <p className="text-sm text-muted-foreground">{t.postCount} tweets</p>
+          </Link>
+        ))}
+      </div>
+      <Link to="tags" className="link block border-t border-accent-border p-2">
+        Show more
+      </Link>
+    </div>
+  );
+};
+
 function App() {
   return (
     <div className="sm:container sm:flex">
       <aside className="flex flex-col p-4 sm:order-2 sm:w-1/4">
         <input type="search" className="bg-accent" placeholder="search" />
-        <div className="mt-4 rounded bg-accent p-2 text-accent-foreground">
-          <h3>Trending</h3>
-          <div>
-            <p>abc</p>
-            <p>bcd</p>
-            <p>efg</p>
-          </div>
-          <p className="link">Show more</p>
-        </div>
+        <Trends />
       </aside>
       <main className="overflow-x-hidden px-2 py-4 sm:w-3/4 sm:border-r sm:pl-0 sm:pr-4">
         <CreatePost />

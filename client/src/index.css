@@ -38,6 +38,8 @@
     --error: 0 84.2% 60.2%;
 
     --reaction: 0 0% 6%;
+
+    --accent-border: 0 0% 89.8%;
   }
 
   .dark {
@@ -73,6 +75,8 @@
     --error: 0 62.8% 40.6%;
 
     --reaction: 0 0% 98%;
+
+    --accent-border: 0 0% 25%;
   }
 }
 
@@ -87,7 +91,7 @@
 
 @layer components {
   .link {
-    @apply font-semibold text-cyan-600 transition-all hover:text-cyan-700 hover:underline;
+    @apply font-semibold text-cyan-600 transition-all hover:text-cyan-700 hover:underline dark:text-cyan-500 dark:hover:text-cyan-600;
   }
 }
 
