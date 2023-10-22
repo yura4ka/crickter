@@ -95,6 +95,7 @@ export const postApi = api.injectEndpoints({
     }),
     createPost: builder.mutation<{ id: string }, CreatePostRequest>({
       query: (body) => ({ url: "post", method: "POST", body }),
+      invalidatesTags: [{ type: "Tags" }],
       async onQueryStarted(
         { text, originalId, responseToId, commentToId },
         { dispatch, queryFulfilled, getState }

@@ -17,7 +17,7 @@ import { useLoginModal } from "../loginModal/useLoginModal";
 import { AvatarImage } from "@radix-ui/react-avatar";
 import React from "react";
 
-const hashtagRegex = /#\w+/;
+const hashtagRegex = /#(\w+)/;
 const linkRegex = /(?:https?|ftp):\/\/[^\s/$.?#].[^\s]*/;
 
 function formatText(text: string) {
@@ -28,9 +28,9 @@ function formatText(text: string) {
         if (tag)
           return (
             <React.Fragment key={i}>
-              <a href={`tags/${tag[0].toLowerCase()}`} className="link">
+              <Link to={`tags/${tag[1].toLowerCase()}`} className="link">
                 {s}
-              </a>{" "}
+              </Link>{" "}
             </React.Fragment>
           );
 
@@ -38,9 +38,9 @@ function formatText(text: string) {
         if (url)
           return (
             <React.Fragment key={i}>
-              <a href={url[0]} target="__blank" className="link">
+              <Link to={url[0]} target="__blank" className="link">
                 {s}
-              </a>{" "}
+              </Link>{" "}
             </React.Fragment>
           );
         if (r === "")

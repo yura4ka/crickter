@@ -18,6 +18,8 @@ import UserPage from "./features/user/UserPage.tsx";
 import { ThemeProvider } from "./lib/ThemeContext.tsx";
 import PostPage from "./features/posts/PostPage.tsx";
 import FavoritePostsPage from "./features/posts/FavoritePostsPage.tsx";
+import TagPage from "./features/tags/TagPage.tsx";
+import TagPostsPage from "./features/tags/TagPostsPage.tsx";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -27,6 +29,8 @@ const router = createBrowserRouter(
       <Route index element={<App />} />
       <Route path="post/:postId" element={<PostPage />} />
       <Route path="user/:userId" element={<UserPage />} />
+      <Route path="tags" element={<TagPage />} />
+      <Route path="tags/:tag" element={<TagPostsPage />} />
 
       <Route element={<AuthLayout />}>
         <Route path="favorite" element={<FavoritePostsPage />} />

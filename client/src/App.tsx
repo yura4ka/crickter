@@ -86,7 +86,7 @@ const Trends = () => {
         ) : (
           tags.map((t) => (
             <Link
-              to={`tags/#${t.name}`}
+              to={`tags/${t.name}`}
               key={t.name}
               className="block p-2 transition-colors hover:bg-accent-border"
             >

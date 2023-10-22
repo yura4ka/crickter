@@ -1,12 +1,17 @@
 package services
 
-import "github.com/yura4ka/crickter/db"
+import (
+	"time"
+
+	"github.com/yura4ka/crickter/db"
+)
 
 const TAGS_PER_PAGE = 15
 
 type TagsResponse struct {
-	Name      string `json:"name"`
-	PostCount int    `json:"postCount"`
+	Name      string    `json:"name"`
+	PostCount int       `json:"postCount"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 func GetTags(page int) ([]TagsResponse, error) {
@@ -19,11 +24,11 @@ func GetTags(page int) ([]TagsResponse, error) {
 	}
 
 	rows, err := db.Client.Query(`
-		SELECT t.name, COUNT(pt.post_id) as count
+		SELECT t.name, COUNT(pt.post_id) as count, t.created_at
 		FROM tags AS t
 		LEFT JOIN post_tags AS pt ON t.id = pt.tag_id
 		LEFT JOIN posts AS p ON pt.post_id = p.id
-		GROUP BY t.name
+		GROUP BY t.name, t.created_at
 		ORDER BY count DESC
 		LIMIT $1 OFFSET $2;
 		`, limit, offset)
@@ -36,7 +41,7 @@ func GetTags(page int) ([]TagsResponse, error) {
 
 	for rows.Next() {
 		tag := TagsResponse{}
-		err := rows.Scan(&tag.Name, &tag.PostCount)
+		err := rows.Scan(&tag.Name, &tag.PostCount, &tag.CreatedAt)
 		if err != nil {
 			return nil, err
 		}
