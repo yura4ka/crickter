@@ -1,5 +1,6 @@
 import { api } from "@/app/api/apiSlice";
 import { EntityState, createEntityAdapter } from "@reduxjs/toolkit";
+import { Post, PostsResponse, postsAdapter, postsSelector } from "../posts/postsApiSlice";
 
 interface Tag {
   name: string;
@@ -57,7 +58,35 @@ export const tagsApi = api.injectEndpoints({
             ]
           : [{ type: "Tags", id: "LIST" }],
     }),
+
+    getTagPosts: builder.query<PostsResponse, { tag: string; page: number }>({
+      query: ({ tag, page }) => ({ url: `tags/${tag}/posts?page=${page}` }),
+      transformResponse: ({ posts, hasMore }: { posts: Post[]; hasMore: boolean }) => {
+        return {
+          posts: postsAdapter.setMany(postsAdapter.getInitialState(), posts),
+          hasMore,
+        };
+      },
+      serializeQueryArgs: ({ endpointName, queryArgs }) => {
+        return endpointName + queryArgs.tag;
+      },
+      merge: (currentCache, newItems) => {
+        postsAdapter.setMany(currentCache.posts, postsSelector.selectAll(newItems.posts));
+        currentCache.hasMore = newItems.hasMore;
+      },
+      forceRefetch({ currentArg, previousArg }) {
+        return currentArg !== previousArg;
+      },
+      providesTags: (result, _, { tag }) =>
+        result
+          ? [
+              ...result.posts.ids.map((id) => ({ type: "Posts" as const, id, tag })),
+              { type: "Posts", tag },
+              { type: "Tags" },
+            ]
+          : [{ type: "Posts", tag }, { type: "Tags" }],
+    }),
   }),
 });
 
-export const { useGetPopularTagsQuery, useGetTagsQuery } = tagsApi;
+export const { useGetPopularTagsQuery, useGetTagsQuery, useGetTagPostsQuery } = tagsApi;

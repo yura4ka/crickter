@@ -85,6 +85,7 @@ interface Props {
   hideControls?: boolean;
   onCommentClick?: () => void;
   onRepostClick?: (post: Post | undefined) => void;
+  fromTag?: string;
 }
 
 const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
@@ -96,6 +97,7 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
     type = "post",
     hideControls,
     onRepostClick,
+    fromTag,
   } = props;
 
   const { isAuth } = useAuth();
@@ -114,7 +116,7 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
       showModal();
       return;
     }
-    handleReaction({ post: p, liked });
+    handleReaction({ post: { ...p, fromTag }, liked });
   };
 
   const onFavoriteClick = () => {
@@ -123,7 +125,7 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
       showModal();
       return;
     }
-    handleFavorite(p);
+    handleFavorite({ ...p, fromTag });
   };
 
   if (p === undefined) {

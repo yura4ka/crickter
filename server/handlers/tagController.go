@@ -31,7 +31,7 @@ func GetTagPosts(c *fiber.Ctx) error {
 	page := c.QueryInt("page", 1)
 	tag := c.Params("tag")
 
-	tags, err := services.GetPosts(
+	posts, err := services.GetPosts(
 		&services.QueryParams{Tag: tag, Page: page, RequestUserId: userId, OrderBy: services.SortPopular},
 	)
 
@@ -46,7 +46,7 @@ func GetTagPosts(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"tags":    tags,
+		"posts":   posts,
 		"hasMore": hasMore,
 	})
 }

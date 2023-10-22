@@ -8,6 +8,7 @@ import {
 } from "./postsApiSlice";
 import { userApi } from "../user/userApiSlice";
 import { commentApi, commentsAdapter, commentsSelector } from "./commentsApiSlice";
+import { tagsApi } from "../tags/tagsApiSlice";
 
 export function getReactionChanges(post: Post | undefined, liked: boolean) {
   const r = liked ? 1 : -1;
@@ -41,7 +42,7 @@ export function getReactionChanges(post: Post | undefined, liked: boolean) {
 export type PostType = "post" | "comment" | "response";
 
 type TPostData = Pick<Post, "id"> &
-  Partial<Pick<Post, "commentToId" | "responseToId" | "user">>;
+  Partial<Pick<Post, "commentToId" | "responseToId" | "user">> & { fromTag?: string };
 
 export function updatePost(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -83,41 +84,54 @@ export function updatePost(
     );
 
   if (post.commentToId)
-    dispatch(
-      commentApi.util.updateQueryData(
-        "getComments",
-        { page: 0, postId: post.commentToId },
-        (draft) => {
-          if (post.responseToId) {
-            const comment = commentsSelector.selectById(
-              draft.comments,
-              post.responseToId
-            );
+    result.push(
+      dispatch(
+        commentApi.util.updateQueryData(
+          "getComments",
+          { page: 0, postId: post.commentToId },
+          (draft) => {
+            if (post.responseToId) {
+              const comment = commentsSelector.selectById(
+                draft.comments,
+                post.responseToId
+              );
+              if (!comment) return;
+              const commentChanges = {
+                responses: comment.responses.map((r) => {
+                  if (r.id === post.id)
+                    return {
+                      ...r,
+                      ...(typeof changes === "function" ? changes(r) : changes),
+                    };
+                  return r;
+                }),
+              };
+              commentsAdapter.updateOne(draft.comments, {
+                id: post.responseToId,
+                changes: commentChanges,
+              });
+
+              return;
+            }
+
+            const comment = commentsSelector.selectById(draft.comments, post.id);
             if (!comment) return;
-            const commentChanges = {
-              responses: comment.responses.map((r) => {
-                if (r.id === post.id)
-                  return {
-                    ...r,
-                    ...(typeof changes === "function" ? changes(r) : changes),
-                  };
-                return r;
-              }),
-            };
-            commentsAdapter.updateOne(draft.comments, {
-              id: post.responseToId,
-              changes: commentChanges,
-            });
 
-            return;
+            if (typeof changes === "function") changes = changes(comment);
+            commentsAdapter.updateOne(draft.comments, { id: post.id, changes });
           }
+        )
+      )
+    );
 
-          const comment = commentsSelector.selectById(draft.comments, post.id);
-          if (!comment) return;
-
-          if (typeof changes === "function") changes = changes(comment);
-          commentsAdapter.updateOne(draft.comments, { id: post.id, changes });
-        }
+  if (post.fromTag)
+    result.push(
+      dispatch(
+        tagsApi.util.updateQueryData(
+          "getTagPosts",
+          { tag: post.fromTag, page: 0 },
+          updateRecipe
+        )
       )
     );
 

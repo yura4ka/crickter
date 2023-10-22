@@ -52,7 +52,7 @@ export interface CreatePostRequest {
 }
 
 interface ReactionRequest {
-  post: Post;
+  post: Post & { fromTag?: string };
   liked: boolean;
 }
 
@@ -223,7 +223,7 @@ export const postApi = api.injectEndpoints({
           : [{ type: "Favorite", id: "LIST" }],
     }),
 
-    handleFavorite: builder.mutation<undefined, Post>({
+    handleFavorite: builder.mutation<undefined, Post & { fromTag?: string }>({
       query: ({ id }) => ({ url: "post/favorite", method: "POST", body: { postId: id } }),
       async onQueryStarted(post, { dispatch, queryFulfilled, getState }) {
         const user = (getState() as RootState).auth.user;
