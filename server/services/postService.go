@@ -103,6 +103,7 @@ type QueryParams struct {
 	Page                                                      int
 	OrderBy                                                   TSortBy
 	IsFavorite                                                bool
+	Tag                                                       string
 }
 
 func buildPostQuery(params *QueryParams) (string, []interface{}) {
@@ -162,6 +163,13 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 		args = append(args, params.UserId)
 	} else if params.IsFavorite {
 		query += "\nWHERE fp.post_id IS NOT NULL\n"
+	} else if params.Tag != "" {
+		query += `
+			RIGHT JOIN post_tags as pt ON p.id = pt.post_id
+			LEFT JOIN tags as t ON pt.tag_id = t.id
+			WHERE t.name = $2
+			`
+		args = append(args, params.Tag)
 	} else {
 		query += "\nWHERE p.comment_to_id IS NULL\n"
 	}
