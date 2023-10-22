@@ -1,26 +1,19 @@
 import CreatePost from "./CreatePost";
-import { Post } from "./postsApiSlice";
 import { DialogHeader, Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { useRepostModal } from "./useRepostModal";
 
-interface Props {
-  post: Post | null;
-  isOpen: boolean;
-  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-}
-const RepostModal = ({ post, isOpen, setOpen }: Props) => {
+const RepostModal = () => {
+  const { isOpen, post, setOpen, hideModal } = useRepostModal();
+
+  if (!post) return <></>;
+
   return (
-    <Dialog open={isOpen} onOpenChange={setOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => setOpen(open, post)}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Make a repost</DialogTitle>
         </DialogHeader>
-        {post && (
-          <CreatePost
-            repostOf={post}
-            originalId={post.id}
-            onPostCreated={() => setOpen(false)}
-          />
-        )}
+        <CreatePost repostOf={post} originalId={post.id} onPostCreated={hideModal} />
       </DialogContent>
     </Dialog>
   );

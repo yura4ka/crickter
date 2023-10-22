@@ -388,7 +388,7 @@ func ProcessFavorite(postId, userId string) error {
 }
 
 func GetFavoritePosts(userId string, page int) ([]PostsResult, error) {
-	query, args := buildPostQuery(&QueryParams{RequestUserId: userId, IsFavorite: true, Page: page})
+	query, args := buildPostQuery(&QueryParams{RequestUserId: userId, IsFavorite: true, Page: page, OrderBy: SortNew})
 	rows, err := db.Client.Query(query, args...)
 	if err != nil {
 		return nil, err

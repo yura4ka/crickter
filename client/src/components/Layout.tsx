@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 import LoginModal from "@/features/loginModal/LoginModal";
+import RepostModal from "@/features/posts/RepostModal";
 
 const Layout = () => {
   return (
@@ -10,6 +11,7 @@ const Layout = () => {
       <Outlet />
       <Footer />
       <LoginModal />
+      <RepostModal />
     </div>
   );
 };

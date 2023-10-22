@@ -16,6 +16,7 @@ import { useAuth } from "../auth/useAuth";
 import { useLoginModal } from "../loginModal/useLoginModal";
 import { AvatarImage } from "@radix-ui/react-avatar";
 import React from "react";
+import { useRepostModal } from "./useRepostModal";
 
 const hashtagRegex = /#(\w+)/;
 const linkRegex = /(?:https?|ftp):\/\/[^\s/$.?#].[^\s]*/;
@@ -28,7 +29,7 @@ function formatText(text: string) {
         if (tag)
           return (
             <React.Fragment key={i}>
-              <Link to={`tags/${tag[1].toLowerCase()}`} className="link">
+              <Link to={`/tags/${tag[1].toLowerCase()}`} className="link">
                 {s}
               </Link>{" "}
             </React.Fragment>
@@ -84,7 +85,6 @@ interface Props {
   type?: PostType;
   hideControls?: boolean;
   onCommentClick?: () => void;
-  onRepostClick?: (post: Post | undefined) => void;
   fromTag?: string;
 }
 
@@ -96,12 +96,12 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
     onCommentClick,
     type = "post",
     hideControls,
-    onRepostClick,
     fromTag,
   } = props;
 
   const { isAuth } = useAuth();
   const { showModal } = useLoginModal();
+  const { showModal: showRepost } = useRepostModal();
 
   const { data: original } = useGetPostByIdQuery(p?.originalId || "", {
     skip: !(fetchOriginal && !!p?.originalId),
@@ -202,7 +202,6 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
             post={original}
             fetchOriginal={false}
             className="my-2 rounded border p-2 sm:p-4"
-            onRepostClick={() => onRepostClick?.(original)}
           />
         )}
         <div className={cn("flex gap-4", hideControls && "hidden")}>
@@ -237,7 +236,7 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
             )}
           </Button>
           {type === "post" && (
-            <Button onClick={() => onRepostClick?.(p)} size={"icon"} variant={"ghost"}>
+            <Button onClick={() => showRepost(p)} size={"icon"} variant={"ghost"}>
               <Repeat className="mr-2 h-4 w-4" />
               {p.reposts}
             </Button>

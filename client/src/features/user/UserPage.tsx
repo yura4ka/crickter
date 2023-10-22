@@ -3,10 +3,9 @@ import { useAuth } from "../auth/useAuth";
 import { useGetUserPostsQuery, useGetUserQuery } from "./userApiSlice";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useRef, useState } from "react";
-import { Post, postsAdapter, postsSelector } from "../posts/postsApiSlice";
+import { postsAdapter, postsSelector } from "../posts/postsApiSlice";
 import { useInfiniteScroll } from "@/lib/hooks";
 import PostCard from "../posts/PostCard";
-import RepostModal from "../posts/RepostModal";
 import { cn } from "@/lib/utils";
 import SubscribeButton from "./SubscribeButton";
 import {
@@ -155,32 +154,18 @@ const Feed = ({ id }: { id: string }) => {
     }
   });
 
-  const [currentRepost, setCurrentRepost] = useState<Post | null>(null);
-  const [isRepostShown, setIsRepostShown] = useState(false);
-
-  const handleRepostClick = (post: Post | undefined) => {
-    if (!post) return;
-    setCurrentRepost(post);
-    setIsRepostShown(true);
-  };
-
   return (
     <div className="divide-y">
       {posts.length === 0 && !isFetching && (
         <div className="pt-4 text-center text-xl">No posts here...</div>
       )}
       {posts.map((p) => (
-        <PostCard key={p.id} post={p} onRepostClick={handleRepostClick} />
+        <PostCard key={p.id} post={p} />
       ))}
       <PostCard
         ref={loaderDiv}
         post={undefined}
         className={hasMore || isFetching ? "" : "hidden"}
-      />
-      <RepostModal
-        post={currentRepost}
-        isOpen={isRepostShown}
-        setOpen={setIsRepostShown}
       />
     </div>
   );

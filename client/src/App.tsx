@@ -3,13 +3,11 @@ import { useAuth } from "./features/auth/useAuth";
 import CreatePost from "./features/posts/CreatePost";
 import PostCard from "./features/posts/PostCard";
 import {
-  Post,
   postsAdapter,
   postsSelector,
   useGetPostsQuery,
 } from "./features/posts/postsApiSlice";
 import { useInfiniteScroll } from "./lib/hooks";
-import RepostModal from "./features/posts/RepostModal";
 import { useGetPopularTagsQuery } from "./features/tags/tagsApiSlice";
 import { Link } from "react-router-dom";
 import { Skeleton } from "./components/ui/skeleton";
@@ -33,29 +31,15 @@ const Feed = () => {
     }
   });
 
-  const [currentRepost, setCurrentRepost] = useState<Post | null>(null);
-  const [isRepostShown, setIsRepostShown] = useState(false);
-
-  const handleRepostClick = (post: Post | undefined) => {
-    if (!post) return;
-    setCurrentRepost(post);
-    setIsRepostShown(true);
-  };
-
   return (
     <div className="divide-y">
       {posts.map((p) => (
-        <PostCard key={p.id} post={p} onRepostClick={handleRepostClick} />
+        <PostCard key={p.id} post={p} />
       ))}
       <PostCard
         ref={loaderDiv}
         post={undefined}
         className={hasMore || isFetching ? "" : "hidden"}
-      />
-      <RepostModal
-        post={currentRepost}
-        isOpen={isRepostShown}
-        setOpen={setIsRepostShown}
       />
     </div>
   );

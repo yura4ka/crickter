@@ -1,14 +1,8 @@
 import { useRef, useState } from "react";
 import { useAuth } from "../auth/useAuth";
-import {
-  Post,
-  postsAdapter,
-  postsSelector,
-  useGetFavoritePostsQuery,
-} from "./postsApiSlice";
+import { postsAdapter, postsSelector, useGetFavoritePostsQuery } from "./postsApiSlice";
 import { useInfiniteScroll } from "@/lib/hooks";
 import PostCard from "./PostCard";
-import RepostModal from "./RepostModal";
 import { Bookmark } from "lucide-react";
 
 const FavoritePostsPage = () => {
@@ -30,15 +24,6 @@ const FavoritePostsPage = () => {
     }
   });
 
-  const [currentRepost, setCurrentRepost] = useState<Post | null>(null);
-  const [isRepostShown, setIsRepostShown] = useState(false);
-
-  const handleRepostClick = (post: Post | undefined) => {
-    if (!post) return;
-    setCurrentRepost(post);
-    setIsRepostShown(true);
-  };
-
   return (
     <main className="sm:container">
       <h1 className="flex items-center gap-2 border-b p-4 text-xl font-bold">
@@ -52,17 +37,12 @@ const FavoritePostsPage = () => {
       )}
       <div className="divide-y px-4 sm:px-4">
         {posts.map((p) => (
-          <PostCard key={p.id} post={p} onRepostClick={handleRepostClick} />
+          <PostCard key={p.id} post={p} />
         ))}
         <PostCard
           ref={loaderDiv}
           post={undefined}
           className={hasMore || isFetching ? "" : "hidden"}
-        />
-        <RepostModal
-          post={currentRepost}
-          isOpen={isRepostShown}
-          setOpen={setIsRepostShown}
         />
       </div>
     </main>

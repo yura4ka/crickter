@@ -23,7 +23,9 @@ func GetUserPosts(c *fiber.Ctx) error {
 	requestUserId, _ := c.Locals("userId").(string)
 	page := c.QueryInt("page", 1)
 
-	posts, err := services.GetPosts(&services.QueryParams{UserId: userId, RequestUserId: requestUserId, Page: page})
+	posts, err := services.GetPosts(
+		&services.QueryParams{UserId: userId, RequestUserId: requestUserId, Page: page, OrderBy: services.SortNew},
+	)
 	if err != nil {
 		log.Print(err)
 		return c.SendStatus(400)

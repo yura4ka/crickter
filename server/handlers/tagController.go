@@ -32,7 +32,7 @@ func GetTagPosts(c *fiber.Ctx) error {
 	tag := c.Params("tag")
 
 	posts, err := services.GetPosts(
-		&services.QueryParams{Tag: tag, Page: page, RequestUserId: userId, OrderBy: services.SortPopular},
+		&services.QueryParams{Tag: tag, Page: page, RequestUserId: userId, OrderBy: services.SortNew},
 	)
 
 	if err != nil {
