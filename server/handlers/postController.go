@@ -8,21 +8,14 @@ import (
 )
 
 func CreatePost(c *fiber.Ctx) error {
-	type Input struct {
-		Text         string  `json:"text"`
-		OriginalId   *string `json:"originalId"`
-		CommentToId  *string `json:"commentToId"`
-		ResponseToId *string `json:"responseToId"`
-	}
-
-	input := new(Input)
+	input := new(services.PostParams)
 	if err := c.BodyParser(input); err != nil {
 		log.Print(err)
 		return c.SendStatus(400)
 	}
 	userId := c.Locals("userId").(string)
 
-	postId, err := services.CreatePost(userId, input.Text, input.OriginalId, input.CommentToId, input.ResponseToId)
+	postId, err := services.CreatePost(userId, input)
 	if err != nil {
 		log.Print(err)
 		return c.SendStatus(400)

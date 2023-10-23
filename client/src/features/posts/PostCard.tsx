@@ -204,7 +204,7 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
             className="my-2 rounded border p-2 sm:p-4"
           />
         )}
-        <div className={cn("flex gap-4", hideControls && "hidden")}>
+        <div className={cn("flex gap-1 sm:gap-4", hideControls && "hidden")}>
           <Button onClick={() => onReactionClick(true)} size={"icon"} variant={"ghost"}>
             <ThumbsUp
               className={cn("mr-2 h-4 w-4", p.reaction === 1 && "fill-reaction")}

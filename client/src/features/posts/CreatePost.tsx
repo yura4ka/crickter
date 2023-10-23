@@ -1,4 +1,4 @@
-import { Loader2 } from "lucide-react";
+import { Loader2, Lock, Paperclip, Unlock } from "lucide-react";
 import { useAuth } from "../auth/useAuth";
 import { Link } from "react-router-dom";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,6 +10,13 @@ import { cn } from "@/lib/utils";
 import { PostType } from "./utils";
 import { Input } from "@/components/ui/input";
 import PostCard from "./PostCard";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 
 const placeholders = [
   "Maxwell's equations",
@@ -46,10 +53,16 @@ const CreatePost: FC<Props> = ({
   repostOf,
 }) => {
   const MAX_LENGTH = type === "post" ? 512 : 256;
+  const placeholder = useRef(
+    type === "comment" || repostOf
+      ? "Add a comment..."
+      : "Your opinion on " + placeholders[Math.floor(Math.random() * placeholders.length)]
+  );
 
   const { isAuth, isLoading, user } = useAuth();
 
   const [value, setValue] = useState("");
+  const [canComment, setCanComment] = useState(true);
   const [createPost, { isLoading: isCreating, isError }] = useCreatePostMutation();
 
   const formRef = useRef<HTMLFormElement>(null);
@@ -58,7 +71,13 @@ const CreatePost: FC<Props> = ({
     e.preventDefault();
     const v = value.trim();
     if (v.length === 0 || v.length > MAX_LENGTH) return;
-    await createPost({ text: v, commentToId, responseToId, originalId }).unwrap();
+    await createPost({
+      text: v,
+      commentToId,
+      responseToId,
+      originalId,
+      canComment,
+    }).unwrap();
     setValue("");
     onPostCreated?.(v);
   };
@@ -98,13 +117,9 @@ const CreatePost: FC<Props> = ({
         {type !== "response" ? (
           <Textarea
             value={value}
+            name="text"
             onChange={(e) => setValue(e.target.value)}
-            placeholder={
-              type === "comment" || repostOf
-                ? "Add a comment..."
-                : "Your opinion on " +
-                  placeholders[Math.floor(Math.random() * placeholders.length)]
-            }
+            placeholder={placeholder.current}
             maxLength={MAX_LENGTH}
             className={cn(
               "scrollbar resize-none",
@@ -125,6 +140,7 @@ const CreatePost: FC<Props> = ({
         ) : (
           <Input
             value={value}
+            name="text"
             onChange={(e) => setValue(e.target.value)}
             placeholder="Add a reply..."
             maxLength={MAX_LENGTH}
@@ -144,16 +160,60 @@ const CreatePost: FC<Props> = ({
 
         <div
           className={cn(
-            "mt-2 flex justify-between gap-1",
+            "mt-2 flex justify-between gap-2",
             type === "response" && "sm:mt-0"
           )}
         >
-          <div className={cn("flex gap-1 divide-x", type === "response" && "hidden")}>
-            {value.length !== 0 && (
-              <p className="text-xs text-muted-foreground">
-                {value.length}/{MAX_LENGTH}
-              </p>
-            )}
+          <div className="flex min-h-min grow justify-between gap-1">
+            <div className="flex">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={undefined}
+                      className="h-6 w-6 p-1"
+                    >
+                      <Paperclip />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Add attachment</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              {type === "post" && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        type="button"
+                        onClick={() => setCanComment((prev) => !prev)}
+                        className="h-6 w-6 p-1"
+                      >
+                        {canComment ? <Unlock /> : <Lock />}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>
+                        Other users {canComment ? "can" : "cannot"} comment on this post
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
+            <div className={cn("self-center", type === "response" && "hidden")}>
+              {value.length !== 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {value.length}/{MAX_LENGTH}
+                </p>
+              )}
+            </div>
           </div>
           <SubmitButton
             isLoading={isCreating}

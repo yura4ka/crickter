@@ -17,14 +17,24 @@ type Post struct {
 	created_at, updated_at time.Time
 }
 
-func CreatePost(userId, text string, originalId, commentToId, responseToId *string) (string, error) {
+type PostParams struct {
+	Text         string  `json:"text"`
+	OriginalId   *string `json:"originalId"`
+	CommentToId  *string `json:"commentToId"`
+	ResponseToId *string `json:"responseToId"`
+	CanComment   bool    `json:"canComment"`
+}
+
+func CreatePost(userId string, params *PostParams) (string, error) {
 	var postId string
 
 	err := db.Client.QueryRow(`
-		INSERT INTO posts (text, user_id, original_id, comment_to_id, response_to_id)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO posts (text, user_id, original_id, comment_to_id, response_to_id, can_comment)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id;
-	`, text, userId, ToNullString(originalId), ToNullString(commentToId), ToNullString(responseToId)).Scan(&postId)
+	`, params.Text, userId, ToNullString(params.OriginalId),
+		ToNullString(params.CommentToId), ToNullString(params.ResponseToId), params.CanComment,
+	).Scan(&postId)
 
 	if err != nil {
 		return "", err

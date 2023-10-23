@@ -50,7 +50,7 @@ export interface CreatePostRequest {
   originalId?: string;
   commentToId?: string;
   responseToId?: string;
-  canComment?: boolean;
+  canComment: boolean;
 }
 
 interface ReactionRequest {
