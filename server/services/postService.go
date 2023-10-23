@@ -198,44 +198,26 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 func parsePosts(rows *sql.Rows, isComment bool) ([]PostsResult, error) {
 	result := make([]PostsResult, 0)
 	for rows.Next() {
-		var id, text, createdAt, updatedAt string
-		var originalId, commentToId, responseToId, avatarUrl, userId, username, name *string
-		var likes, dislikes, comments, responses, reposts, reaction int
-		var canComment, isDeleted, isUserDeleted, isFavorite bool
+		var updatedAt string
+		var avatarUrl, userId, username, name *string
+		var comments, responses int
+		row := PostsResult{}
+
 		err := rows.Scan(
-			&id, &text, &createdAt, &updatedAt, &canComment, &isDeleted,
-			&userId, &username, &name, &avatarUrl, &isUserDeleted,
-			&originalId, &commentToId, &responseToId,
-			&likes, &dislikes, &reaction, &comments, &responses, &reposts, &isFavorite,
+			&row.Id, &row.Text, &row.CreatedAt, &updatedAt, &row.CanComment, &row.IsDeleted,
+			&userId, &username, &name, &avatarUrl, &row.User.IsDeleted,
+			&row.OriginalId, &row.CommentToId, &row.ResponseToId,
+			&row.Likes, &row.Dislikes, &row.Reaction, &comments, &responses, &row.Reposts, &row.IsFavorite,
 		)
 		if err != nil {
 			return nil, err
 		}
-		row := PostsResult{
-			postBase: postBase{
-				Id:         id,
-				Text:       text,
-				CreatedAt:  createdAt,
-				CanComment: canComment,
-				IsDeleted:  isDeleted,
-			},
-			Likes:        likes,
-			Dislikes:     dislikes,
-			Reaction:     reaction,
-			OriginalId:   originalId,
-			CommentToId:  commentToId,
-			ResponseToId: responseToId,
-			Reposts:      reposts,
-			IsFavorite:   isFavorite,
+
+		if !row.User.IsDeleted {
+			row.User = postUser{Id: userId, Username: username, Name: name, AvatarUrl: avatarUrl}
 		}
 
-		if isUserDeleted {
-			row.User = postUser{IsDeleted: true}
-		} else {
-			row.User = postUser{Id: userId, Username: username, Name: name, IsDeleted: isUserDeleted, AvatarUrl: avatarUrl}
-		}
-
-		if updatedAt != createdAt {
+		if updatedAt != row.CreatedAt {
 			row.UpdatedAt = &updatedAt
 		}
 

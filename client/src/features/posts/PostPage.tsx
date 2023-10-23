@@ -12,12 +12,14 @@ import { FC, useRef, useState } from "react";
 import { useAuth } from "../auth/useAuth";
 import { useInfiniteScroll } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
+import { Lock } from "lucide-react";
 
 interface CommentsCardProps {
   comment: Post & { responses?: Post[] };
   postId: string;
   responseToId?: string;
   originalId?: string;
+  canComment: boolean;
 }
 
 const CommentsCard: FC<CommentsCardProps> = ({
@@ -25,6 +27,7 @@ const CommentsCard: FC<CommentsCardProps> = ({
   postId,
   originalId,
   responseToId,
+  canComment,
 }) => {
   const [loadResponses, { isLoading }] = useGetCommentResponsesMutation();
   const [isResponseShown, setIsResponseShown] = useState(false);
@@ -48,13 +51,15 @@ const CommentsCard: FC<CommentsCardProps> = ({
         type={originalId ? "response" : "comment"}
       />
       <div className={cn("ml-8 divide-y sm:ml-16", !isResponseShown && "hidden")}>
-        <CreatePost
-          type="response"
-          commentToId={postId}
-          responseToId={responseToId}
-          originalId={originalId}
-          className="py-4"
-        />
+        {canComment && (
+          <CreatePost
+            type="response"
+            commentToId={postId}
+            responseToId={responseToId}
+            originalId={originalId}
+            className="py-4"
+          />
+        )}
         {comment.responses?.map((r) => (
           <CommentsCard
             key={r.id}
@@ -62,6 +67,7 @@ const CommentsCard: FC<CommentsCardProps> = ({
             postId={postId}
             originalId={r.id}
             responseToId={responseToId}
+            canComment={canComment}
           />
         ))}
         <PostCard
@@ -78,7 +84,9 @@ const PostPage = () => {
   const navigate = useNavigate();
   const { isLoading: isAuthLoading } = useAuth();
   const { postId } = useParams();
-  const { data: post } = useGetPostByIdQuery(postId || "", { skip: !postId });
+  const { data: post, isLoading: isPostLoading } = useGetPostByIdQuery(postId || "", {
+    skip: !postId,
+  });
   const [page, setPage] = useState(1);
   const { comments, hasMore, isFetching } = useGetCommentsQuery(
     { page, postId: postId || "" },
@@ -111,10 +119,24 @@ const PostPage = () => {
       <PostCard post={post} className="my-2 border-b" />
       <div className="pt-2">
         <h3 className="pb-4 text-lg">{post?.comments} comments</h3>
-        <CreatePost type="comment" commentToId={postId} />
+        {!post?.canComment && !isPostLoading ? (
+          <div className="flex gap-2 rounded border p-4">
+            <Lock />
+            Commenting has been disabled for this post...
+          </div>
+        ) : (
+          <CreatePost type="comment" commentToId={postId} />
+        )}
+
         <div className="my-2 divide-y">
           {comments.map((c) => (
-            <CommentsCard key={c.id} comment={c} postId={postId} responseToId={c.id} />
+            <CommentsCard
+              key={c.id}
+              comment={c}
+              postId={postId}
+              responseToId={c.id}
+              canComment={post?.canComment ?? false}
+            />
           ))}
           <PostCard
             ref={loaderDiv}

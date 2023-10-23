@@ -42,6 +42,7 @@ export interface Post {
   reposts: number;
   reaction: -1 | 0 | 1;
   isFavorite: boolean;
+  canComment: boolean;
 }
 
 export interface CreatePostRequest {
@@ -49,6 +50,7 @@ export interface CreatePostRequest {
   originalId?: string;
   commentToId?: string;
   responseToId?: string;
+  canComment?: boolean;
 }
 
 interface ReactionRequest {
@@ -97,7 +99,7 @@ export const postApi = api.injectEndpoints({
       query: (body) => ({ url: "post", method: "POST", body }),
       invalidatesTags: [{ type: "Tags" }],
       async onQueryStarted(
-        { text, originalId, responseToId, commentToId },
+        { text, originalId, responseToId, commentToId, canComment },
         { dispatch, queryFulfilled, getState }
       ) {
         const user = (getState() as RootState).auth.user;
@@ -119,6 +121,7 @@ export const postApi = api.injectEndpoints({
           reposts: 0,
           reaction: 0,
           isFavorite: false,
+          canComment: !!canComment,
         };
         dispatch(
           postApi.util.updateQueryData("getPosts", 0, (draft) => {

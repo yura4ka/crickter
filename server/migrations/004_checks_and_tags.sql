@@ -12,6 +12,10 @@ BEGIN
     VALUES (NEW.text, NEW.is_deleted, NEW.id);
   END IF;
 
+  IF NEW.text = OLD.text THEN
+    RETURN NEW;
+  END IF;
+
   FOR tag IN
     SELECT DISTINCT lower((regexp_matches(NEW.text, '\Y#(\w+)', 'gm'))[1]) AS name
   LOOP
