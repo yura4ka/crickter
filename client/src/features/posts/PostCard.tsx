@@ -65,6 +65,16 @@ const MinimalOriginal: FC<{ post: Post | undefined }> = ({ post }) => {
       </div>
     );
 
+  if (post.isDeleted)
+    return (
+      <a
+        href={"#" + post.id}
+        className="my-2 block border-l-4 pl-2 transition hover:bg-border"
+      >
+        <div className="italic text-muted-foreground">Deleted post</div>
+      </a>
+    );
+
   return (
     <a
       href={"#" + post.id}
@@ -146,34 +156,36 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
   const created = formatTimeAgo(new Date(p.createdAt));
   const updated = p.updatedAt && formatTimeAgo(new Date(p.updatedAt));
 
-  const avatar = p.user.isDeleted ? (
-    <Avatar>
-      <AvatarFallback>U</AvatarFallback>
-    </Avatar>
-  ) : (
-    <Link to={`/user/${p.user.id}`}>
+  const avatar =
+    p.isDeleted || p.user.isDeleted ? (
       <Avatar>
-        {p.user.avatarUrl && <AvatarImage src={p.user.avatarUrl} />}
-        <AvatarFallback>{p.user.username[0]}</AvatarFallback>
+        <AvatarFallback>U</AvatarFallback>
       </Avatar>
-    </Link>
-  );
+    ) : (
+      <Link to={`/user/${p.user.id}`}>
+        <Avatar>
+          {p.user.avatarUrl && <AvatarImage src={p.user.avatarUrl} />}
+          <AvatarFallback>{p.user.username[0]}</AvatarFallback>
+        </Avatar>
+      </Link>
+    );
 
-  const userData = p.user.isDeleted ? (
-    <p className="text-base font-bold">Deleted User</p>
-  ) : (
-    <>
-      <Link
-        to={`/user/${p.user.id}`}
-        className="break-all text-base font-bold text-foreground hover:underline"
-      >
-        {p.user.name}
-      </Link>
-      <Link to={`/user/${p.user.id}`} className="break-all hover:underline">
-        @{p.user.username}
-      </Link>
-    </>
-  );
+  const userData =
+    p.isDeleted || p.user.isDeleted ? (
+      <p className="text-base font-bold">Deleted User</p>
+    ) : (
+      <>
+        <Link
+          to={`/user/${p.user.id}`}
+          className="break-all text-base font-bold text-foreground hover:underline"
+        >
+          {p.user.name}
+        </Link>
+        <Link to={`/user/${p.user.id}`} className="break-all hover:underline">
+          @{p.user.username}
+        </Link>
+      </>
+    );
 
   return (
     <article
@@ -183,19 +195,26 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
     >
       {avatar}
       <div className="grow">
-        <div className="mb-1 flex flex-wrap items-baseline gap-x-2 align-bottom text-sm text-muted-foreground">
-          {userData}•<span>{created}</span>
-          {updated && (
-            <>
-              •<span className="">ed. {updated}</span>
-            </>
-          )}
-        </div>
+        {!p.isDeleted && (
+          <div className="mb-1 flex flex-wrap items-baseline gap-x-2 align-bottom text-sm text-muted-foreground">
+            {userData}•<span>{created}</span>
+            {updated && (
+              <>
+                •<span className="">ed. {updated}</span>
+              </>
+            )}
+          </div>
+        )}
+
         {fetchOriginal && p.originalId && type !== "post" && (
           <MinimalOriginal post={original} />
         )}
         <div style={{ wordBreak: "break-word" }} className="pb-1">
-          {formatText(p.text)}
+          {p.isDeleted ? (
+            <p className="py-2 italic text-muted-foreground">Deleted post</p>
+          ) : (
+            formatText(p.text)
+          )}
         </div>
         {fetchOriginal && p.originalId && type === "post" && (
           <PostCard

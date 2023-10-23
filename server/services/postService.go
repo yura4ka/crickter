@@ -77,17 +77,16 @@ type postUser struct {
 }
 
 type postBase struct {
-	Id         string   `json:"id"`
-	Text       string   `json:"text"`
-	User       postUser `json:"user"`
-	CreatedAt  string   `json:"createdAt"`
-	UpdatedAt  *string  `json:"updatedAt"`
-	CanComment bool     `json:"canComment"`
-	IsDeleted  bool     `json:"isDeleted"`
+	Id        string   `json:"id"`
+	Text      string   `json:"text"`
+	User      postUser `json:"user"`
+	CreatedAt string   `json:"createdAt"`
+	UpdatedAt *string  `json:"updatedAt"`
 }
 
-type PostsResult struct {
-	postBase
+type postInfo struct {
+	CanComment   bool    `json:"canComment"`
+	IsDeleted    bool    `json:"isDeleted"`
 	OriginalId   *string `json:"originalId"`
 	CommentToId  *string `json:"commentToId"`
 	ResponseToId *string `json:"responseToId"`
@@ -97,6 +96,17 @@ type PostsResult struct {
 	Comments     int     `json:"comments"`
 	Reposts      int     `json:"reposts"`
 	IsFavorite   bool    `json:"isFavorite"`
+}
+
+type PostsResult struct {
+	postBase
+	postInfo
+}
+
+type DeletedPostResult struct {
+	postInfo
+	Id        string `json:"id"`
+	CreatedAt string `json:"createdAt"`
 }
 
 type TSortBy int
@@ -169,7 +179,7 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 		query += "\nWHERE p.response_to_id = $2\n"
 		args = append(args, params.ResponseToId)
 	} else if params.UserId != "" {
-		query += "\nWHERE p.comment_to_id IS NULL AND u.id = $2\n"
+		query += "\nWHERE p.comment_to_id IS NULL AND u.id = $2 AND p.is_deleted = FALSE\n"
 		args = append(args, params.UserId)
 	} else if params.IsFavorite {
 		query += "\nWHERE fp.post_id IS NOT NULL\n"
@@ -177,11 +187,11 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 		query += `
 			RIGHT JOIN post_tags as pt ON p.id = pt.post_id
 			LEFT JOIN tags as t ON pt.tag_id = t.id
-			WHERE t.name = $2
+			WHERE t.name = $2 AND p.is_deleted = FALSE
 			`
 		args = append(args, params.Tag)
 	} else {
-		query += "\nWHERE p.comment_to_id IS NULL\n"
+		query += "\nWHERE p.comment_to_id IS NULL AND p.is_deleted = FALSE\n"
 	}
 
 	query += "GROUP BY p.id, u.id, o.id, c.id, r.id, pr.likes, pr.dislikes, pr.reaction, reposts.count, fp.post_id\n"
@@ -205,22 +215,44 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 	return query, args
 }
 
-func parsePosts(rows *sql.Rows, isComment bool) ([]PostsResult, error) {
-	result := make([]PostsResult, 0)
+func parsePosts(rows *sql.Rows, isComment bool) ([]interface{}, error) {
+	result := make([]interface{}, 0)
 	for rows.Next() {
 		var updatedAt string
 		var avatarUrl, userId, username, name *string
-		var comments, responses int
+		var responses int
 		row := PostsResult{}
 
 		err := rows.Scan(
 			&row.Id, &row.Text, &row.CreatedAt, &updatedAt, &row.CanComment, &row.IsDeleted,
 			&userId, &username, &name, &avatarUrl, &row.User.IsDeleted,
 			&row.OriginalId, &row.CommentToId, &row.ResponseToId,
-			&row.Likes, &row.Dislikes, &row.Reaction, &comments, &responses, &row.Reposts, &row.IsFavorite,
+			&row.Likes, &row.Dislikes, &row.Reaction, &row.Comments, &responses, &row.Reposts, &row.IsFavorite,
 		)
 		if err != nil {
 			return nil, err
+		}
+
+		if row.IsDeleted {
+			deleted := DeletedPostResult{
+				Id:        row.Id,
+				CreatedAt: row.CreatedAt,
+				postInfo: postInfo{
+					CanComment: row.CanComment, IsDeleted: row.IsDeleted,
+					Likes: row.Likes, Dislikes: row.Dislikes, Reaction: row.Reaction,
+					Comments: row.Comments, Reposts: row.Reposts, IsFavorite: row.IsFavorite,
+					OriginalId:   row.OriginalId,
+					CommentToId:  row.CommentToId,
+					ResponseToId: row.ResponseToId,
+				},
+			}
+
+			if isComment {
+				deleted.Comments = responses
+			}
+
+			result = append(result, deleted)
+			continue
 		}
 
 		if !row.User.IsDeleted {
@@ -233,8 +265,6 @@ func parsePosts(rows *sql.Rows, isComment bool) ([]PostsResult, error) {
 
 		if isComment {
 			row.Comments = responses
-		} else {
-			row.Comments = comments
 		}
 		result = append(result, row)
 	}
@@ -242,7 +272,7 @@ func parsePosts(rows *sql.Rows, isComment bool) ([]PostsResult, error) {
 	return result, nil
 }
 
-func GetPosts(params *QueryParams) ([]PostsResult, error) {
+func GetPosts(params *QueryParams) ([]interface{}, error) {
 	query, args := buildPostQuery(params)
 	rows, err := db.Client.Query(query, args...)
 
@@ -300,7 +330,7 @@ func ProcessReaction(userId, postId string, liked bool) error {
 	return err
 }
 
-func QueryPostById(postId, userId string) (*PostsResult, error) {
+func QueryPostById(postId, userId string) (*interface{}, error) {
 	query, args := buildPostQuery(&QueryParams{PostId: postId, RequestUserId: userId})
 	rows, err := db.Client.Query(query, args...)
 
@@ -324,7 +354,9 @@ func QueryPostById(postId, userId string) (*PostsResult, error) {
 
 func HasMorePosts(page int) (bool, error) {
 	var total int
-	err := db.Client.QueryRow(`SELECT COUNT(*) FROM posts WHERE comment_to_id IS NULL;`).Scan(&total)
+	err := db.Client.QueryRow(`
+		SELECT COUNT(*) FROM posts WHERE comment_to_id IS NULL AND is_deleted = FALSE;
+	`).Scan(&total)
 	if err != nil {
 		return false, err
 	}
@@ -379,7 +411,7 @@ func ProcessFavorite(postId, userId string) error {
 	return err
 }
 
-func GetFavoritePosts(userId string, page int) ([]PostsResult, error) {
+func GetFavoritePosts(userId string, page int) ([]interface{}, error) {
 	query, args := buildPostQuery(&QueryParams{RequestUserId: userId, IsFavorite: true, Page: page, OrderBy: SortNew})
 	rows, err := db.Client.Query(query, args...)
 	if err != nil {

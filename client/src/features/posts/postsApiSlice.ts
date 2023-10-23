@@ -27,11 +27,7 @@ export interface PostsResponse {
   hasMore: boolean;
 }
 
-export interface Post {
-  id: string;
-  text: string;
-  user: PostUser;
-  createdAt: string;
+interface PostInfo {
   updatedAt: string | null;
   originalId: string | null;
   commentToId: string | null;
@@ -44,6 +40,22 @@ export interface Post {
   isFavorite: boolean;
   canComment: boolean;
 }
+
+export interface NormalPost extends PostInfo {
+  id: string;
+  text: string;
+  user: PostUser;
+  createdAt: string;
+  isDeleted: false;
+}
+
+export interface DeletedPost extends PostInfo {
+  id: string;
+  createdAt: string;
+  isDeleted: true;
+}
+
+export type Post = PostInfo & (NormalPost | DeletedPost);
 
 export interface CreatePostRequest {
   text: string;
@@ -121,7 +133,8 @@ export const postApi = api.injectEndpoints({
           reposts: 0,
           reaction: 0,
           isFavorite: false,
-          canComment: !!canComment,
+          canComment,
+          isDeleted: false,
         };
         dispatch(
           postApi.util.updateQueryData("getPosts", 0, (draft) => {
@@ -155,12 +168,13 @@ export const postApi = api.injectEndpoints({
                 const comment = commentsSelector.selectById(draft.comments, responseToId);
                 if (!comment) return;
                 const changes = {
-                  responses: [newPost as Post, ...comment.responses],
+                  responses: [newPost as NormalPost, ...comment.responses],
                 };
                 commentsAdapter.updateOne(draft.comments, {
                   id: responseToId,
                   changes,
                 });
+                draft.total++;
               }
             )
           );

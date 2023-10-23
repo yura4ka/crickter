@@ -3,10 +3,10 @@ import { Post } from "./postsApiSlice";
 import { api } from "@/app/api/apiSlice";
 import { updatePost } from "./utils";
 
-export interface IComment extends Post {
+export type IComment = Post & {
   responses: Post[];
   isNew?: boolean;
-}
+};
 
 interface CommentsResponse {
   comments: EntityState<IComment>;
@@ -15,7 +15,7 @@ interface CommentsResponse {
 }
 
 interface DataResponse {
-  comments: Omit<IComment, "responses">[];
+  comments: Post[];
   total: number;
   hasMore: boolean;
 }

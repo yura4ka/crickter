@@ -1,5 +1,6 @@
 import { AnyAction, ThunkDispatch } from "@reduxjs/toolkit";
 import {
+  NormalPost,
   Post,
   PostsResponse,
   postApi,
@@ -42,13 +43,15 @@ export function getReactionChanges(post: Post | undefined, liked: boolean) {
 export type PostType = "post" | "comment" | "response";
 
 type TPostData = Pick<Post, "id"> &
-  Partial<Pick<Post, "commentToId" | "responseToId" | "user">> & { fromTag?: string };
+  Partial<Pick<NormalPost, "commentToId" | "responseToId" | "user">> & {
+    fromTag?: string;
+  };
 
 export function updatePost(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   dispatch: ThunkDispatch<any, any, AnyAction>,
   post: TPostData,
-  changes: Partial<Post> | ((post: Post) => Partial<Post>)
+  postChanges: Partial<Post> | ((post: Post) => Partial<Post>)
 ) {
   let user = post.user;
 
@@ -56,18 +59,20 @@ export function updatePost(
     const p = postsSelector.selectById(draft.posts, post.id);
     if (!p) return;
 
-    if (!user) user = p.user;
+    if (!user && !p.isDeleted) user = p.user;
 
-    if (typeof changes === "function") changes = changes(p);
+    const changes = typeof postChanges === "function" ? postChanges(p) : postChanges;
     postsAdapter.updateOne(draft.posts, { id: post.id, changes });
   }
 
   const result = [
     dispatch(postApi.util.updateQueryData("getPosts", 0, updateRecipe)),
     dispatch(
-      postApi.util.updateQueryData("getPostById", post.id, (draft) =>
-        Object.assign(draft, changes)
-      )
+      postApi.util.updateQueryData("getPostById", post.id, (draft) => {
+        const changes =
+          typeof postChanges === "function" ? postChanges(draft) : postChanges;
+        Object.assign(draft, changes);
+      })
     ),
     dispatch(postApi.util.updateQueryData("getFavoritePosts", 0, updateRecipe)),
   ];
@@ -101,10 +106,12 @@ export function updatePost(
                   if (r.id === post.id)
                     return {
                       ...r,
-                      ...(typeof changes === "function" ? changes(r) : changes),
+                      ...(typeof postChanges === "function"
+                        ? postChanges(r)
+                        : postChanges),
                     };
                   return r;
-                }),
+                }) as Post[],
               };
               commentsAdapter.updateOne(draft.comments, {
                 id: post.responseToId,
@@ -117,8 +124,12 @@ export function updatePost(
             const comment = commentsSelector.selectById(draft.comments, post.id);
             if (!comment) return;
 
-            if (typeof changes === "function") changes = changes(comment);
-            commentsAdapter.updateOne(draft.comments, { id: post.id, changes });
+            const changes =
+              typeof postChanges === "function" ? postChanges(comment) : postChanges;
+            commentsAdapter.updateOne(draft.comments, {
+              id: post.id,
+              changes,
+            });
           }
         )
       )

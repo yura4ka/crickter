@@ -165,7 +165,9 @@ func GetUserInfo(id, requestUserId string) (*UserInfo, error) {
 
 func HasUserMorePosts(userId string, page int) (bool, error) {
 	var total int
-	err := db.Client.QueryRow(`SELECT COUNT(*) FROM posts WHERE user_id = $1 AND comment_to_id IS NULL;`, userId).
+	err := db.Client.QueryRow(`
+		SELECT COUNT(*) FROM posts WHERE user_id = $1 AND comment_to_id IS NULL AND is_deleted = FALSE;
+	`, userId).
 		Scan(&total)
 	if err != nil {
 		return false, err

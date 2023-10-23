@@ -88,7 +88,7 @@ const PostPage = () => {
     skip: !postId,
   });
   const [page, setPage] = useState(1);
-  const { comments, hasMore, isFetching } = useGetCommentsQuery(
+  const { comments, hasMore, total, isFetching } = useGetCommentsQuery(
     { page, postId: postId || "" },
     {
       skip: isAuthLoading,
@@ -97,6 +97,7 @@ const PostPage = () => {
           data?.comments ?? commentsAdapter.getInitialState()
         ),
         hasMore: data?.hasMore,
+        total: data?.total,
         ...other,
       }),
     }
@@ -118,7 +119,7 @@ const PostPage = () => {
     <main className="overflow-x-hidden px-2 pb-4 sm:container">
       <PostCard post={post} className="my-2 border-b" />
       <div className="pt-2">
-        <h3 className="pb-4 text-lg">{post?.comments} comments</h3>
+        <h3 className="pb-4 text-lg">{total} comments</h3>
         {!post?.canComment && !isPostLoading ? (
           <div className="flex gap-2 rounded border p-4">
             <Lock />

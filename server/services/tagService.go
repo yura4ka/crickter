@@ -57,7 +57,8 @@ func HasTagMorePosts(tag string, page int) (bool, error) {
 		SELECT count(pt.post_id)
 		FROM tags AS t
 		LEFT JOIN post_tags AS pt ON t.id = pt.tag_id
-		WHERE t.name = $1;
+		LEFT JOIN posts AS p ON pt.post_id = p.id
+		WHERE t.name = $1 AND p.is_deleted = FALSE;
 	`, tag).Scan(&total)
 
 	if err != nil {
