@@ -3,8 +3,8 @@ import { useAuth } from "../auth/useAuth";
 import { Link } from "react-router-dom";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { FC, useRef, useState } from "react";
-import { Post, useCreatePostMutation } from "./postsApiSlice";
+import { FC, useEffect, useRef, useState } from "react";
+import { Post, PostMedia, useCreatePostMutation } from "./postsApiSlice";
 import SubmitButton from "@/components/SubmitButton";
 import { cn } from "@/lib/utils";
 import { PostType } from "./utils";
@@ -17,6 +17,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
+import { UploadEventDetails } from "@/lib/HeadlessModal";
+import { UploadCtxProvider } from "@uploadcare/blocks";
 
 const placeholders = [
   "Maxwell's equations",
@@ -63,22 +65,50 @@ const CreatePost: FC<Props> = ({
 
   const [value, setValue] = useState("");
   const [canComment, setCanComment] = useState(true);
+  const [media, setMedia] = useState<PostMedia[]>(() => []);
+
   const [createPost, { isLoading: isCreating, isError }] = useCreatePostMutation();
 
   const formRef = useRef<HTMLFormElement>(null);
+  const uploaderRef = useRef<UploadCtxProvider>(null);
+
+  const handleUpload = (e: CustomEvent<UploadEventDetails>) => {
+    const { detail } = e;
+    if (detail.ctx !== "post-uploader") return;
+    setMedia(
+      detail.data.map((f) => ({
+        id: f.uuid,
+        url: f.cdnUrl,
+        urlModifiers: f.cdnUrlModifiers,
+        type: f.contentInfo.mime.type,
+        mime: f.contentInfo.mime.mime,
+        subtype: f.contentInfo.mime.subtype,
+      }))
+    );
+  };
+
+  useEffect(() => {
+    window.addEventListener("LR_DATA_OUTPUT", handleUpload);
+    return () => {
+      window.removeEventListener("LR_DATA_OUTPUT", handleUpload);
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const v = value.trim();
-    if (v.length === 0 || v.length > MAX_LENGTH) return;
+    if (v.length > MAX_LENGTH || (v.length === 0 && media.length === 0)) return;
     await createPost({
       text: v,
       commentToId,
       responseToId,
       originalId,
       canComment,
+      media,
     }).unwrap();
     setValue("");
+    setMedia([]);
+    uploaderRef.current?.uploadCollection.clearAll();
     onPostCreated?.(v);
   };
 
@@ -158,6 +188,31 @@ const CreatePost: FC<Props> = ({
           />
         )}
 
+        <div className="mt-2 flex flex-wrap gap-2">
+          {media.map((f) => (
+            <div key={f.id}>
+              {f.type === "image" && (
+                <picture>
+                  <source
+                    srcSet={
+                      f.url +
+                      "-/format/auto/-/progressive/yes/-/quality/lightest/-/scale_crop/100x100/smart/"
+                    }
+                  />
+                  <img
+                    width={100}
+                    height={100}
+                    src={
+                      f.url +
+                      "-/format/preserve/-/progressive/yes/-/quality/lightest/-/scale_crop/100x100/smart/"
+                    }
+                  />
+                </picture>
+              )}
+            </div>
+          ))}
+        </div>
+
         <div
           className={cn(
             "mt-2 flex justify-between gap-2",
@@ -173,7 +228,7 @@ const CreatePost: FC<Props> = ({
                       type="button"
                       variant="ghost"
                       size="icon"
-                      onClick={undefined}
+                      onClick={() => uploaderRef.current?.initFlow()}
                       className="h-6 w-6 p-1"
                     >
                       <Paperclip />
@@ -217,7 +272,10 @@ const CreatePost: FC<Props> = ({
           </div>
           <SubmitButton
             isLoading={isCreating}
-            disabled={value.trim().length === 0 || value.length > MAX_LENGTH}
+            disabled={
+              value.length > MAX_LENGTH ||
+              (value.trim().length === 0 && media.length === 0)
+            }
           >
             {type === "comment" || repostOf
               ? "Comment"
@@ -227,6 +285,11 @@ const CreatePost: FC<Props> = ({
           </SubmitButton>
         </div>
       </div>
+      <lr-upload-ctx-provider
+        ctx-name="post-uploader"
+        ref={uploaderRef}
+      ></lr-upload-ctx-provider>
+      <lr-data-output ctx-name="post-uploader" use-event></lr-data-output>
     </form>
   );
 };

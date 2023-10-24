@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import * as LR from "@uploadcare/blocks";
 import { Provider } from "react-redux";
 import { store } from "./app/store.ts";
 import {
@@ -20,6 +21,9 @@ import PostPage from "./features/posts/PostPage.tsx";
 import FavoritePostsPage from "./features/posts/FavoritePostsPage.tsx";
 import TagPage from "./features/tags/TagPage.tsx";
 import TagPostsPage from "./features/tags/TagPostsPage.tsx";
+import HeadlessModal from "./lib/HeadlessModal.ts";
+
+LR.registerBlocks({ ...LR, HeadlessModal });
 
 const router = createBrowserRouter(
   createRoutesFromElements(

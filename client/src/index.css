@@ -93,6 +93,19 @@
   .link {
     @apply font-semibold text-cyan-600 transition-all hover:text-cyan-700 hover:underline dark:text-cyan-500 dark:hover:text-cyan-600;
   }
+
+  html.dark .uploadcare-config {
+    --darkmode: 1;
+    --h-accent: 192;
+    --s-accent: 91%;
+    --l-accent: 36%;
+  }
+
+  .uploadcare-config {
+    --h-accent: 189;
+    --s-accent: 94%;
+    --l-accent: 43%;
+  }
 }
 
 @layer utilities {

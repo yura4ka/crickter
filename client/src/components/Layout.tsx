@@ -12,6 +12,19 @@ const Layout = () => {
       <Footer />
       <LoginModal />
       <RepostModal />
+      <lr-config
+        ctx-name="post-uploader"
+        pubkey="2ac4018b8e52c68924ae"
+        maxLocalFileSizeBytes={5000000}
+        imgOnly={true}
+        sourceList="local, url, camera"
+        use-cloud-image-editor="true"
+      ></lr-config>
+      <lr-headless-modal
+        ctx-name="post-uploader"
+        css-src="https://cdn.jsdelivr.net/npm/@uploadcare/blocks@0.25.0/web/lr-file-uploader-regular.min.css"
+        class="uploadcare-config"
+      ></lr-headless-modal>
     </div>
   );
 };
