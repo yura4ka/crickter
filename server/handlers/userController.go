@@ -118,3 +118,20 @@ func GetFollowers(c *fiber.Ctx) error {
 		"hasMore": hasMore,
 	})
 }
+
+func ChangeUser(c *fiber.Ctx) error {
+	input := new(services.ChangeUserRequest)
+	if err := c.BodyParser(input); err != nil {
+		log.Print(err)
+		return c.SendStatus(400)
+	}
+	userId, _ := c.Locals("userId").(string)
+
+	if err := services.ChangeUser(userId, input); err != nil {
+		c.SendStatus(400)
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Ok",
+	})
+}

@@ -15,4 +15,5 @@ func addUserRouter(app *fiber.App) {
 	post.Post("/:userId/unfollow", middleware.RequireAuth, handlers.HandleUnFollow)
 	post.Get("/:userId/following", middleware.ParseAuth, handlers.GetFollowing)
 	post.Get("/:userId/followers", middleware.ParseAuth, handlers.GetFollowers)
+	post.Patch("/", middleware.RequireAuth, handlers.ChangeUser)
 }

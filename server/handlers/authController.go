@@ -65,11 +65,11 @@ func Login(c *fiber.Ctx) error {
 		"ucare":  ucare,
 		"expire": expire,
 		"user": fiber.Map{
-			"id":        user.ID,
-			"email":     user.Email,
-			"username":  user.Username,
-			"name":      user.Name,
-			"avatarUrl": user.AvatarUrl,
+			"id":       user.ID,
+			"email":    user.Email,
+			"username": user.Username,
+			"name":     user.Name,
+			"avatar":   user.Avatar,
 		},
 	})
 }
@@ -107,11 +107,11 @@ func Refresh(c *fiber.Ctx) error {
 		"ucareToken": ucare,
 		"expire":     expire,
 		"user": fiber.Map{
-			"id":        user.ID,
-			"email":     user.Email,
-			"username":  user.Username,
-			"name":      user.Name,
-			"avatarUrl": user.AvatarUrl,
+			"id":       user.ID,
+			"email":    user.Email,
+			"username": user.Username,
+			"name":     user.Name,
+			"avatar":   user.Avatar,
 		},
 	})
 }

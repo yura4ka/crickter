@@ -104,27 +104,27 @@ func UpdatePost(id, text string) error {
 }
 
 type postUser struct {
-	Id        *string `json:"id"`
-	Username  *string `json:"username"`
-	Name      *string `json:"name"`
-	AvatarUrl *string `json:"avatarUrl"`
+	Id        *string `json:"id,omitempty"`
+	Username  *string `json:"username,omitempty"`
+	Name      *string `json:"name,omitempty"`
+	Avatar    *Avatar `json:"avatar,omitempty"`
 	IsDeleted bool    `json:"isDeleted"`
 }
 
 type postBase struct {
 	Id        string   `json:"id"`
-	Text      string   `json:"text"`
+	Text      *string  `json:"text,omitempty"`
 	User      postUser `json:"user"`
 	CreatedAt string   `json:"createdAt"`
-	UpdatedAt *string  `json:"updatedAt"`
+	UpdatedAt *string  `json:"updatedAt,omitempty"`
 }
 
 type postInfo struct {
 	CanComment   bool    `json:"canComment"`
 	IsDeleted    bool    `json:"isDeleted"`
-	OriginalId   *string `json:"originalId"`
-	CommentToId  *string `json:"commentToId"`
-	ResponseToId *string `json:"responseToId"`
+	OriginalId   *string `json:"originalId,omitempty"`
+	CommentToId  *string `json:"commentToId,omitempty"`
+	ResponseToId *string `json:"responseToId,omitempty"`
 	Likes        int     `json:"likes"`
 	Dislikes     int     `json:"dislikes"`
 	Reaction     int     `json:"reaction"`
@@ -137,12 +137,6 @@ type PostsResult struct {
 	postBase
 	postInfo
 	Media []PostMedia `json:"media"`
-}
-
-type DeletedPostResult struct {
-	postInfo
-	Id        string `json:"id"`
-	CreatedAt string `json:"createdAt"`
 }
 
 type TSortBy int
@@ -174,7 +168,7 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 
 	query := `
 		SELECT p.id, p.text, p.created_at, p.updated_at, p.can_comment, p.is_deleted,
-			u.id as "userId", u.username, u.name, u.avatar_url, u.is_deleted as user_deleted,
+			u.id as "userId", u.username, u.name, u.avatar_url, u.avatar_type, u.is_deleted as user_deleted,
 			o.id as "originalId", c.id as "commentToId", r.id as "responseToId",
 			COALESCE(pr.likes, 0), COALESCE(pr.dislikes, 0), COALESCE(pr.reaction, 0),
 			COUNT(pc.id) as comments, COUNT(post_r.id) as responses, COALESCE(reposts.count, 0),
@@ -263,17 +257,17 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 	return query, args
 }
 
-func parsePosts(rows *sql.Rows, isComment bool) ([]interface{}, error) {
-	result := make([]interface{}, 0)
+func parsePosts(rows *sql.Rows, isComment bool) ([]PostsResult, error) {
+	result := make([]PostsResult, 0)
 	for rows.Next() {
-		var updatedAt, mediaJson string
-		var avatarUrl, userId, username, name *string
+		var text, updatedAt, mediaJson string
+		var avatarUrl, avatarType, userId, username, name *string
 		var responses int
 		row := PostsResult{}
 
 		err := rows.Scan(
-			&row.Id, &row.Text, &row.CreatedAt, &updatedAt, &row.CanComment, &row.IsDeleted,
-			&userId, &username, &name, &avatarUrl, &row.User.IsDeleted,
+			&row.Id, &text, &row.CreatedAt, &updatedAt, &row.CanComment, &row.IsDeleted,
+			&userId, &username, &name, &avatarUrl, &avatarType, &row.User.IsDeleted,
 			&row.OriginalId, &row.CommentToId, &row.ResponseToId,
 			&row.Likes, &row.Dislikes, &row.Reaction, &row.Comments, &responses, &row.Reposts, &row.IsFavorite,
 			&mediaJson,
@@ -282,39 +276,27 @@ func parsePosts(rows *sql.Rows, isComment bool) ([]interface{}, error) {
 			return nil, err
 		}
 
+		if isComment {
+			row.Comments = responses
+		}
+
 		if row.IsDeleted {
-			deleted := DeletedPostResult{
-				Id:        row.Id,
-				CreatedAt: row.CreatedAt,
-				postInfo: postInfo{
-					CanComment: row.CanComment, IsDeleted: row.IsDeleted,
-					Likes: row.Likes, Dislikes: row.Dislikes, Reaction: row.Reaction,
-					Comments: row.Comments, Reposts: row.Reposts, IsFavorite: row.IsFavorite,
-					OriginalId:   row.OriginalId,
-					CommentToId:  row.CommentToId,
-					ResponseToId: row.ResponseToId,
-				},
-			}
-
-			if isComment {
-				deleted.Comments = responses
-			}
-
-			result = append(result, deleted)
+			result = append(result, row)
 			continue
 		}
 
 		if !row.User.IsDeleted {
-			row.User = postUser{Id: userId, Username: username, Name: name, AvatarUrl: avatarUrl}
+			row.User = postUser{Id: userId, Username: username, Name: name}
+			if avatarUrl != nil {
+				row.User.Avatar = &Avatar{Url: *avatarUrl, Type: *avatarType}
+			}
 		}
 
 		if updatedAt != row.CreatedAt {
 			row.UpdatedAt = &updatedAt
 		}
 
-		if isComment {
-			row.Comments = responses
-		}
+		row.Text = &text
 
 		err = json.Unmarshal([]byte(mediaJson), &row.Media)
 		if err != nil {
@@ -331,7 +313,7 @@ func parsePosts(rows *sql.Rows, isComment bool) ([]interface{}, error) {
 	return result, nil
 }
 
-func GetPosts(params *QueryParams) ([]interface{}, error) {
+func GetPosts(params *QueryParams) ([]PostsResult, error) {
 	query, args := buildPostQuery(params)
 	rows, err := db.Client.Query(query, args...)
 
@@ -389,7 +371,7 @@ func ProcessReaction(userId, postId string, liked bool) error {
 	return err
 }
 
-func QueryPostById(postId, userId string) (*interface{}, error) {
+func QueryPostById(postId, userId string) (*PostsResult, error) {
 	query, args := buildPostQuery(&QueryParams{PostId: postId, RequestUserId: userId})
 	rows, err := db.Client.Query(query, args...)
 
@@ -470,12 +452,13 @@ func ProcessFavorite(postId, userId string) error {
 	return err
 }
 
-func GetFavoritePosts(userId string, page int) ([]interface{}, error) {
+func GetFavoritePosts(userId string, page int) ([]PostsResult, error) {
 	query, args := buildPostQuery(&QueryParams{RequestUserId: userId, IsFavorite: true, Page: page, OrderBy: SortNew})
 	rows, err := db.Client.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	return parsePosts(rows, false)
 }
 

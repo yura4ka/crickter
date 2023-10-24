@@ -2,7 +2,9 @@ package services
 
 import (
 	"database/sql"
+	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/yura4ka/crickter/db"
@@ -21,6 +23,10 @@ type NewUser struct {
 }
 
 func CreateUser(user *NewUser) (string, error) {
+	if len(user.Password) < 4 {
+		return "", ErrInvalidPassword
+	}
+
 	hashed, err := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
 
 	if err != nil {
@@ -42,13 +48,18 @@ func CreateUser(user *NewUser) (string, error) {
 	return id, err
 }
 
+type Avatar struct {
+	Url  string `json:"url"`
+	Type string `json:"type"`
+}
+
 type BaseUser struct {
 	ID        string    `json:"id"`
 	Name      string    `json:"name"`
 	Username  *string   `json:"username"`
 	CreatedAt time.Time `json:"createdAt"`
 	IsPrivate bool      `json:"isPrivate"`
-	AvatarUrl *string   `json:"avatarUrl"`
+	Avatar    *Avatar   `json:"avatar,omitempty"`
 }
 
 type User struct {
@@ -62,15 +73,20 @@ type User struct {
 
 func GetUserByEmail(email string) (*User, error) {
 	var user User
+	var avatarUrl, avatarType *string
 
 	err := db.Client.QueryRow(`
 		SELECT * FROM users
 		WHERE email = $1;
 	`, email).Scan(&user.ID, &user.CreatedAt, &user.Email, &user.Password, &user.Name,
-		&user.Username, &user.IsPrivate, &user.UpdatedAt, &user.AvatarUrl, &user.Bio, &user.IsDeleted)
+		&user.Username, &user.IsPrivate, &user.UpdatedAt, &avatarUrl, &user.Bio, &user.IsDeleted, &avatarType)
 
 	if err != nil {
 		return nil, err
+	}
+
+	if avatarUrl != nil {
+		user.Avatar = &Avatar{Url: *avatarUrl, Type: *avatarType}
 	}
 
 	return &user, nil
@@ -78,15 +94,20 @@ func GetUserByEmail(email string) (*User, error) {
 
 func GetUserById(id string) (*User, error) {
 	var user User
+	var avatarUrl, avatarType *string
 
 	err := db.Client.QueryRow(`
 		SELECT * FROM users
 		WHERE id = $1;
 	`, id).Scan(&user.ID, &user.CreatedAt, &user.Email, &user.Password, &user.Name,
-		&user.Username, &user.IsPrivate, &user.UpdatedAt, &user.AvatarUrl, &user.Bio, &user.IsDeleted)
+		&user.Username, &user.IsPrivate, &user.UpdatedAt, &avatarUrl, &user.Bio, &user.IsDeleted, &avatarType)
 
 	if err != nil {
 		return nil, err
+	}
+
+	if avatarUrl != nil {
+		user.Avatar = &Avatar{Url: *avatarUrl, Type: *avatarType}
 	}
 
 	return &user, nil
@@ -119,8 +140,9 @@ type UserInfo struct {
 func GetUserInfo(id, requestUserId string) (*UserInfo, error) {
 	var u UserInfo
 	var isDeleted bool
+	var avatarUrl, avatarType *string
 	err := db.Client.QueryRow(`
-		SELECT u.id, u.created_at, u.name, u.username, u.is_private, u.avatar_url, u.bio, u.is_deleted,
+		SELECT u.id, u.created_at, u.name, u.username, u.is_private, u.avatar_url, u.avatar_type, u.bio, u.is_deleted,
 			COALESCE(COUNT(f1.*), 0) AS followers, COALESCE(f2.count, 0) AS following,
 			COALESCE(p.count, 0) AS post_count
 		FROM users AS u
@@ -139,7 +161,7 @@ func GetUserInfo(id, requestUserId string) (*UserInfo, error) {
 		WHERE u.id = $1
 		GROUP BY u.id, u.created_at, u.name, u.username, f2.count, p.count;
 	`, id).
-		Scan(&u.ID, &u.CreatedAt, &u.Name, &u.Username, &u.IsPrivate, &u.AvatarUrl, &u.Bio,
+		Scan(&u.ID, &u.CreatedAt, &u.Name, &u.Username, &u.IsPrivate, &avatarUrl, &avatarType, &u.Bio,
 			&isDeleted, &u.Followers, &u.Following, &u.PostCount)
 	if err != nil {
 		return nil, err
@@ -147,6 +169,10 @@ func GetUserInfo(id, requestUserId string) (*UserInfo, error) {
 
 	if isDeleted {
 		return nil, ErrDeletedUser
+	}
+
+	if avatarUrl != nil {
+		u.Avatar = &Avatar{Url: *avatarUrl, Type: *avatarType}
 	}
 
 	if requestUserId != "" && id != requestUserId {
@@ -215,9 +241,13 @@ func parseFollowInfo(rows *sql.Rows, isSubscribed map[string]bool) ([]FollowInfo
 
 	for rows.Next() {
 		row := FollowInfo{}
-		err := rows.Scan(&row.ID, &row.Name, &row.Username, &row.CreatedAt, &row.IsPrivate, &row.AvatarUrl)
+		var avatarUrl, avatarType *string
+		err := rows.Scan(&row.ID, &row.Name, &row.Username, &row.CreatedAt, &row.IsPrivate, &avatarUrl, &avatarType)
 		if err != nil {
 			return nil, err
+		}
+		if avatarUrl != nil {
+			row.Avatar = &Avatar{Url: *avatarUrl, Type: *avatarType}
 		}
 		row.IsSubscribed = isSubscribed[row.ID]
 		result = append(result, row)
@@ -240,7 +270,7 @@ func GetFollowing(userId, requestUserId string, page int) ([]FollowInfo, error) 
 	}
 
 	rows, err := db.Client.Query(`
-		SELECT u.id, u.name, u.username, u.created_at, u.is_private, u.avatar_url
+		SELECT u.id, u.name, u.username, u.created_at, u.is_private, u.avatar_url, u.avatar_type
 		FROM users_followers AS f
 		INNER JOIN users AS u ON f.user_id = u.id
 		WHERE f.follower_id = $1 AND u.is_deleted = FALSE
@@ -264,7 +294,7 @@ func GetFollowers(userId, requestUserId string, page int) ([]FollowInfo, error) 
 	}
 
 	rows, err := db.Client.Query(`
-		SELECT u.id, u.name, u.username, u.created_at, u.is_private, u.avatar_url
+		SELECT u.id, u.name, u.username, u.created_at, u.is_private, u.avatar_url, u.avatar_type
 		FROM users_followers AS f
 		INNER JOIN users AS u ON f.follower_id = u.id
 		WHERE f.user_id = $1 AND u.is_deleted = FALSE
@@ -307,4 +337,92 @@ func HasMoreFollowers(userId string, page int) (bool, error) {
 		return false, nil
 	}
 	return count > page*USERS_PER_PAGE, nil
+}
+
+type ChangeUserRequest struct {
+	Name            *string `json:"name"`
+	Username        *string `json:"username"`
+	Avatar          *Avatar `json:"avatar"`
+	Bio             *string `json:"bio"`
+	Password        *string `json:"password"`
+	ConfirmPassword *string `json:"confirmPassword"`
+}
+
+func ChangeUser(userId string, user *ChangeUserRequest) error {
+	var oldPassword string
+	var oldAvatar *string
+
+	if user.Password != nil && len(*user.Password) < 4 {
+		return ErrInvalidPassword
+	}
+
+	if user.Password != nil || user.Avatar != nil {
+		err := db.Client.QueryRow(`
+			SELECT password, avatar_url FROM users WHERE id = $1;
+		`, userId).Scan(&oldPassword, &oldAvatar)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	queries := make([]string, 0)
+	args := make([]any, 0)
+	argsCount := 1
+
+	if user.Name != nil {
+		queries = append(queries, fmt.Sprintf("name = $%d", argsCount))
+		args = append(args, *user.Name)
+		argsCount++
+	}
+
+	if user.Username != nil {
+		queries = append(queries, fmt.Sprintf("username = $%d", argsCount))
+		args = append(args, *user.Username)
+		argsCount++
+	}
+
+	if user.Bio != nil {
+		queries = append(queries, fmt.Sprintf("bio = $%d", argsCount))
+		args = append(args, *user.Bio)
+		argsCount++
+	}
+
+	if user.Password != nil {
+		if user.ConfirmPassword == nil {
+			return ErrWrongPassword
+		}
+
+		if err := bcrypt.CompareHashAndPassword([]byte(oldPassword), []byte(*user.ConfirmPassword)); err != nil {
+			return ErrWrongPassword
+		}
+
+		hashed, err := bcrypt.GenerateFromPassword([]byte(*user.Password), 10)
+		if err != nil {
+			return err
+		}
+
+		queries = append(queries, fmt.Sprintf("password = $%d", argsCount))
+		args = append(args, hashed)
+		argsCount++
+	}
+
+	if user.Avatar != nil {
+		if user.Avatar.Url == "" {
+			user.Avatar.Type = user.Avatar.Url
+		}
+		queries = append(queries, fmt.Sprintf("avatar_url = $%d, avatar_type = $%d", argsCount, argsCount+1))
+		args = append(args, ToNullString(&user.Avatar.Url), ToNullString(&user.Avatar.Type))
+		argsCount += 2
+	}
+
+	args = append(args, userId)
+
+	_, err := db.Client.Exec(
+		"UPDATE USERS SET\n"+strings.Join(queries, ", ")+fmt.Sprintf("\nWHERE id = $%d", argsCount),
+		args...,
+	)
+
+	return err
+
 }
