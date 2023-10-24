@@ -13,44 +13,36 @@ export interface User {
 export interface AuthState {
   user?: User | null;
   token?: string;
+  ucareToken?: string;
+  expire?: number;
 }
 
-const initialState: AuthState = {
-  user: undefined,
-  token: undefined,
-};
+const initialState: AuthState = {};
 
 export const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    setCredentials: (state, action: PayloadAction<AuthState>) => {
-      state.token = action.payload.token;
-      state.user = action.payload.user;
-    },
+    setCredentials: (_, { payload }: PayloadAction<AuthState>) => payload,
   },
   extraReducers: (builder) => {
-    builder.addMatcher(authApi.endpoints.login.matchFulfilled, (state, { payload }) => {
-      state.token = payload.token;
-      state.user = payload.user;
+    builder.addMatcher(authApi.endpoints.login.matchFulfilled, (_, { payload }) => {
+      return payload;
     });
-    builder.addMatcher(authApi.endpoints.refresh.matchFulfilled, (state, { payload }) => {
-      state.token = payload.token;
-      state.user = payload.user;
+    builder.addMatcher(authApi.endpoints.refresh.matchFulfilled, (_, { payload }) => {
+      return payload;
     });
-    builder.addMatcher(authApi.endpoints.refresh.matchRejected, (state) => {
-      state.token = undefined;
-      state.user = null;
+    builder.addMatcher(authApi.endpoints.refresh.matchRejected, () => {
+      return { user: null };
     });
-    builder.addMatcher(authApi.endpoints.logout.matchFulfilled, (state) => {
-      state.token = undefined;
-      state.user = null;
+    builder.addMatcher(authApi.endpoints.logout.matchFulfilled, () => {
+      return { user: null };
     });
   },
 });
 
 export const { setCredentials } = authSlice.actions;
 
-export const selectUser = (state: RootState) => state.auth.user;
+export const selectAuth = (state: RootState) => state.auth;
 
 export default authSlice.reducer;

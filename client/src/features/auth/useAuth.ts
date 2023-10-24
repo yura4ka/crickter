@@ -1,24 +1,23 @@
 import { useAppSelector } from "@/app/hooks";
-import { User, selectUser } from "./authSlice";
+import { AuthState, User, selectAuth } from "./authSlice";
 import { useRefreshQuery } from "./authApiSlice";
 
 type AuthReturnType =
-  | {
-      isAuth: true;
+  | (Required<Omit<AuthState, "user">> & {
       user: User;
+      isAuth: true;
       isLoading: boolean;
-    }
-  | {
+    })
+  | (AuthState & {
       isAuth: false;
-      user?: User | null;
       isLoading: boolean;
-    };
+    });
 
 export const useAuth = () => {
-  const user = useAppSelector(selectUser);
-  const isAuth = !!user;
+  const auth = useAppSelector(selectAuth);
+  const isAuth = !!auth.user;
   const { isFetching } = useRefreshQuery(undefined, {
-    skip: isAuth || user === null,
+    skip: isAuth || auth.user === null,
   });
-  return { user, isAuth, isLoading: isFetching } as AuthReturnType;
+  return { ...auth, isAuth, isLoading: isFetching } as AuthReturnType;
 };

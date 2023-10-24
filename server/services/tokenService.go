@@ -1,8 +1,13 @@
 package services
 
 import (
+	"encoding/hex"
 	"os"
+	"strconv"
 	"time"
+
+	"crypto/hmac"
+	"crypto/sha256"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
@@ -94,4 +99,17 @@ func VerifyAccessToken(token string) (*TokenPayload, error) {
 	}
 
 	return nil, err
+}
+
+func CreateUcareToken(age time.Duration) (string, int64) {
+	mac := hmac.New(sha256.New, []byte(os.Getenv("UPLOAD_CARE_SECRET")))
+	expire := time.Now().Add(age).Unix()
+	mac.Write([]byte(strconv.FormatInt(expire, 10)))
+	dataHmac := mac.Sum(nil)
+	hmacHex := hex.EncodeToString(dataHmac)
+	return hmacHex, expire
+}
+
+func GetAccessMaxAge() time.Duration {
+	return access_max_age
 }

@@ -57,9 +57,13 @@ func Login(c *fiber.Ctx) error {
 		return c.SendStatus(400)
 	}
 
+	ucare, expire := services.CreateUcareToken(services.GetAccessMaxAge())
+
 	c.Cookie(services.CreateRefreshCookie(refresh))
 	return c.JSON(fiber.Map{
-		"token": access,
+		"token":  access,
+		"ucare":  ucare,
+		"expire": expire,
 		"user": fiber.Map{
 			"id":        user.ID,
 			"email":     user.Email,
@@ -95,9 +99,13 @@ func Refresh(c *fiber.Ctx) error {
 		return c.SendStatus(400)
 	}
 
+	ucare, expire := services.CreateUcareToken(services.GetAccessMaxAge())
+
 	c.Cookie(services.CreateRefreshCookie(newRefresh))
 	return c.JSON(fiber.Map{
-		"token": newAccess,
+		"token":      newAccess,
+		"ucareToken": ucare,
+		"expire":     expire,
 		"user": fiber.Map{
 			"id":        user.ID,
 			"email":     user.Email,

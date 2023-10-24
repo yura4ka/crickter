@@ -3,8 +3,11 @@ import Navbar from "./Navbar";
 import Footer from "./Footer";
 import LoginModal from "@/features/loginModal/LoginModal";
 import RepostModal from "@/features/posts/RepostModal";
+import { useAuth } from "@/features/auth/useAuth";
 
 const Layout = () => {
+  const { ucareToken, expire } = useAuth();
+
   return (
     <div className="grid min-h-screen grid-rows-[auto_1fr_auto]">
       <Navbar />
@@ -15,6 +18,8 @@ const Layout = () => {
       <lr-config
         ctx-name="post-uploader"
         pubkey="2ac4018b8e52c68924ae"
+        secureSignature={ucareToken}
+        secureExpire={expire?.toString()}
         maxLocalFileSizeBytes={5000000}
         imgOnly={true}
         sourceList="local, url, camera"
