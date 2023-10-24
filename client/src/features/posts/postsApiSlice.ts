@@ -9,15 +9,10 @@ import {
   commentsSelector,
 } from "./commentsApiSlice";
 import { userApi } from "../user/userApiSlice";
+import { User } from "../auth/authSlice";
 
 export type PostUser =
-  | {
-      id: string;
-      username: string;
-      name: string;
-      avatarUrl: string | null;
-      isDeleted: false;
-    }
+  | (Omit<User, "isDeleted"> & { isDeleted: false })
   | {
       isDeleted: true;
     };

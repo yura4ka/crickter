@@ -3,6 +3,7 @@ import { BaseUser } from "./userApiSlice";
 import SubscribeButton from "./SubscribeButton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Link } from "react-router-dom";
+import { optimizeImageUrl } from "@/lib/utils";
 
 interface Props {
   user: BaseUser;
@@ -20,7 +21,9 @@ const UserCard: FC<Props> = ({ user, hidden, handleSubscribe, onLinkClick }) => 
         className="group flex flex-1 items-center gap-4"
       >
         <Avatar>
-          {user.avatarUrl && <AvatarImage src={user.avatarUrl} />}
+          {user.avatar && (
+            <AvatarImage src={optimizeImageUrl(user.avatar.url, user.avatar.type)} />
+          )}
           <AvatarFallback>{user.username[0]}</AvatarFallback>
         </Avatar>
         <div>

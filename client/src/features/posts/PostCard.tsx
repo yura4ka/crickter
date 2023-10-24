@@ -5,7 +5,7 @@ import {
   useProcessReactionMutation,
 } from "./postsApiSlice";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { cn, formatTimeAgo } from "@/lib/utils";
+import { cn, formatTimeAgo, optimizeImageUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, ThumbsDown, ThumbsUp, Repeat, Bookmark } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -164,7 +164,9 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
     ) : (
       <Link to={`/user/${p.user.id}`}>
         <Avatar>
-          {p.user.avatarUrl && <AvatarImage src={p.user.avatarUrl} />}
+          {p.user.avatar && (
+            <AvatarImage src={optimizeImageUrl(p.user.avatar.url, p.user.avatar.type)} />
+          )}
           <AvatarFallback>{p.user.username[0]}</AvatarFallback>
         </Avatar>
       </Link>

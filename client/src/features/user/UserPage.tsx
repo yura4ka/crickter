@@ -1,12 +1,16 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
-import { useGetUserPostsQuery, useGetUserQuery } from "./userApiSlice";
+import {
+  useChangeUserMutation,
+  useGetUserPostsQuery,
+  useGetUserQuery,
+} from "./userApiSlice";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { postsAdapter, postsSelector } from "../posts/postsApiSlice";
 import { useInfiniteScroll } from "@/lib/hooks";
 import PostCard from "../posts/PostCard";
-import { cn } from "@/lib/utils";
+import { cn, optimizeImageUrl } from "@/lib/utils";
 import SubscribeButton from "./SubscribeButton";
 import {
   Dialog,
@@ -17,14 +21,44 @@ import {
 } from "@/components/ui/dialog";
 import FollowersCard from "./FollowersCard";
 import FollowingCard from "./FollowingCard";
-import { Loader2 } from "lucide-react";
+import { Camera, Loader2 } from "lucide-react";
+import { UploadCtxProvider } from "@uploadcare/blocks";
+import { UploadEventDetails } from "@/lib/HeadlessModal";
 
 const UserInfo = ({ id }: { id: string }) => {
   const { data: user, isLoading } = useGetUserQuery(id);
   const { isLoading: isAuthLoading, user: auth } = useAuth();
+  const [changeUser] = useChangeUserMutation();
 
+  const uploaderRef = useRef<UploadCtxProvider>(null);
   const [followersOpen, setFollowersOpen] = useState(false);
   const [followingOpen, setFollowingOpen] = useState(false);
+
+  const handleAvatarChange = useCallback(
+    (e: CustomEvent<UploadEventDetails>) => {
+      const { detail } = e;
+      if (detail.ctx !== "avatar-uploader") return;
+      changeUser({
+        avatar: {
+          url: detail.data[0].cdnUrl ?? "",
+          type: detail.data[0].contentInfo.mime.subtype,
+        },
+      });
+      uploaderRef.current?.addFileFromObject;
+    },
+    [changeUser]
+  );
+
+  const onDoneFlow = () => uploaderRef.current?.uploadCollection.clearAll();
+
+  useEffect(() => {
+    window.addEventListener("LR_DATA_OUTPUT", handleAvatarChange);
+    window.addEventListener("LR_DONE_FLOW", onDoneFlow);
+    return () => {
+      window.removeEventListener("LR_DATA_OUTPUT", handleAvatarChange);
+      window.removeEventListener("LR_DONE_FLOW", onDoneFlow);
+    };
+  }, [handleAvatarChange]);
 
   if (!user || isLoading || isAuthLoading) {
     return (
@@ -96,13 +130,37 @@ const UserInfo = ({ id }: { id: string }) => {
     <>
       <header className="mx-auto flex max-w-xl sm:max-w-4xl">
         <div className="pr-4 sm:py-4 sm:pr-10 md:pr-20">
-          <Avatar
-            key={user.id}
-            className="h-20 w-20 text-2xl sm:h-40 sm:w-40 sm:text-4xl"
+          <button
+            onClick={() => uploaderRef.current?.initFlow()}
+            disabled={user.id !== auth?.id}
+            className="group relative"
           >
-            {user.avatarUrl && <AvatarImage src={user.avatarUrl} />}
-            <AvatarFallback>{user.username[0]}</AvatarFallback>
-          </Avatar>
+            <div
+              className={cn(
+                "absolute z-10 grid h-full w-full place-content-center rounded-full border-foreground opacity-0 transition-all group-hover:border group-hover:opacity-100",
+                user.id !== auth?.id && "hidden"
+              )}
+            >
+              <Camera className="stroke-zinc-50" />
+            </div>
+            <Avatar
+              key={user.id}
+              className={cn(
+                "h-20 w-20 text-2xl transition-all sm:h-40 sm:w-40 sm:text-4xl",
+                user.id === auth?.id && "group-hover:blur-sm group-hover:brightness-75"
+              )}
+            >
+              {user.avatar && (
+                <AvatarImage
+                  src={optimizeImageUrl(user.avatar.url, user.avatar.type, {
+                    size: "160x160",
+                    quality: "smart",
+                  })}
+                />
+              )}
+              <AvatarFallback>{user.username[0]}</AvatarFallback>
+            </Avatar>
+          </button>
         </div>
         <div className="flex flex-1 flex-col gap-4 sm:text-lg">
           <div className="flex items-center justify-between gap-1">
@@ -131,6 +189,11 @@ const UserInfo = ({ id }: { id: string }) => {
         />
         {secondary}
       </div>
+      <lr-upload-ctx-provider
+        ctx-name="avatar-uploader"
+        ref={uploaderRef}
+      ></lr-upload-ctx-provider>
+      <lr-data-output ctx-name="post-uploader" use-event></lr-data-output>
     </>
   );
 };

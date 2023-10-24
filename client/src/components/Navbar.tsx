@@ -13,6 +13,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import ModeToggle from "./ui/ModeToggle";
 import { useLogoutMutation } from "@/features/auth/authApiSlice";
+import { optimizeImageUrl } from "@/lib/utils";
 
 const Navbar = () => {
   const { isAuth, isLoading, user } = useAuth();
@@ -35,7 +36,11 @@ const Navbar = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger>
                   <Avatar className="mr-2 sm:mx-4">
-                    {user.avatarUrl && <AvatarImage src={user.avatarUrl} />}
+                    {user.avatar && (
+                      <AvatarImage
+                        src={optimizeImageUrl(user.avatar.url, user.avatar.type)}
+                      />
+                    )}
                     <AvatarFallback>{user.username[0]}</AvatarFallback>
                   </Avatar>
                 </DropdownMenuTrigger>

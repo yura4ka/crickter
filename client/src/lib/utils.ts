@@ -5,7 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const emailRegexp = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
+export const emailRegexp = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/;
 export const validatePassword = (password: string) => password.trim().length >= 4;
 export const nameMaxLength = 64;
 export const usernameMaxLength = 64;
@@ -35,4 +35,22 @@ export function formatTimeAgo(date: Date) {
     }
     duration /= division.amount;
   }
+}
+
+interface Operations {
+  size: string;
+  format: "jpeg" | "png" | "webp" | "auto" | "preserve";
+  quality: "normal" | "smart" | "better" | "best" | "lighter" | "lightest";
+}
+
+export function optimizeImageUrl(
+  url: string,
+  type: string,
+  { size = "40x40", format = "auto", quality = "lightest" }: Partial<Operations> = {}
+): string {
+  if (type === "gif") return url;
+  return (
+    url +
+    `-/format/${format}/-/progressive/yes/-/quality/${quality}/-/scale_crop/${size}/smart/`
+  );
 }

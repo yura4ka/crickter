@@ -1,13 +1,14 @@
 import { RootState } from "@/app/store";
 import { PayloadAction, createSlice } from "@reduxjs/toolkit";
 import { authApi } from "./authApiSlice";
+import { UserAvatar } from "../user/userApiSlice";
 
 export interface User {
   id: string;
   email: string;
   username: string;
   name: string;
-  avatarUrl: string | null;
+  avatar: UserAvatar | null;
 }
 
 export interface AuthState {
@@ -24,6 +25,9 @@ export const authSlice = createSlice({
   initialState,
   reducers: {
     setCredentials: (_, { payload }: PayloadAction<AuthState>) => payload,
+    changeUser: (state, { payload }: PayloadAction<Partial<User>>) => {
+      if (state.user) Object.assign(state.user, payload);
+    },
   },
   extraReducers: (builder) => {
     builder.addMatcher(authApi.endpoints.login.matchFulfilled, (_, { payload }) => {
@@ -41,7 +45,7 @@ export const authSlice = createSlice({
   },
 });
 
-export const { setCredentials } = authSlice.actions;
+export const { setCredentials, changeUser } = authSlice.actions;
 
 export const selectAuth = (state: RootState) => state.auth;
 

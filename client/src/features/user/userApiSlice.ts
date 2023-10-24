@@ -2,6 +2,12 @@ import { api } from "@/app/api/apiSlice";
 import { Post, PostsResponse, postsAdapter, postsSelector } from "../posts/postsApiSlice";
 import { EntityState, createEntityAdapter } from "@reduxjs/toolkit";
 import { RootState } from "@/app/store";
+import { changeUser } from "../auth/authSlice";
+
+export interface UserAvatar {
+  url: string;
+  type: string;
+}
 
 export interface BaseUser {
   id: string;
@@ -10,7 +16,7 @@ export interface BaseUser {
   createdAt: string;
   isPrivate: boolean;
   isSubscribed: boolean;
-  avatarUrl: string | null;
+  avatar?: UserAvatar;
 }
 
 interface User extends BaseUser {
@@ -23,6 +29,15 @@ interface User extends BaseUser {
 interface UsersResponse {
   users: EntityState<BaseUser>;
   hasMore: boolean;
+}
+
+interface ChangeUserRequest {
+  name?: string;
+  username?: string;
+  avatar?: UserAvatar;
+  bio?: string;
+  password?: string;
+  confirmPassword?: string;
 }
 
 export const followersAdapter = createEntityAdapter<BaseUser>();
@@ -173,6 +188,21 @@ export const userApi = api.injectEndpoints({
         );
       },
     }),
+
+    changeUser: builder.mutation<undefined, ChangeUserRequest>({
+      query: (body) => ({ url: "user", method: "PATCH", body }),
+      invalidatesTags: [
+        { type: "Comments" },
+        { type: "Favorite" },
+        { type: "Posts" },
+        { type: "Tags" },
+        { type: "Users" },
+      ],
+      async onQueryStarted(changes, { dispatch, queryFulfilled }) {
+        await queryFulfilled;
+        dispatch(changeUser(changes));
+      },
+    }),
   }),
 });
 
@@ -183,4 +213,5 @@ export const {
   useUnfollowMutation,
   useGetFollowersQuery,
   useGetFollowingQuery,
+  useChangeUserMutation,
 } = userApi;

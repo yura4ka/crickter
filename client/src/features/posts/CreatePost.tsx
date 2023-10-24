@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FC, useEffect, useRef, useState } from "react";
 import { Post, PostMedia, useCreatePostMutation } from "./postsApiSlice";
 import SubmitButton from "@/components/SubmitButton";
-import { cn } from "@/lib/utils";
+import { cn, optimizeImageUrl } from "@/lib/utils";
 import { PostType } from "./utils";
 import { Input } from "@/components/ui/input";
 import PostCard from "./PostCard";
@@ -140,7 +140,7 @@ const CreatePost: FC<Props> = ({
   return (
     <form onSubmit={handleSubmit} ref={formRef} className={cn("flex gap-2", className)}>
       <Avatar className={cn(type === "response" && "hidden sm:block")}>
-        {user.avatarUrl && <AvatarImage src={user.avatarUrl} />}
+        {user.avatar && <AvatarImage src={user.avatar.url} />}
         <AvatarFallback>{user.username[0]}</AvatarFallback>
       </Avatar>
       <div className={cn("w-full", type === "response" && "items-center gap-2 sm:flex")}>
@@ -194,18 +194,15 @@ const CreatePost: FC<Props> = ({
               {f.type === "image" && (
                 <picture>
                   <source
-                    srcSet={
-                      f.url +
-                      "-/format/auto/-/progressive/yes/-/quality/lightest/-/scale_crop/100x100/smart/"
-                    }
+                    srcSet={optimizeImageUrl(f.url, f.subtype, { size: "100x100" })}
                   />
                   <img
                     width={100}
                     height={100}
-                    src={
-                      f.url +
-                      "-/format/preserve/-/progressive/yes/-/quality/lightest/-/scale_crop/100x100/smart/"
-                    }
+                    src={optimizeImageUrl(f.url, f.subtype, {
+                      size: "100x100",
+                      format: "preserve",
+                    })}
                   />
                 </picture>
               )}
