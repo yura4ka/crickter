@@ -2,6 +2,7 @@ package services
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -17,12 +18,22 @@ type Post struct {
 	created_at, updated_at time.Time
 }
 
+type PostMedia struct {
+	Id           string `json:"id"`
+	Url          string `json:"url"`
+	UrlModifiers string `json:"urlModifiers"`
+	Type         string `json:"type"`
+	Mime         string `json:"mime"`
+	Subtype      string `json:"subtype"`
+}
+
 type PostParams struct {
-	Text         string  `json:"text"`
-	OriginalId   *string `json:"originalId"`
-	CommentToId  *string `json:"commentToId"`
-	ResponseToId *string `json:"responseToId"`
-	CanComment   bool    `json:"canComment"`
+	Text         string      `json:"text"`
+	OriginalId   *string     `json:"originalId"`
+	CommentToId  *string     `json:"commentToId"`
+	ResponseToId *string     `json:"responseToId"`
+	CanComment   bool        `json:"canComment"`
+	Media        []PostMedia `json:"media"`
 }
 
 func CreatePost(userId string, params *PostParams) (string, error) {
@@ -35,6 +46,30 @@ func CreatePost(userId string, params *PostParams) (string, error) {
 	`, params.Text, userId, ToNullString(params.OriginalId),
 		ToNullString(params.CommentToId), ToNullString(params.ResponseToId), params.CanComment,
 	).Scan(&postId)
+
+	if err != nil {
+		return "", err
+	}
+
+	if len(params.Media) == 0 {
+		return postId, nil
+	}
+
+	args := make([]any, 0, len(params.Media))
+	query := ""
+
+	for i, v := range params.Media {
+		order := (i) * 6
+		query += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d), ",
+			order+1, order+2, order+3, order+4, order+5, order+6)
+		args = append(args, postId, v.Url, v.UrlModifiers, v.Type, v.Mime, v.Subtype)
+	}
+
+	query = query[:len(query)-2]
+
+	_, err = db.Client.Exec(`
+		INSERT INTO post_media (post_id, url, url_modifiers, type, mime, subtype) VALUES
+	`+query, args...)
 
 	if err != nil {
 		return "", err
@@ -101,6 +136,7 @@ type postInfo struct {
 type PostsResult struct {
 	postBase
 	postInfo
+	Media []PostMedia `json:"media"`
 }
 
 type DeletedPostResult struct {
@@ -138,11 +174,19 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 
 	query := `
 		SELECT p.id, p.text, p.created_at, p.updated_at, p.can_comment, p.is_deleted,
-			u.id as "userId", u.username, u.name, u.avatar_url, u.is_deleted as "userDeleted",
+			u.id as "userId", u.username, u.name, u.avatar_url, u.is_deleted as user_deleted,
 			o.id as "originalId", c.id as "commentToId", r.id as "responseToId",
 			COALESCE(pr.likes, 0), COALESCE(pr.dislikes, 0), COALESCE(pr.reaction, 0),
 			COUNT(pc.id) as comments, COUNT(post_r.id) as responses, COALESCE(reposts.count, 0),
-			CASE WHEN fp.post_id IS NOT NULL THEN TRUE ELSE FALSE END as favorite
+			CASE WHEN fp.post_id IS NOT NULL THEN TRUE ELSE FALSE END as favorite,
+			json_agg(json_build_object(
+				'id', m.id,
+				'url', m.url,
+				'urlModifiers', m.url_modifiers,
+				'type', m.type,
+				'mime', m.mime,
+				'subtype', m.subtype
+			)) as media
 		FROM posts as p
 		LEFT JOIN users as u ON p.user_id = u.id
 		LEFT JOIN posts as o ON p.original_id = o.id
@@ -167,7 +211,8 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 			FROM post_reactions
 			GROUP BY post_id
 		) pr ON p.id = pr.post_id
-		LEFT JOIN favorite_posts as fp ON p.id = fp.post_id AND fp.user_id = $1`
+		LEFT JOIN favorite_posts as fp ON p.id = fp.post_id AND fp.user_id = $1
+		LEFT JOIN post_media as m ON p.id = m.post_id`
 
 	if params.PostId != "" {
 		query += "\nWHERE p.id = $2\n"
@@ -194,7 +239,10 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 		query += "\nWHERE p.comment_to_id IS NULL AND p.is_deleted = FALSE\n"
 	}
 
-	query += "GROUP BY p.id, u.id, o.id, c.id, r.id, pr.likes, pr.dislikes, pr.reaction, reposts.count, fp.post_id\n"
+	query += `
+		AND (m.is_deleted = FALSE OR m.is_deleted IS NULL)
+		GROUP BY p.id, u.id, o.id, c.id, r.id, pr.likes, pr.dislikes, pr.reaction, reposts.count, fp.post_id
+	`
 
 	switch params.OrderBy {
 	case SortNew:
@@ -218,7 +266,7 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 func parsePosts(rows *sql.Rows, isComment bool) ([]interface{}, error) {
 	result := make([]interface{}, 0)
 	for rows.Next() {
-		var updatedAt string
+		var updatedAt, mediaJson string
 		var avatarUrl, userId, username, name *string
 		var responses int
 		row := PostsResult{}
@@ -228,6 +276,7 @@ func parsePosts(rows *sql.Rows, isComment bool) ([]interface{}, error) {
 			&userId, &username, &name, &avatarUrl, &row.User.IsDeleted,
 			&row.OriginalId, &row.CommentToId, &row.ResponseToId,
 			&row.Likes, &row.Dislikes, &row.Reaction, &row.Comments, &responses, &row.Reposts, &row.IsFavorite,
+			&mediaJson,
 		)
 		if err != nil {
 			return nil, err
@@ -266,6 +315,16 @@ func parsePosts(rows *sql.Rows, isComment bool) ([]interface{}, error) {
 		if isComment {
 			row.Comments = responses
 		}
+
+		err = json.Unmarshal([]byte(mediaJson), &row.Media)
+		if err != nil {
+			return nil, err
+		}
+
+		if row.Media[0].Id == "" {
+			row.Media = []PostMedia{}
+		}
+
 		result = append(result, row)
 	}
 

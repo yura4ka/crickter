@@ -15,6 +15,10 @@ func CreatePost(c *fiber.Ctx) error {
 	}
 	userId := c.Locals("userId").(string)
 
+	if len(input.Text) == 0 && len(input.Media) == 0 {
+		return c.SendStatus(400)
+	}
+
 	postId, err := services.CreatePost(userId, input)
 	if err != nil {
 		log.Print(err)

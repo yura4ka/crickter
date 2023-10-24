@@ -22,9 +22,13 @@ export type PostUser =
       isDeleted: true;
     };
 
-export interface PostsResponse {
-  posts: EntityState<Post>;
-  hasMore: boolean;
+export interface PostMedia {
+  id: string;
+  url: string;
+  urlModifiers: string;
+  type: string;
+  mime: string;
+  subtype: string;
 }
 
 interface PostInfo {
@@ -47,6 +51,7 @@ export interface NormalPost extends PostInfo {
   user: PostUser;
   createdAt: string;
   isDeleted: false;
+  media: PostMedia[];
 }
 
 export interface DeletedPost extends PostInfo {
@@ -57,12 +62,18 @@ export interface DeletedPost extends PostInfo {
 
 export type Post = PostInfo & (NormalPost | DeletedPost);
 
+export interface PostsResponse {
+  posts: EntityState<Post>;
+  hasMore: boolean;
+}
+
 export interface CreatePostRequest {
   text: string;
   originalId?: string;
   commentToId?: string;
   responseToId?: string;
   canComment: boolean;
+  media: PostMedia[];
 }
 
 interface ReactionRequest {
@@ -111,7 +122,7 @@ export const postApi = api.injectEndpoints({
       query: (body) => ({ url: "post", method: "POST", body }),
       invalidatesTags: [{ type: "Tags" }],
       async onQueryStarted(
-        { text, originalId, responseToId, commentToId, canComment },
+        { text, originalId, responseToId, commentToId, canComment, media },
         { dispatch, queryFulfilled, getState }
       ) {
         const user = (getState() as RootState).auth.user;
@@ -135,6 +146,7 @@ export const postApi = api.injectEndpoints({
           isFavorite: false,
           canComment,
           isDeleted: false,
+          media,
         };
         dispatch(
           postApi.util.updateQueryData("getPosts", 0, (draft) => {
