@@ -31,18 +31,14 @@ func CreatePost(c *fiber.Ctx) error {
 }
 
 func UpdatePost(c *fiber.Ctx) error {
-	type Input struct {
-		Id   string `json:"id"`
-		Text string `json:"text"`
-	}
-
-	input := new(Input)
+	input := new(services.PostUpdateRequest)
 	if err := c.BodyParser(input); err != nil {
 		return c.SendStatus(400)
 	}
 	userId := c.Locals("userId").(string)
+	id := c.Params("id")
 
-	post, err := services.GetPostById(input.Id)
+	post, err := services.GetPostById(id)
 
 	if err != nil {
 		log.Print(err)
@@ -53,14 +49,14 @@ func UpdatePost(c *fiber.Ctx) error {
 		return c.SendStatus(403)
 	}
 
-	err = services.UpdatePost(input.Id, input.Text)
+	err = services.UpdatePost(id, input)
 	if err != nil {
 		log.Print(err)
 		return c.SendStatus(400)
 	}
 
 	return c.JSON(fiber.Map{
-		"message": "ok",
+		"message": "Ok",
 	})
 }
 

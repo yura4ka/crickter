@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/yura4ka/crickter/db"
@@ -38,10 +39,38 @@ type PostParams struct {
 	Media        []PostMedia `json:"media"`
 }
 
+func AddMedia(tx *sql.Tx, postId string, media []PostMedia) error {
+	args := make([]any, 0, len(media))
+	query := ""
+
+	for i, v := range media {
+		order := (i) * 8
+		query += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d), ",
+			order+1, order+2, order+3, order+4, order+5, order+6, order+7, order+8)
+		args = append(args, postId, v.Url, v.UrlModifiers, v.Type, v.Mime, v.Subtype, v.Height, v.Width)
+	}
+
+	query = query[:len(query)-2]
+
+	_, err := tx.Exec(`
+		INSERT INTO post_media (post_id, url, url_modifiers, type, mime, subtype, height, width) VALUES
+	`+query+`
+		ON CONFLICT (url) DO UPDATE SET is_deleted = TRUE;
+	`, args...)
+
+	return err
+}
+
 func CreatePost(userId string, params *PostParams) (string, error) {
 	var postId string
 
-	err := db.Client.QueryRow(`
+	tx, err := db.Client.Begin()
+	if err != nil {
+		return "", err
+	}
+	defer tx.Rollback()
+
+	err = tx.QueryRow(`
 		INSERT INTO posts (text, user_id, original_id, comment_to_id, response_to_id, can_comment)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id;
@@ -57,22 +86,12 @@ func CreatePost(userId string, params *PostParams) (string, error) {
 		return postId, nil
 	}
 
-	args := make([]any, 0, len(params.Media))
-	query := ""
-
-	for i, v := range params.Media {
-		order := (i) * 8
-		query += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d), ",
-			order+1, order+2, order+3, order+4, order+5, order+6, order+7, order+8)
-		args = append(args, postId, v.Url, v.UrlModifiers, v.Type, v.Mime, v.Subtype, v.Height, v.Width)
+	err = AddMedia(tx, postId, params.Media)
+	if err != nil {
+		return "", err
 	}
 
-	query = query[:len(query)-2]
-
-	_, err = db.Client.Exec(`
-		INSERT INTO post_media (post_id, url, url_modifiers, type, mime, subtype, height, width) VALUES
-	`+query, args...)
-
+	err = tx.Commit()
 	if err != nil {
 		return "", err
 	}
@@ -84,7 +103,7 @@ func GetPostById(id string) (*Post, error) {
 	var post Post
 
 	err := db.Client.QueryRow(`
-		SELECT id, user_id, text, parent_id, created_at, updated_at
+		SELECT id, user_id, text, original_id, created_at, updated_at
 		FROM posts
 		WHERE id = $1;
 	`, id).Scan(&post.Id, &post.UserId, &post.Text, &post.ParentId, &post.created_at, &post.updated_at)
@@ -96,13 +115,116 @@ func GetPostById(id string) (*Post, error) {
 	return &post, nil
 }
 
-func UpdatePost(id, text string) error {
-	_, err := db.Client.Exec(`
-		UPDATE posts SET text = $1
-		WHERE id = $2;
-	`)
+type MediaFull struct {
+	PostMedia
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	IsDeleted bool      `json:"isDeleted"`
+	PostId    string    `json:"postId"`
+}
 
-	return err
+func GetPostMedia(id string, all bool) ([]MediaFull, error) {
+	result := make([]MediaFull, 0)
+
+	query := "SELECT * FROM post_media WHERE post_id = $1"
+	if !all {
+		query += " AND is_deleted = FALSE;"
+	}
+	rows, err := db.Client.Query(query, id)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		temp := MediaFull{}
+		err = rows.Scan(
+			&temp.Id, &temp.CreatedAt, &temp.UpdatedAt, &temp.Url, &temp.IsDeleted,
+			&temp.Type, &temp.PostId, &temp.UrlModifiers, &temp.Mime, &temp.Subtype,
+			&temp.Width, &temp.Height,
+		)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, temp)
+	}
+	defer rows.Close()
+
+	return result, nil
+}
+
+type PostUpdateRequest struct {
+	Text       *string     `json:"text"`
+	Media      []PostMedia `json:"media"`
+	CanComment *bool       `json:"canComment"`
+}
+
+func UpdatePost(id string, post *PostUpdateRequest) error {
+	queries := make([]string, 0)
+	args := make([]any, 0)
+	argsCount := 1
+
+	if post.Text != nil {
+		queries = append(queries, fmt.Sprintf("text = $%d", argsCount))
+		args = append(args, *post.Text)
+		argsCount++
+	}
+
+	if post.CanComment != nil {
+		queries = append(queries, fmt.Sprintf("can_comment = $%d", argsCount))
+		args = append(args, *post.CanComment)
+		argsCount++
+	}
+
+	tx, err := db.Client.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if post.Media != nil {
+		postMediaMap := make(map[string]bool)
+		toDelete := make([]string, 0)
+
+		media, err := GetPostMedia(id, false)
+		if err != nil {
+			return err
+		}
+
+		for _, v := range post.Media {
+			postMediaMap[v.Url] = true
+		}
+
+		for _, v := range media {
+			if _, ok := postMediaMap[v.Url]; !ok {
+				toDelete = append(toDelete, fmt.Sprintf(`'%v'`, v.Url))
+			}
+		}
+
+		_, err = tx.Exec(
+			fmt.Sprintf("UPDATE post_media SET is_deleted = FALSE WHERE url IN (%v);", strings.Join(toDelete, ", ")),
+		)
+		if err != nil {
+			return err
+		}
+
+		err = AddMedia(tx, id, post.Media)
+		if err != nil {
+			return err
+		}
+	}
+
+	args = append(args, id)
+
+	_, err = tx.Exec(
+		"UPDATE posts SET\n"+strings.Join(queries, ", ")+fmt.Sprintf("\nWHERE id = $%d", argsCount),
+		args...,
+	)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 type postUser struct {
