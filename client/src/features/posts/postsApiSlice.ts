@@ -24,6 +24,8 @@ export interface PostMedia {
   type: string;
   mime: string;
   subtype: string;
+  width: number;
+  height: number;
 }
 
 interface PostInfo {

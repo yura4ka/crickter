@@ -83,6 +83,8 @@ const CreatePost: FC<Props> = ({
         type: f.contentInfo.mime.type,
         mime: f.contentInfo.mime.mime,
         subtype: f.contentInfo.mime.subtype,
+        height: f.imageInfo.height,
+        width: f.imageInfo.width,
       }))
     );
   };

@@ -25,6 +25,8 @@ type PostMedia struct {
 	Type         string `json:"type"`
 	Mime         string `json:"mime"`
 	Subtype      string `json:"subtype"`
+	Width        int    `json:"width"`
+	Height       int    `json:"height"`
 }
 
 type PostParams struct {
@@ -59,16 +61,16 @@ func CreatePost(userId string, params *PostParams) (string, error) {
 	query := ""
 
 	for i, v := range params.Media {
-		order := (i) * 6
-		query += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d), ",
-			order+1, order+2, order+3, order+4, order+5, order+6)
-		args = append(args, postId, v.Url, v.UrlModifiers, v.Type, v.Mime, v.Subtype)
+		order := (i) * 8
+		query += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d), ",
+			order+1, order+2, order+3, order+4, order+5, order+6, order+7, order+8)
+		args = append(args, postId, v.Url, v.UrlModifiers, v.Type, v.Mime, v.Subtype, v.Height, v.Width)
 	}
 
 	query = query[:len(query)-2]
 
 	_, err = db.Client.Exec(`
-		INSERT INTO post_media (post_id, url, url_modifiers, type, mime, subtype) VALUES
+		INSERT INTO post_media (post_id, url, url_modifiers, type, mime, subtype, height, width) VALUES
 	`+query, args...)
 
 	if err != nil {
@@ -179,7 +181,9 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 				'urlModifiers', m.url_modifiers,
 				'type', m.type,
 				'mime', m.mime,
-				'subtype', m.subtype
+				'subtype', m.subtype,
+				'width', m.width,
+				'height', m.height
 			)) as media
 		FROM posts as p
 		LEFT JOIN users as u ON p.user_id = u.id

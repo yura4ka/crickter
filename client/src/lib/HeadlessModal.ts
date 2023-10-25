@@ -17,6 +17,7 @@ export interface UploadEventDetails {
     cdnUrl: string;
     cdnUrlModifiers: string;
     contentInfo: { mime: { mime: string; type: string; subtype: string } };
+    imageInfo: { height: number; width: number };
   }[];
 }
 
