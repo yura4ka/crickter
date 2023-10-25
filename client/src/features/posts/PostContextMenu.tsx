@@ -11,6 +11,18 @@ import {
   useChangePostMutation,
   useDeletePostMutation,
 } from "./postsApiSlice";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   children: React.ReactElement;
@@ -31,40 +43,57 @@ const PostContextMenu = ({ children, isOwner, post }: Props) => {
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56">
-        {isOwner ? (
-          <>
+    <AlertDialog>
+      <DropdownMenu>
+        <DropdownMenuTrigger>{children}</DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56">
+          {isOwner ? (
+            <>
+              <DropdownMenuItem>
+                <History className="mr-2 h-4 w-4" />
+                <span>View history</span>
+              </DropdownMenuItem>
+              <DropdownMenuCheckboxItem
+                checked={post.canComment}
+                onCheckedChange={handleCanCommentChange}
+              >
+                Allow Comments
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuItem>
+                <Pencil className="mr-2 h-4 w-4" />
+                <span>Edit Post</span>
+              </DropdownMenuItem>
+              <AlertDialogTrigger asChild>
+                <DropdownMenuItem>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  <span>Delete Post</span>
+                </DropdownMenuItem>
+              </AlertDialogTrigger>
+            </>
+          ) : (
             <DropdownMenuItem>
-              <History className="mr-2 h-4 w-4" />
-              <span>View history</span>
+              <DropdownMenuItem>
+                <UserX className="mr-2 h-4 w-4" />
+                <span>Block User</span>
+              </DropdownMenuItem>
             </DropdownMenuItem>
-            <DropdownMenuCheckboxItem
-              checked={post.canComment}
-              onCheckedChange={handleCanCommentChange}
-            >
-              Allow Comments
-            </DropdownMenuCheckboxItem>
-            <DropdownMenuItem>
-              <Pencil className="mr-2 h-4 w-4" />
-              <span>Edit Post</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleDelete}>
-              <Trash2 className="mr-2 h-4 w-4" />
-              <span>Delete Post</span>
-            </DropdownMenuItem>
-          </>
-        ) : (
-          <DropdownMenuItem>
-            <DropdownMenuItem>
-              <UserX className="mr-2 h-4 w-4" />
-              <span>Block User</span>
-            </DropdownMenuItem>
-          </DropdownMenuItem>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action cannot be undone. This action will delete this post
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 };
 
