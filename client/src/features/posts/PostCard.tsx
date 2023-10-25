@@ -7,7 +7,14 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn, formatTimeAgo, optimizeImageUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, ThumbsDown, ThumbsUp, Repeat, Bookmark } from "lucide-react";
+import {
+  MessageSquare,
+  ThumbsDown,
+  ThumbsUp,
+  Repeat,
+  Bookmark,
+  MoreHorizontal,
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 import { FC, forwardRef } from "react";
@@ -18,6 +25,7 @@ import { AvatarImage } from "@radix-ui/react-avatar";
 import React from "react";
 import { useRepostModal } from "./useRepostModal";
 import PostGallery from "./PostGallery";
+import PostContextMenu from "./PostContextMenu";
 
 const hashtagRegex = /#(\w+)/;
 const linkRegex = /(?:https?|ftp):\/\/[^\s/$.?#].[^\s]*/;
@@ -110,7 +118,7 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
     fromTag,
   } = props;
 
-  const { isAuth } = useAuth();
+  const { isAuth, user } = useAuth();
   const { showModal } = useLoginModal();
   const { showModal: showRepost } = useRepostModal();
 
@@ -199,8 +207,17 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
     <article
       id={p.id}
       ref={ref}
-      className={cn("flex gap-3 py-4 pr-2 sm:gap-4 sm:py-6 sm:pr-0", className)}
+      className={cn("relative flex gap-3 py-4 pr-2 sm:gap-4 sm:py-6 sm:pr-0", className)}
     >
+      {isAuth && !p.isDeleted && !p.user.isDeleted && (
+        <div className="absolute right-1 top-4">
+          <PostContextMenu isOwner={user?.id === p.user.id} canComment={p.canComment}>
+            <Button variant="ghost" size="icon">
+              <MoreHorizontal />
+            </Button>
+          </PostContextMenu>
+        </div>
+      )}
       {avatar}
       <div className="grow">
         {!p.isDeleted && (
@@ -219,11 +236,11 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
         )}
 
         {p.isDeleted ? (
-          <p className="py-2 italic text-muted-foreground">Deleted post</p>
+          <p className="my-2 italic text-muted-foreground">Deleted post</p>
         ) : (
           <div
             style={{ wordBreak: "break-word" }}
-            className={cn("pb-1", !p.text && "hidden")}
+            className={cn("mb-1", !p.text && "hidden")}
           >
             {formatText(p.text)}
           </div>
@@ -233,7 +250,7 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
           <PostCard
             post={original}
             fetchOriginal={false}
-            className="my-2 rounded border p-2 sm:p-4"
+            className="my-2 rounded border px-2 pb-2 sm:px-4 sm:pb-4"
           />
         )}
         {!p.isDeleted && <PostGallery media={p.media} />}

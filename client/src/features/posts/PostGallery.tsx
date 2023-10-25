@@ -78,7 +78,7 @@ const PostGallery = ({ media }: Props) => {
   }, [media]);
 
   return (
-    <div>
+    <div className="mt-2">
       <Gallery images={images} onClick={handleClick} enableImageSelection={false} />
       <Lightbox
         slides={slides}

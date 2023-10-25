@@ -12,10 +12,10 @@ import { userApi } from "../user/userApiSlice";
 import { User } from "../auth/authSlice";
 
 export type PostUser =
-  | (Omit<User, "isDeleted"> & { isDeleted: false })
-  | {
-      isDeleted: true;
-    };
+  | (Partial<User> & { isDeleted: true })
+  | (User & {
+      isDeleted: false;
+    });
 
 export interface PostMedia {
   id: string;
