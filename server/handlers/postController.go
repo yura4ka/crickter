@@ -160,3 +160,18 @@ func GetFavoritePosts(c *fiber.Ctx) error {
 		"hasMore": hasMore,
 	})
 }
+
+func DeletePost(c *fiber.Ctx) error {
+	postId := c.Params("id")
+	userId, _ := c.Locals("userId").(string)
+
+	err := services.DeletePost(postId, userId)
+	if err != nil {
+		log.Print(err)
+		return c.SendStatus(400)
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Ok",
+	})
+}

@@ -83,7 +83,8 @@ func CreatePost(userId string, params *PostParams) (string, error) {
 	}
 
 	if len(params.Media) == 0 {
-		return postId, nil
+		err = tx.Commit()
+		return postId, err
 	}
 
 	err = AddMedia(tx, postId, params.Media)
@@ -604,4 +605,13 @@ func HasMoreFavorite(userId string, page int) (bool, error) {
 		return false, err
 	}
 	return total > page*POSTS_PER_PAGE, nil
+}
+
+func DeletePost(postId, userId string) error {
+	_, err := db.Client.Exec(`
+		UPDATE posts SET is_deleted = TRUE
+		WHERE id = $1 AND user_id = $2;
+	`, postId, userId)
+
+	return err
 }

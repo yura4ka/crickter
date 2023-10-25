@@ -6,7 +6,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Pencil, Trash2, History, UserX } from "lucide-react";
-import { NormalPost, useChangePostMutation } from "./postsApiSlice";
+import {
+  NormalPost,
+  useChangePostMutation,
+  useDeletePostMutation,
+} from "./postsApiSlice";
 
 interface Props {
   children: React.ReactElement;
@@ -16,9 +20,14 @@ interface Props {
 
 const PostContextMenu = ({ children, isOwner, post }: Props) => {
   const [changePost] = useChangePostMutation();
+  const [deletePost] = useDeletePostMutation();
 
   const handleCanCommentChange = (canComment: boolean) => {
-    changePost({post, changes: { canComment }});
+    changePost({ post, changes: { canComment } });
+  };
+
+  const handleDelete = () => {
+    deletePost(post);
   };
 
   return (
@@ -41,7 +50,7 @@ const PostContextMenu = ({ children, isOwner, post }: Props) => {
               <Pencil className="mr-2 h-4 w-4" />
               <span>Edit Post</span>
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleDelete}>
               <Trash2 className="mr-2 h-4 w-4" />
               <span>Delete Post</span>
             </DropdownMenuItem>

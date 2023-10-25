@@ -289,10 +289,32 @@ export const postApi = api.injectEndpoints({
       undefined,
       { post: NormalPost; changes: ChangePostRequest }
     >({
-      query: ({ post, changes }) => ({ url: `post/${post.id}`, method: "PATCH", body: changes }),
+      query: ({ post, changes }) => ({
+        url: `post/${post.id}`,
+        method: "PATCH",
+        body: changes,
+      }),
       async onQueryStarted({ post, changes }, { dispatch, queryFulfilled }) {
         await queryFulfilled;
         updatePost(dispatch, post, changes);
+      },
+    }),
+
+    deletePost: builder.mutation<undefined, NormalPost>({
+      query: (post) => ({
+        url: `post/${post.id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: [
+        { type: "Comments" },
+        { type: "Favorite" },
+        { type: "Posts" },
+        { type: "Tags" },
+        { type: "Users" },
+      ],
+      async onQueryStarted(post, { dispatch, queryFulfilled }) {
+        await queryFulfilled;
+        updatePost(dispatch, post, { isDeleted: true });
       },
     }),
   }),
@@ -306,4 +328,5 @@ export const {
   useGetFavoritePostsQuery,
   useHandleFavoriteMutation,
   useChangePostMutation,
+  useDeletePostMutation,
 } = postApi;
