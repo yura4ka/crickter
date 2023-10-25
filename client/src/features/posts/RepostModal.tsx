@@ -9,7 +9,7 @@ const RepostModal = () => {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => setOpen(open, post)}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="scrollbar max-h-screen max-w-sm overflow-y-scroll sm:my-2 sm:max-w-xl md:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Make a repost</DialogTitle>
         </DialogHeader>

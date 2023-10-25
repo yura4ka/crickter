@@ -24,10 +24,12 @@
     "lucide-react": "^0.258.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-grid-gallery": "^1.0.1-alpha.0",
     "react-redux": "^8.1.1",
     "react-router-dom": "^6.14.1",
     "tailwind-merge": "^1.13.2",
-    "tailwindcss-animate": "^1.0.6"
+    "tailwindcss-animate": "^1.0.6",
+    "yet-another-react-lightbox": "^3.14.0"
   },
   "devDependencies": {
     "@types/node": "^20.3.3",

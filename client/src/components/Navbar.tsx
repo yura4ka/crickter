@@ -38,7 +38,9 @@ const Navbar = () => {
                   <Avatar className="mr-2 sm:mx-4">
                     {user.avatar && (
                       <AvatarImage
-                        src={optimizeImageUrl(user.avatar.url, user.avatar.type)}
+                        src={optimizeImageUrl(user.avatar.url, user.avatar.type, {
+                          scale: "40x40",
+                        })}
                       />
                     )}
                     <AvatarFallback>{user.username[0]}</AvatarFallback>

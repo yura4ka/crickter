@@ -38,7 +38,8 @@ export function formatTimeAgo(date: Date) {
 }
 
 interface Operations {
-  size: string;
+  scale?: string;
+  resize?: string;
   format: "jpeg" | "png" | "webp" | "auto" | "preserve";
   quality: "normal" | "smart" | "better" | "best" | "lighter" | "lightest";
 }
@@ -46,11 +47,18 @@ interface Operations {
 export function optimizeImageUrl(
   url: string,
   type: string,
-  { size = "40x40", format = "auto", quality = "lightest" }: Partial<Operations> = {}
+  {
+    scale: scaleCrop,
+    resize,
+    format = "auto",
+    quality = "lightest",
+  }: Partial<Operations> = {}
 ): string {
   if (type === "gif") return url;
   return (
     url +
-    `-/format/${format}/-/progressive/yes/-/quality/${quality}/-/scale_crop/${size}/smart/`
+    `-/format/${format}/-/progressive/yes/-/quality/${quality}/${
+      scaleCrop ? `-/scale_crop/${scaleCrop}/smart` : ""
+    }${resize ? `-/resize/${resize}` : ""}/`
   );
 }

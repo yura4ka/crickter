@@ -156,14 +156,16 @@ export const postApi = api.injectEndpoints({
           }));
         }
         if (commentToId && !responseToId) {
-          (newPost as unknown as IComment).responses = [];
-          (newPost as unknown as IComment).isNew = true;
           dispatch(
             commentApi.util.updateQueryData(
               "getComments",
               { page: 0, postId: commentToId },
               (draft) => {
-                commentsAdapter.addOne(draft.comments, newPost as unknown as IComment);
+                commentsAdapter.addOne(draft.comments, {
+                  ...newPost,
+                  responses: [],
+                  isNew: true,
+                } as IComment);
                 draft.total++;
               }
             )
@@ -176,9 +178,17 @@ export const postApi = api.injectEndpoints({
               (draft) => {
                 const comment = commentsSelector.selectById(draft.comments, responseToId);
                 if (!comment) return;
-                const changes = {
-                  responses: [newPost as NormalPost, ...comment.responses],
-                };
+
+                const changed = comment.responses.slice();
+                changed.splice(
+                  originalId
+                    ? comment.responses.findIndex((p) => p.id === originalId) + 1
+                    : 0,
+                  0,
+                  newPost as Post
+                );
+
+                const changes = { responses: changed };
                 commentsAdapter.updateOne(draft.comments, {
                   id: responseToId,
                   changes,

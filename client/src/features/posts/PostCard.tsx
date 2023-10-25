@@ -17,6 +17,7 @@ import { useLoginModal } from "../loginModal/useLoginModal";
 import { AvatarImage } from "@radix-ui/react-avatar";
 import React from "react";
 import { useRepostModal } from "./useRepostModal";
+import PostGallery from "./PostGallery";
 
 const hashtagRegex = /#(\w+)/;
 const linkRegex = /(?:https?|ftp):\/\/[^\s/$.?#].[^\s]*/;
@@ -165,7 +166,12 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
       <Link to={`/user/${p.user.id}`}>
         <Avatar>
           {p.user.avatar && (
-            <AvatarImage src={optimizeImageUrl(p.user.avatar.url, p.user.avatar.type)} />
+            <AvatarImage
+              className="aspect-square h-full w-full"
+              src={optimizeImageUrl(p.user.avatar.url, p.user.avatar.type, {
+                scale: "40x40",
+              })}
+            />
           )}
           <AvatarFallback>{p.user.username[0]}</AvatarFallback>
         </Avatar>
@@ -211,13 +217,18 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
         {fetchOriginal && p.originalId && type !== "post" && (
           <MinimalOriginal post={original} />
         )}
-        <div style={{ wordBreak: "break-word" }} className="pb-1">
-          {p.isDeleted ? (
-            <p className="py-2 italic text-muted-foreground">Deleted post</p>
-          ) : (
-            formatText(p.text)
-          )}
-        </div>
+
+        {p.isDeleted ? (
+          <p className="py-2 italic text-muted-foreground">Deleted post</p>
+        ) : (
+          <div
+            style={{ wordBreak: "break-word" }}
+            className={cn("pb-1", !p.text && "hidden")}
+          >
+            {formatText(p.text)}
+          </div>
+        )}
+
         {fetchOriginal && p.originalId && type === "post" && (
           <PostCard
             post={original}
@@ -225,6 +236,7 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
             className="my-2 rounded border p-2 sm:p-4"
           />
         )}
+        {!p.isDeleted && <PostGallery media={p.media} />}
         <div className={cn("flex gap-1 sm:gap-4", hideControls && "hidden")}>
           <Button onClick={() => onReactionClick(true)} size={"icon"} variant={"ghost"}>
             <ThumbsUp

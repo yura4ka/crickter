@@ -20,7 +20,7 @@ const baseQueryWithAuth: typeof baseQuery = async (args, api, endpoints) => {
       api.dispatch(setCredentials(refreshResult.data as Required<AuthState>));
       result = await baseQuery(args, api, endpoints);
     } else {
-      api.dispatch(setCredentials({ token: undefined, user: null }));
+      api.dispatch(setCredentials({ user: null }));
     }
   }
 

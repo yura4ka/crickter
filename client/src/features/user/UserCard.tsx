@@ -22,7 +22,11 @@ const UserCard: FC<Props> = ({ user, hidden, handleSubscribe, onLinkClick }) => 
       >
         <Avatar>
           {user.avatar && (
-            <AvatarImage src={optimizeImageUrl(user.avatar.url, user.avatar.type)} />
+            <AvatarImage
+              src={optimizeImageUrl(user.avatar.url, user.avatar.type, {
+                scale: "40x40",
+              })}
+            />
           )}
           <AvatarFallback>{user.username[0]}</AvatarFallback>
         </Avatar>

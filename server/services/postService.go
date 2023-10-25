@@ -175,16 +175,7 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 			COALESCE(pr.likes, 0), COALESCE(pr.dislikes, 0), COALESCE(pr.reaction, 0),
 			COUNT(pc.id) as comments, COUNT(post_r.id) as responses, COALESCE(reposts.count, 0),
 			CASE WHEN fp.post_id IS NOT NULL THEN TRUE ELSE FALSE END as favorite,
-			json_agg(json_build_object(
-				'id', m.id,
-				'url', m.url,
-				'urlModifiers', m.url_modifiers,
-				'type', m.type,
-				'mime', m.mime,
-				'subtype', m.subtype,
-				'width', m.width,
-				'height', m.height
-			)) as media
+			m.media
 		FROM posts as p
 		LEFT JOIN users as u ON p.user_id = u.id
 		LEFT JOIN posts as o ON p.original_id = o.id
@@ -210,7 +201,20 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 			GROUP BY post_id
 		) pr ON p.id = pr.post_id
 		LEFT JOIN favorite_posts as fp ON p.id = fp.post_id AND fp.user_id = $1
-		LEFT JOIN post_media as m ON p.id = m.post_id`
+		LEFT JOIN (
+			SELECT post_id, is_deleted, jsonb_agg(jsonb_build_object(
+				'id', id,
+				'url', url,
+				'urlModifiers', url_modifiers,
+				'type', type,
+				'mime', mime,
+				'subtype', subtype,
+				'width', width,
+				'height', height
+			)) as media
+			FROM post_media
+			GROUP BY post_id, is_deleted
+		) m ON p.id = m.post_id`
 
 	if params.PostId != "" {
 		query += "\nWHERE p.id = $2\n"
@@ -239,7 +243,7 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 
 	query += `
 		AND (m.is_deleted = FALSE OR m.is_deleted IS NULL)
-		GROUP BY p.id, u.id, o.id, c.id, r.id, pr.likes, pr.dislikes, pr.reaction, reposts.count, fp.post_id
+		GROUP BY p.id, u.id, o.id, c.id, r.id, pr.likes, pr.dislikes, pr.reaction, reposts.count, fp.post_id, m.media
 	`
 
 	switch params.OrderBy {
@@ -264,8 +268,8 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 func parsePosts(rows *sql.Rows, isComment bool) ([]PostsResult, error) {
 	result := make([]PostsResult, 0)
 	for rows.Next() {
-		var text, updatedAt, mediaJson string
-		var avatarUrl, avatarType, userId, username, name *string
+		var text, updatedAt string
+		var avatarUrl, avatarType, userId, username, name, mediaJson *string
 		var responses int
 		row := PostsResult{}
 
@@ -276,6 +280,7 @@ func parsePosts(rows *sql.Rows, isComment bool) ([]PostsResult, error) {
 			&row.Likes, &row.Dislikes, &row.Reaction, &row.Comments, &responses, &row.Reposts, &row.IsFavorite,
 			&mediaJson,
 		)
+
 		if err != nil {
 			return nil, err
 		}
@@ -302,13 +307,17 @@ func parsePosts(rows *sql.Rows, isComment bool) ([]PostsResult, error) {
 
 		row.Text = &text
 
-		err = json.Unmarshal([]byte(mediaJson), &row.Media)
-		if err != nil {
-			return nil, err
-		}
-
-		if row.Media[0].Id == "" {
+		if mediaJson == nil {
 			row.Media = []PostMedia{}
+		} else {
+			err = json.Unmarshal([]byte(*mediaJson), &row.Media)
+			if err != nil {
+				return nil, err
+			}
+
+			if row.Media[0].Id == "" {
+				row.Media = []PostMedia{}
+			}
 		}
 
 		result = append(result, row)

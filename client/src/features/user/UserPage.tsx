@@ -153,7 +153,7 @@ const UserInfo = ({ id }: { id: string }) => {
               {user.avatar && (
                 <AvatarImage
                   src={optimizeImageUrl(user.avatar.url, user.avatar.type, {
-                    size: "160x160",
+                    scale: "160x160",
                     quality: "smart",
                   })}
                 />
