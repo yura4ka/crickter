@@ -78,6 +78,8 @@ interface ReactionRequest {
   liked: boolean;
 }
 
+type ChangePostRequest = Partial<Pick<NormalPost, "text" | "canComment" | "media">>;
+
 export const postsAdapter = createEntityAdapter<Post>({
   sortComparer: (a, b) => Number(new Date(b.createdAt)) - Number(new Date(a.createdAt)),
 });
@@ -282,6 +284,17 @@ export const postApi = api.injectEndpoints({
         }
       },
     }),
+
+    changePost: builder.mutation<
+      undefined,
+      { post: NormalPost; changes: ChangePostRequest }
+    >({
+      query: ({ post, changes }) => ({ url: `post/${post.id}`, method: "PATCH", body: changes }),
+      async onQueryStarted({ post, changes }, { dispatch, queryFulfilled }) {
+        await queryFulfilled;
+        updatePost(dispatch, post, changes);
+      },
+    }),
   }),
 });
 
@@ -292,4 +305,5 @@ export const {
   useGetPostByIdQuery,
   useGetFavoritePostsQuery,
   useHandleFavoriteMutation,
+  useChangePostMutation,
 } = postApi;

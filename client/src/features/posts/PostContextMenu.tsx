@@ -6,14 +6,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Pencil, Trash2, History, UserX } from "lucide-react";
+import { NormalPost, useChangePostMutation } from "./postsApiSlice";
 
 interface Props {
   children: React.ReactElement;
   isOwner: boolean;
-  canComment: boolean;
+  post: NormalPost;
 }
 
-const PostContextMenu = ({ children, isOwner, canComment }: Props) => {
+const PostContextMenu = ({ children, isOwner, post }: Props) => {
+  const [changePost] = useChangePostMutation();
+
+  const handleCanCommentChange = (canComment: boolean) => {
+    changePost({post, changes: { canComment }});
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
@@ -24,7 +31,12 @@ const PostContextMenu = ({ children, isOwner, canComment }: Props) => {
               <History className="mr-2 h-4 w-4" />
               <span>View history</span>
             </DropdownMenuItem>
-            <DropdownMenuCheckboxItem>Allow Comments</DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={post.canComment}
+              onCheckedChange={handleCanCommentChange}
+            >
+              Allow Comments
+            </DropdownMenuCheckboxItem>
             <DropdownMenuItem>
               <Pencil className="mr-2 h-4 w-4" />
               <span>Edit Post</span>
