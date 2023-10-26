@@ -296,7 +296,7 @@ export const postApi = api.injectEndpoints({
       }),
       async onQueryStarted({ post, changes }, { dispatch, queryFulfilled }) {
         await queryFulfilled;
-        updatePost(dispatch, post, changes);
+        updatePost(dispatch, post, { ...changes, updatedAt: new Date().toString() });
       },
     }),
 

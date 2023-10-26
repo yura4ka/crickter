@@ -44,18 +44,18 @@ func AddMedia(tx *sql.Tx, postId string, media []PostMedia) error {
 	query := ""
 
 	for i, v := range media {
-		order := (i) * 8
-		query += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d), ",
-			order+1, order+2, order+3, order+4, order+5, order+6, order+7, order+8)
-		args = append(args, postId, v.Url, v.UrlModifiers, v.Type, v.Mime, v.Subtype, v.Height, v.Width)
+		order := (i) * 9
+		query += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d), ",
+			order+1, order+2, order+3, order+4, order+5, order+6, order+7, order+8, order+9)
+		args = append(args, postId, v.Id, v.Url, v.UrlModifiers, v.Type, v.Mime, v.Subtype, v.Height, v.Width)
 	}
 
 	query = query[:len(query)-2]
 
 	_, err := tx.Exec(`
-		INSERT INTO post_media (post_id, url, url_modifiers, type, mime, subtype, height, width) VALUES
+		INSERT INTO post_media (post_id, id, url, url_modifiers, type, mime, subtype, height, width) VALUES
 	`+query+`
-		ON CONFLICT (url) DO UPDATE SET is_deleted = TRUE;
+		ON CONFLICT (id) DO NOTHING;
 	`, args...)
 
 	return err
@@ -202,16 +202,20 @@ func UpdatePost(id string, post *PostUpdateRequest) error {
 			}
 		}
 
-		_, err = tx.Exec(
-			fmt.Sprintf("UPDATE post_media SET is_deleted = FALSE WHERE url IN (%v);", strings.Join(toDelete, ", ")),
-		)
-		if err != nil {
-			return err
+		if len(toDelete) != 0 {
+			_, err = tx.Exec(
+				fmt.Sprintf("UPDATE post_media SET is_deleted = TRUE WHERE url IN (%v);", strings.Join(toDelete, ", ")),
+			)
+			if err != nil {
+				return err
+			}
 		}
 
-		err = AddMedia(tx, id, post.Media)
-		if err != nil {
-			return err
+		if len(post.Media) != 0 {
+			err = AddMedia(tx, id, post.Media)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -325,7 +329,7 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 		) pr ON p.id = pr.post_id
 		LEFT JOIN favorite_posts as fp ON p.id = fp.post_id AND fp.user_id = $1
 		LEFT JOIN (
-			SELECT post_id, is_deleted, jsonb_agg(jsonb_build_object(
+			SELECT post_id, jsonb_agg(jsonb_build_object(
 				'id', id,
 				'url', url,
 				'urlModifiers', url_modifiers,
@@ -336,7 +340,8 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 				'height', height
 			)) as media
 			FROM post_media
-			GROUP BY post_id, is_deleted
+			WHERE is_deleted = FALSE
+			GROUP BY post_id
 		) m ON p.id = m.post_id`
 
 	if params.PostId != "" {
@@ -365,7 +370,6 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 	}
 
 	query += `
-		AND (m.is_deleted = FALSE OR m.is_deleted IS NULL)
 		GROUP BY p.id, u.id, o.id, c.id, r.id, pr.likes, pr.dislikes, pr.reaction, reposts.count, fp.post_id, m.media
 	`
 

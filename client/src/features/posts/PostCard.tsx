@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
-import { FC, forwardRef } from "react";
+import { FC, forwardRef, useState } from "react";
 import { PostType } from "./utils";
 import { useAuth } from "../auth/useAuth";
 import { useLoginModal } from "../loginModal/useLoginModal";
@@ -26,6 +26,7 @@ import React from "react";
 import { useRepostModal } from "./useRepostModal";
 import PostGallery from "./PostGallery";
 import PostContextMenu from "./PostContextMenu";
+import CreatePost from "./CreatePost";
 
 const hashtagRegex = /#(\w+)/;
 const linkRegex = /(?:https?|ftp):\/\/[^\s/$.?#].[^\s]*/;
@@ -121,6 +122,7 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
   const { isAuth, user } = useAuth();
   const { showModal } = useLoginModal();
   const { showModal: showRepost } = useRepostModal();
+  const [isEditing, setIsEditing] = useState(false);
 
   const { data: original } = useGetPostByIdQuery(p?.originalId || "", {
     skip: !(fetchOriginal && !!p?.originalId),
@@ -158,6 +160,19 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
           <Skeleton className="mb-1 h-4 w-[250px]" />
           <Skeleton className="mb-1 h-4 w-[200px]" />
         </div>
+      </article>
+    );
+  }
+
+  if (isEditing && !p.isDeleted) {
+    return (
+      <article ref={ref} className="py-4 pr-2 sm:py-6 sm:pr-0">
+        <CreatePost
+          edit={p}
+          repostOf={original}
+          type={type}
+          onSubmitted={() => setIsEditing(false)}
+        />
       </article>
     );
   }
@@ -211,7 +226,11 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
     >
       {isAuth && !p.isDeleted && !p.user.isDeleted && (
         <div className="absolute right-1 top-4">
-          <PostContextMenu isOwner={user?.id === p.user.id} post={p}>
+          <PostContextMenu
+            isOwner={user?.id === p.user.id}
+            post={p}
+            handleEditing={setIsEditing}
+          >
             <Button variant="ghost" size="icon">
               <MoreHorizontal />
             </Button>

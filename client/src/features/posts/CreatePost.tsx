@@ -4,7 +4,13 @@ import { Link } from "react-router-dom";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FC, useCallback, useEffect, useId, useRef, useState } from "react";
-import { Post, PostMedia, useCreatePostMutation } from "./postsApiSlice";
+import {
+  NormalPost,
+  Post,
+  PostMedia,
+  useChangePostMutation,
+  useCreatePostMutation,
+} from "./postsApiSlice";
 import SubmitButton from "@/components/SubmitButton";
 import { cn, optimizeImageUrl } from "@/lib/utils";
 import { PostType } from "./utils";
@@ -36,24 +42,44 @@ const placeholders = [
   "Le Chatelier's principle",
 ];
 
+function getSubmitButtonText(
+  type: PostType | undefined,
+  isEditing: boolean,
+  isRepost: boolean
+) {
+  if (isEditing) return "Edit";
+  if (isRepost) return "Repost";
+
+  switch (type) {
+    case "comment":
+      return "Comment";
+    case "response":
+      return "Reply";
+    default:
+      return "Post";
+  }
+}
+
 interface Props {
   type?: PostType;
-  onPostCreated?: (text: string, parentId?: string) => void;
+  onSubmitted?: () => void;
   commentToId?: string;
   responseToId?: string;
   originalId?: string;
   className?: string;
   repostOf?: Post;
+  edit?: NormalPost;
 }
 
 const CreatePost: FC<Props> = ({
-  onPostCreated,
+  onSubmitted,
   commentToId,
   responseToId,
   originalId,
   type = "post",
   className,
   repostOf,
+  edit,
 }) => {
   const MAX_LENGTH = type === "post" ? 512 : 256;
   const placeholder = useRef(
@@ -64,12 +90,18 @@ const CreatePost: FC<Props> = ({
 
   const { isAuth, isLoading, user, ucareToken, expire } = useAuth();
   const id = useId();
+  const isMediaInit = useRef(false);
 
-  const [value, setValue] = useState("");
-  const [canComment, setCanComment] = useState(true);
-  const [media, setMedia] = useState<PostMedia[]>(() => []);
+  const [value, setValue] = useState(edit?.text ?? "");
+  const [canComment, setCanComment] = useState(edit?.canComment ?? true);
+  const [media, setMedia] = useState<PostMedia[]>(() => edit?.media ?? []);
 
-  const [createPost, { isLoading: isCreating, isError }] = useCreatePostMutation();
+  const [createPost, { isLoading: isCreating, isError: isCreateError }] =
+    useCreatePostMutation();
+  const [changePost, { isLoading: isUpdating, isError: isUpdateError }] =
+    useChangePostMutation();
+
+  const isError = isCreateError || isUpdateError;
 
   const formRef = useRef<HTMLFormElement>(null);
   const uploaderRef = useRef<UploadCtxProvider>(null);
@@ -94,29 +126,47 @@ const CreatePost: FC<Props> = ({
     [id]
   );
 
+  const initMedia = useCallback(() => {
+    if (!uploaderRef.current || !edit || isMediaInit.current) return;
+
+    edit.media.forEach((m) =>
+      uploaderRef.current?.addFileFromUuid(m.id, { silent: true })
+    );
+
+    if (edit.media.length !== 0)
+      uploaderRef.current.$["*currentActivity"] = "upload-list";
+    isMediaInit.current = true;
+  }, [edit]);
+
   useEffect(() => {
     window.addEventListener("LR_DATA_OUTPUT", handleUpload);
+    window.addEventListener("LR_INIT_FLOW", initMedia);
     return () => {
       window.removeEventListener("LR_DATA_OUTPUT", handleUpload);
+      window.removeEventListener("LR_INIT_FLOW", initMedia);
     };
-  }, [handleUpload]);
+  }, [handleUpload, initMedia]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const v = value.trim();
     if (v.length > MAX_LENGTH || (v.length === 0 && media.length === 0)) return;
-    await createPost({
-      text: v,
-      commentToId,
-      responseToId,
-      originalId,
-      canComment,
-      media,
-    }).unwrap();
+
+    if (!edit)
+      await createPost({
+        text: v,
+        commentToId,
+        responseToId,
+        originalId,
+        canComment,
+        media,
+      }).unwrap();
+    else
+      await changePost({ post: edit, changes: { text: v, canComment, media } }).unwrap();
     setValue("");
     setMedia([]);
     uploaderRef.current?.uploadCollection.clearAll();
-    onPostCreated?.(v);
+    onSubmitted?.();
   };
 
   if (isLoading) {
@@ -291,18 +341,24 @@ const CreatePost: FC<Props> = ({
                 )}
               </div>
             </div>
+            {edit && (
+              <Button
+                onClick={onSubmitted}
+                disabled={isUpdating}
+                variant="secondary"
+                type="button"
+              >
+                Cancel
+              </Button>
+            )}
             <SubmitButton
-              isLoading={isCreating}
+              isLoading={isCreating || isUpdating}
               disabled={
                 value.length > MAX_LENGTH ||
                 (value.trim().length === 0 && media.length === 0)
               }
             >
-              {type === "comment" || repostOf
-                ? "Comment"
-                : type === "response"
-                ? "Reply"
-                : "Post"}
+              {getSubmitButtonText(type, !!edit, !!repostOf)}
             </SubmitButton>
           </div>
         </div>

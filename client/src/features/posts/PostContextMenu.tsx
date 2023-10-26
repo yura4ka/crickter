@@ -22,15 +22,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
 
 interface Props {
   children: React.ReactElement;
   isOwner: boolean;
   post: NormalPost;
+  handleEditing: (isEditing: boolean) => void;
 }
 
-const PostContextMenu = ({ children, isOwner, post }: Props) => {
+const PostContextMenu = ({ children, isOwner, post, handleEditing }: Props) => {
   const [changePost] = useChangePostMutation();
   const [deletePost] = useDeletePostMutation();
 
@@ -44,8 +44,8 @@ const PostContextMenu = ({ children, isOwner, post }: Props) => {
 
   return (
     <AlertDialog>
-      <DropdownMenu>
-        <DropdownMenuTrigger>{children}</DropdownMenuTrigger>
+      <DropdownMenu modal={false}>
+        <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
         <DropdownMenuContent className="w-56">
           {isOwner ? (
             <>
@@ -59,7 +59,7 @@ const PostContextMenu = ({ children, isOwner, post }: Props) => {
               >
                 Allow Comments
               </DropdownMenuCheckboxItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleEditing(true)}>
                 <Pencil className="mr-2 h-4 w-4" />
                 <span>Edit Post</span>
               </DropdownMenuItem>
