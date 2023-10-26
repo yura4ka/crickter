@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   children: React.ReactElement;
@@ -33,6 +34,7 @@ interface Props {
 const PostContextMenu = ({ children, isOwner, post, handleEditing }: Props) => {
   const [changePost] = useChangePostMutation();
   const [deletePost] = useDeletePostMutation();
+  const navigate = useNavigate();
 
   const handleCanCommentChange = (canComment: boolean) => {
     changePost({ post, changes: { canComment } });
@@ -49,7 +51,7 @@ const PostContextMenu = ({ children, isOwner, post, handleEditing }: Props) => {
         <DropdownMenuContent className="w-56">
           {isOwner ? (
             <>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate(`/post/${post.id}/history`)}>
                 <History className="mr-2 h-4 w-4" />
                 <span>View history</span>
               </DropdownMenuItem>

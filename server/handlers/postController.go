@@ -192,6 +192,7 @@ func GetPostHistory(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"history": history,
+		"changes": history.Changes,
+		"media":   history.Media,
 	})
 }

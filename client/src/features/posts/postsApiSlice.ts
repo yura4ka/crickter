@@ -80,6 +80,19 @@ interface ReactionRequest {
 
 type ChangePostRequest = Partial<Pick<NormalPost, "text" | "canComment" | "media">>;
 
+interface PostHistoryResponse {
+  changes: Pick<NormalPost, "text" | "createdAt" | "isDeleted">[];
+  media: (PostMedia & { createdAt: string; updatedAt: string; isDeleted: boolean })[];
+}
+
+type PostHistory = {
+  date: string;
+  text?: string;
+  isDeleted?: boolean;
+  addMedia: PostMedia[];
+  deletedMedia: PostMedia[];
+};
+
 export const postsAdapter = createEntityAdapter<Post>({
   sortComparer: (a, b) => Number(new Date(b.createdAt)) - Number(new Date(a.createdAt)),
 });
@@ -294,6 +307,7 @@ export const postApi = api.injectEndpoints({
         method: "PATCH",
         body: changes,
       }),
+      invalidatesTags: (_result, _error, { post }) => [{ type: "History", id: post.id }],
       async onQueryStarted({ post, changes }, { dispatch, queryFulfilled }) {
         await queryFulfilled;
         updatePost(dispatch, post, { ...changes, updatedAt: new Date().toString() });
@@ -305,16 +319,60 @@ export const postApi = api.injectEndpoints({
         url: `post/${post.id}`,
         method: "DELETE",
       }),
-      invalidatesTags: [
+      invalidatesTags: (_result, _error, { id }) => [
         { type: "Comments" },
         { type: "Favorite" },
         { type: "Posts" },
         { type: "Tags" },
         { type: "Users" },
+        { type: "History", id },
       ],
       async onQueryStarted(post, { dispatch, queryFulfilled }) {
         await queryFulfilled;
         updatePost(dispatch, post, { isDeleted: true });
+      },
+    }),
+
+    getPostHistory: builder.query<PostHistory[], string>({
+      query: (id) => ({ url: `post/${id}/history` }),
+      providesTags: (_result, _error, id) => [{ type: "History", id }],
+      transformResponse: ({ changes, media }: PostHistoryResponse) => {
+        const result = new Map<string, PostHistory>();
+
+        for (const { createdAt, text, isDeleted } of changes) {
+          result.set(createdAt, {
+            date: createdAt,
+            text,
+            isDeleted,
+            addMedia: [],
+            deletedMedia: [],
+          });
+        }
+
+        for (const m of media) {
+          if (m.isDeleted) {
+            const h = result.get(m.updatedAt);
+            if (h) h.deletedMedia.push(m);
+            else
+              result.set(m.updatedAt, {
+                date: m.updatedAt,
+                addMedia: [],
+                deletedMedia: [m],
+              });
+          }
+          const h = result.get(m.createdAt);
+          if (h) h.addMedia.push(m);
+          else
+            result.set(m.createdAt, {
+              date: m.createdAt,
+              addMedia: [m],
+              deletedMedia: [],
+            });
+        }
+
+        return Array.from(result, ([, v]) => v).sort(
+          (a, b) => +new Date(a.date) - +new Date(b.date)
+        );
       },
     }),
   }),
@@ -329,4 +387,5 @@ export const {
   useHandleFavoriteMutation,
   useChangePostMutation,
   useDeletePostMutation,
+  useGetPostHistoryQuery,
 } = postApi;

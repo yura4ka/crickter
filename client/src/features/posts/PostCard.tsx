@@ -22,49 +22,11 @@ import { PostType } from "./utils";
 import { useAuth } from "../auth/useAuth";
 import { useLoginModal } from "../loginModal/useLoginModal";
 import { AvatarImage } from "@radix-ui/react-avatar";
-import React from "react";
 import { useRepostModal } from "./useRepostModal";
 import PostGallery from "./PostGallery";
 import PostContextMenu from "./PostContextMenu";
 import CreatePost from "./CreatePost";
-
-const hashtagRegex = /#(\w+)/;
-const linkRegex = /(?:https?|ftp):\/\/[^\s/$.?#].[^\s]*/;
-
-function formatText(text: string) {
-  return text.split("\n").map((r, j) => (
-    <p key={j}>
-      {r.split(" ").map((s, i) => {
-        const tag = s.match(hashtagRegex);
-        if (tag)
-          return (
-            <React.Fragment key={i}>
-              <Link to={`/tags/${tag[1].toLowerCase()}`} className="link">
-                {s}
-              </Link>{" "}
-            </React.Fragment>
-          );
-
-        const url = s.match(linkRegex);
-        if (url)
-          return (
-            <React.Fragment key={i}>
-              <Link to={url[0]} target="__blank" className="link">
-                {s}
-              </Link>{" "}
-            </React.Fragment>
-          );
-        if (r === "")
-          return (
-            <React.Fragment key={i}>
-              <br />
-            </React.Fragment>
-          );
-        return <React.Fragment key={i}>{s} </React.Fragment>;
-      })}
-    </p>
-  ));
-}
+import { formatText } from "./textFormatter";
 
 const MinimalOriginal: FC<{ post: Post | undefined }> = ({ post }) => {
   if (!post)
