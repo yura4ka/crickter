@@ -175,3 +175,23 @@ func DeletePost(c *fiber.Ctx) error {
 		"message": "Ok",
 	})
 }
+
+func GetPostHistory(c *fiber.Ctx) error {
+	postId := c.Params("id")
+	userId, _ := c.Locals("userId").(string)
+
+	post, err := services.GetPostById(postId)
+	if err != nil || post.UserId != userId {
+		return c.SendStatus(400)
+	}
+
+	history, err := services.GetPostHistory(postId)
+	if err != nil {
+		log.Print(err)
+		return c.SendStatus(400)
+	}
+
+	return c.JSON(fiber.Map{
+		"history": history,
+	})
+}

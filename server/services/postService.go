@@ -619,3 +619,45 @@ func DeletePost(postId, userId string) error {
 
 	return err
 }
+
+type PostChange struct {
+	Id        string    `json:"id"`
+	CreatedAt time.Time `json:"createdAt"`
+	Text      string    `json:"text"`
+	IsDeleted bool      `json:"isDeleted"`
+}
+
+type PostHistory struct {
+	Changes []PostChange `json:"changes"`
+	Media   []MediaFull  `json:"media"`
+}
+
+func GetPostHistory(postId string) (*PostHistory, error) {
+	rows, err := db.Client.Query(`
+		SELECT id, created_at, text, is_deleted
+		FROM post_changes
+		WHERE post_id = $1;
+	`, postId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := PostHistory{Changes: []PostChange{}}
+
+	for rows.Next() {
+		change := PostChange{}
+		err := rows.Scan(&change.Id, &change.CreatedAt, &change.Text, &change.IsDeleted)
+		if err != nil {
+			return nil, err
+		}
+		result.Changes = append(result.Changes, change)
+	}
+
+	result.Media, err = GetPostMedia(postId, true)
+	if err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}

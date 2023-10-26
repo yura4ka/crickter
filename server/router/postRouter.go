@@ -17,4 +17,5 @@ func addPostRouter(app *fiber.App) {
 	post.Get("/:id", middleware.ParseAuth, handlers.GetPostById)
 	post.Post("/favorite", middleware.RequireAuth, handlers.ProcessFavorite)
 	post.Delete("/:id", middleware.RequireAuth, handlers.DeletePost)
+	post.Get("/:id/history", middleware.RequireAuth, handlers.GetPostHistory)
 }

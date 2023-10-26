@@ -7,7 +7,7 @@ DECLARE
   tag RECORD;
   tag_id UUID;
 BEGIN
-  IF NEW.text != OLD.text OR NEW.is_deleted != OLD.is_deleted THEN
+  IF TG_OP = 'INSERT' OR NEW.text != OLD.text OR NEW.is_deleted != OLD.is_deleted THEN
     INSERT INTO post_changes (text, is_deleted, post_id)
     VALUES (NEW.text, NEW.is_deleted, NEW.id);
   END IF;
