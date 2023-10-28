@@ -82,6 +82,7 @@ const Login: FC<Props> = ({ className, outerClass, redirect = true }) => {
               onChange={onEmailChange}
               isError={isError}
               description={isError ? "Wrong email or password" : undefined}
+              autoComplete="email"
             />
             <PasswordInput
               label="Password"
@@ -89,6 +90,7 @@ const Login: FC<Props> = ({ className, outerClass, redirect = true }) => {
               onChange={onPasswordChange}
               isError={isError}
               description={isError ? "Wrong email or password" : undefined}
+              autoComplete="current-password"
             />
           </CardContent>
           <CardFooter className="px-0 sm:p-6 sm:pt-0">

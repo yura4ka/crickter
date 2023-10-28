@@ -136,6 +136,7 @@ const Register = () => {
               description={isEmailTaken ? EmailInfoState.TAKEN : emailInfo}
               placeholder="john_biden@gmail.com"
               maxLength={emailMaxLength}
+              autoComplete="email"
             />
             <CustomInput
               type="text"
@@ -145,6 +146,7 @@ const Register = () => {
               description="Your name (you can change it later)"
               placeholder="John Biden"
               maxLength={nameMaxLength}
+              autoComplete="name"
             />
             <CustomInput
               type="text"
@@ -160,6 +162,7 @@ const Register = () => {
               isError={isUsernameTaken}
               isLoading={isUCheckLoading}
               maxLength={usernameMaxLength}
+              autoComplete="username"
             />
             <ConfirmPassword
               description="At least 4 characters"
@@ -169,6 +172,7 @@ const Register = () => {
                 changeForm("isPasswordValid", isValid);
               }}
               placeholder="cool_password_2023"
+              autoComplete="new-password"
             />
           </CardContent>
           <CardFooter className="px-0 sm:p-6 sm:pt-0">

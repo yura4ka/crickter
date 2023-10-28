@@ -11,6 +11,8 @@ import { useInfiniteScroll } from "./lib/hooks";
 import { useGetPopularTagsQuery } from "./features/tags/tagsApiSlice";
 import { Link } from "react-router-dom";
 import { Skeleton } from "./components/ui/skeleton";
+import { Input } from "./components/ui/input";
+import { Search } from "lucide-react";
 
 const Feed = () => {
   const { isLoading: isAuthLoading } = useAuth();
@@ -87,11 +89,20 @@ const Trends = () => {
   );
 };
 
+const PostSearch = () => {
+  return (
+    <form className="relative">
+      <Input name="search" placeholder="Search" className="bg-muted pl-9" />
+      <Search className="absolute left-2 top-1/2 h-5 w-5 -translate-y-1/2" />
+    </form>
+  );
+};
+
 function App() {
   return (
     <div className="sm:container sm:flex">
       <aside className="flex flex-col p-4 sm:order-2 sm:w-1/4">
-        <input type="search" className="bg-accent" placeholder="search" />
+        <PostSearch />
         <Trends />
       </aside>
       <main className="overflow-x-hidden px-2 py-4 sm:w-3/4 sm:border-r sm:pl-0 sm:pr-4">

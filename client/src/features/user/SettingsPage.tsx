@@ -181,9 +181,13 @@ const BioSection = ({ bio }: { bio: string | null }) => {
         <p className="text-xs text-muted-foreground">
           {value.length !== 0 && `${value.length}/${MAX_LENGTH}`}
         </p>
-        <Button onClick={onSubmit} disabled={value.length > MAX_LENGTH || isLoading}>
+        <SubmitButton
+          onClick={onSubmit}
+          disabled={value.length > MAX_LENGTH}
+          isLoading={isLoading}
+        >
           {bio ? (value ? "Change Bio" : "Remove Bio") : "Add Bio"}
-        </Button>
+        </SubmitButton>
       </div>
     </section>
   );
