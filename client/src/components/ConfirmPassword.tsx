@@ -53,7 +53,7 @@ const ConfirmPassword: FC<Props> = ({ description, onChange, validate, ...rest }
     }
 
     const isEqual = value.trim() === original;
-    setConfirm({ value, isError: !isEqual, info: PasswordInfo.NOT_MATCH });
+    setConfirm({ value, isError: !isEqual, info: isEqual ?  PasswordInfo.CONFIRM: PasswordInfo.NOT_MATCH });
 
     const isValid = isEqual && validate(original);
     setPassword((prev) => ({ ...prev, isError: !isValid }));

@@ -3,6 +3,7 @@ package router
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/yura4ka/crickter/handlers"
+	"github.com/yura4ka/crickter/middleware"
 )
 
 func addAuthRouter(app *fiber.App) {
@@ -13,5 +14,5 @@ func addAuthRouter(app *fiber.App) {
 	auth.Get("/refresh", handlers.Refresh)
 	auth.Post("/checkEmail", handlers.CheckEmail)
 	auth.Get("/logout", handlers.Logout)
-	auth.Post("/checkUsername", handlers.CheckUsername)
+	auth.Post("/checkUsername", middleware.ParseAuth, handlers.CheckUsername)
 }

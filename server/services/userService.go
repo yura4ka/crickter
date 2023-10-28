@@ -115,14 +115,20 @@ func GetUserById(id string) (*User, error) {
 
 func GetUserByUsername(username string) (*User, error) {
 	var user User
+	var avatarUrl, avatarType *string
 
 	err := db.Client.QueryRow(`
 		SELECT * FROM users
 		WHERE username = $1;
-	`, username).Scan(&user.ID, &user.CreatedAt, &user.Email, &user.Password, &user.Name, &user.Username, &user.IsPrivate)
+	`, username).Scan(&user.ID, &user.CreatedAt, &user.Email, &user.Password, &user.Name,
+		&user.Username, &user.IsPrivate, &user.UpdatedAt, &avatarUrl, &user.Bio, &user.IsDeleted, &avatarType)
 
 	if err != nil {
 		return nil, err
+	}
+
+	if avatarUrl != nil {
+		user.Avatar = &Avatar{Url: *avatarUrl, Type: *avatarType}
 	}
 
 	return &user, nil
@@ -384,7 +390,7 @@ func ChangeUser(userId string, user *ChangeUserRequest) error {
 
 	if user.Bio != nil {
 		queries = append(queries, fmt.Sprintf("bio = $%d", argsCount))
-		args = append(args, *user.Bio)
+		args = append(args, ToNullString(user.Bio))
 		argsCount++
 	}
 

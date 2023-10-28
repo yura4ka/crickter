@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"database/sql"
+	"errors"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
@@ -128,7 +130,10 @@ func CheckEmail(c *fiber.Ctx) error {
 
 	_, err := services.GetUserByEmail(input.Email)
 	if err != nil {
-		return c.SendStatus(200)
+		if errors.Is(err, sql.ErrNoRows) {
+			return c.SendStatus(200)
+		}
+		return c.SendStatus(500)
 	}
 
 	return c.SendStatus(400)
@@ -149,8 +154,17 @@ func CheckUsername(c *fiber.Ctx) error {
 		return c.SendStatus(400)
 	}
 
-	_, err := services.GetUserByUsername(input.Username)
+	userId, _ := c.Locals("userId").(string)
+	u, err := services.GetUserByUsername(input.Username)
+
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return c.SendStatus(200)
+		}
+		return c.SendStatus(500)
+	}
+
+	if userId == u.ID {
 		return c.SendStatus(200)
 	}
 

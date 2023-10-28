@@ -112,7 +112,7 @@ const UserInfo = ({ id }: { id: string }) => {
         {user.bio
           ? user.bio
           : user.id === auth?.id && (
-              <Link to="/settings" className="underline hover:text-foreground">
+              <Link to="/settings#bio" className="underline hover:text-foreground">
                 Add bio
               </Link>
             )}

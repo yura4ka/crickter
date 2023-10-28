@@ -23,6 +23,7 @@ import TagPage from "./features/tags/TagPage.tsx";
 import TagPostsPage from "./features/tags/TagPostsPage.tsx";
 import HeadlessModal from "./lib/HeadlessModal.ts";
 import PostHistoryPage from "./features/posts/PostHistoryPage.tsx";
+import SettingsPage from "./features/user/SettingsPage.tsx";
 
 LR.registerBlocks({ ...LR, HeadlessModal });
 
@@ -40,6 +41,7 @@ const router = createBrowserRouter(
       <Route element={<AuthLayout />}>
         <Route path="favorite" element={<FavoritePostsPage />} />
         <Route path="post/:postId/history" element={<PostHistoryPage />} />
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
     </Route>
   )

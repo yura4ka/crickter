@@ -58,7 +58,7 @@ const Navbar = () => {
                       <span>Profile</span>
                     </DropdownMenuItem>
                   </Link>
-                  <Link to={`/user/${user.id}`}>
+                  <Link to={`/settings`}>
                     <DropdownMenuItem className="cursor-pointer">
                       <Settings className="mr-2 h-4 w-4" />
                       <span>Settings</span>
