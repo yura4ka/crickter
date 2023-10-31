@@ -121,7 +121,7 @@ func GetConversations(userId string) ([]Conversation, error) {
 		GROUP BY c.id, u.user_id, u.username, u.name, u.avatar_url, u.avatar_type, u.user_deleted,
 			lm.conversation_id, lm.text, lm.created_at, lm.is_media, lm.is_repost, lm.is_post,
 			lm.m_user_id, lm.m_username, lm.m_name, lm.m_avatar_url, lm.m_avatar_type, lm.m_user_deleted
-		ORDER BY lm.created_at DESC, c.created_at DESC;
+		ORDER BY c.created_at DESC, lm.created_at DESC;
 	`, userId)
 
 	if err != nil {
