@@ -8,4 +8,5 @@ func SetupRouter(app *fiber.App) {
 	addCommentRouter(app)
 	addUserRouter(app)
 	addTagRouter(app)
+	addConversationRouter(app)
 }
