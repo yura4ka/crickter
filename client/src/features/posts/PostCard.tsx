@@ -180,6 +180,10 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
       </>
     );
 
+  let commentCount = p.comments;
+  if (p.responseToId) commentCount = p.reposts;
+  else if (p.commentToId) commentCount = p.responseCount;
+
   return (
     <article
       id={p.id}
@@ -257,12 +261,12 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
             {onCommentClick !== undefined ? (
               <>
                 <MessageSquare className="mr-2 h-4 w-4" />
-                {type === "response" ? p.reposts : p.comments}
+                {commentCount}
               </>
             ) : (
               <Link to={"/post/" + p.id}>
                 <MessageSquare className="mr-2 h-4 w-4" />
-                {type === "response" ? p.reposts : p.comments}
+                {commentCount}
               </Link>
             )}
           </Button>

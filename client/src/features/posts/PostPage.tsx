@@ -8,7 +8,7 @@ import {
   useGetCommentResponsesMutation,
   useGetCommentsQuery,
 } from "./commentsApiSlice";
-import { FC, useRef, useState } from "react";
+import { FC, useEffect, useRef, useState } from "react";
 import { useAuth } from "../auth/useAuth";
 import { useInfiniteScroll } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
@@ -32,7 +32,7 @@ const CommentsCard: FC<CommentsCardProps> = ({
   const [loadResponses, { isLoading }] = useGetCommentResponsesMutation();
   const [isResponseShown, setIsResponseShown] = useState(false);
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(() => comment.comments > 0);
+  const [hasMore, setHasMore] = useState(() => comment.responseCount > 0);
 
   const loaderDiv = useRef<HTMLDivElement>(null);
   useInfiniteScroll(loaderDiv, async () => {
@@ -84,14 +84,18 @@ const PostPage = () => {
   const navigate = useNavigate();
   const { isLoading: isAuthLoading } = useAuth();
   const { postId } = useParams();
-  const { data: post, isLoading: isPostLoading } = useGetPostByIdQuery(postId || "", {
+  const {
+    data: post,
+    isLoading: isPostLoading,
+    isError,
+  } = useGetPostByIdQuery(postId || "", {
     skip: !postId,
   });
   const [page, setPage] = useState(1);
   const { comments, hasMore, total, isFetching } = useGetCommentsQuery(
     { page, postId: postId || "" },
     {
-      skip: isAuthLoading,
+      skip: isAuthLoading || !postId,
       selectFromResult: ({ data, ...other }) => ({
         comments: commentsSelector.selectAll(
           data?.comments ?? commentsAdapter.getInitialState()
@@ -103,6 +107,12 @@ const PostPage = () => {
     }
   );
 
+  useEffect(() => {
+    if (post && post.commentToId && !isPostLoading) {
+      navigate("/post/" + post.commentToId, { replace: true });
+    }
+  }, [isPostLoading, navigate, post]);
+
   const loaderDiv = useRef<HTMLDivElement>(null);
   useInfiniteScroll(loaderDiv, () => {
     if (hasMore && !isFetching && !isAuthLoading) {
@@ -110,7 +120,7 @@ const PostPage = () => {
     }
   });
 
-  if (!postId) {
+  if (!postId || isError) {
     navigate("/");
     return <></>;
   }

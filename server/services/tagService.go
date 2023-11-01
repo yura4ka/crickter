@@ -27,11 +27,11 @@ func GetTags(page int) ([]TagsResponse, error) {
 		SELECT t.name, COUNT(pt.post_id) as count, t.created_at
 		FROM tags AS t
 		LEFT JOIN post_tags AS pt ON t.id = pt.tag_id
-		LEFT JOIN posts AS p ON pt.post_id = p.id
 		GROUP BY t.name, t.created_at
+		HAVING COUNT(pt.post_id) != 0
 		ORDER BY count DESC
 		LIMIT $1 OFFSET $2;
-		`, limit, offset)
+	`, limit, offset)
 
 	if err != nil {
 		return nil, err
@@ -49,6 +49,23 @@ func GetTags(page int) ([]TagsResponse, error) {
 	}
 
 	return result, nil
+}
+
+func HasMoreTags(page int) (bool, error) {
+	var total int
+	err := db.Client.QueryRow(`
+		SELECT COUNT(t.name)
+		FROM tags AS t
+		LEFT JOIN post_tags AS pt ON t.id = pt.tag_id
+		GROUP BY t.name
+		HAVING COUNT(pt.post_id) != 0
+	`).Scan(&total)
+
+	if err != nil {
+		return false, err
+	}
+
+	return total > page*TAGS_PER_PAGE, nil
 }
 
 func HasTagMorePosts(tag string, page int) (bool, error) {

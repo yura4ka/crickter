@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useGetTagPostsQuery } from "./tagsApiSlice";
 import { useAuth } from "../auth/useAuth";
 import { useRef, useState } from "react";
@@ -6,6 +6,7 @@ import { postsAdapter, postsSelector } from "../posts/postsApiSlice";
 import { useInfiniteScroll } from "@/lib/hooks";
 import { Hash } from "lucide-react";
 import PostCard from "../posts/PostCard";
+import { cn } from "@/lib/utils";
 
 const TagPostsPage = () => {
   const { tag } = useParams();
@@ -49,7 +50,19 @@ const TagPostsPage = () => {
       )}
       <div className="divide-y px-4 sm:px-4">
         {posts.map((p) => (
-          <PostCard key={p.id} post={p} fromTag={tag} />
+          <div key={p.id}>
+            <PostCard
+              post={p}
+              fromTag={tag}
+              type={p.commentToId ? "comment" : "post"}
+              className={cn(p.commentToId && "pb-0 sm:pb-0")}
+            />
+            {p.commentToId && (
+              <Link to={"/post/" + p.commentToId} className="link mb-2 block px-2">
+                view thread
+              </Link>
+            )}
+          </div>
         ))}
         <PostCard
           ref={loaderDiv}

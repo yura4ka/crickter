@@ -36,6 +36,7 @@ interface PostInfo {
   likes: number;
   dislikes: number;
   comments: number;
+  responseCount: number;
   reposts: number;
   reaction: -1 | 0 | 1;
   isFavorite: boolean;
@@ -151,6 +152,7 @@ export const postApi = api.injectEndpoints({
           responseToId: responseToId || null,
           commentToId: commentToId || null,
           comments: 0,
+          responseCount: 0,
           likes: 0,
           dislikes: 0,
           reposts: 0,
@@ -160,11 +162,6 @@ export const postApi = api.injectEndpoints({
           isDeleted: false,
           media,
         };
-        dispatch(
-          postApi.util.updateQueryData("getPosts", 0, (draft) => {
-            postsAdapter.addOne(draft.posts, newPost as Post);
-          })
-        );
         if (originalId) {
           updatePost(dispatch, { id: originalId }, (post) => ({
             reposts: post.reposts + 1,
@@ -221,6 +218,11 @@ export const postApi = api.injectEndpoints({
                 postsAdapter.addOne(draft.posts, newPost as Post);
               }
             )
+          );
+          dispatch(
+            postApi.util.updateQueryData("getPosts", 0, (draft) => {
+              postsAdapter.addOne(draft.posts, newPost as Post);
+            })
           );
         }
       },

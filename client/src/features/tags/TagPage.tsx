@@ -39,7 +39,7 @@ const TagPage = () => {
             className="rounded border p-2 transition-colors hover:bg-accent"
           >
             <p className="text-lg font-bold">#{t.name}</p>
-            <p className="text-sm text-muted-foreground">{t.postCount} tweets</p>
+            <p className="text-sm text-muted-foreground">{t.postCount} posts</p>
             <p className="text-sm text-muted-foreground">
               First mention{" "}
               {new Date(t.createdAt).toLocaleDateString(undefined, {

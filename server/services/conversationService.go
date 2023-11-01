@@ -254,7 +254,8 @@ func LeaveConversation(convId, userId string) error {
 		SELECT p.user_id
 		FROM conversations AS c
 		INNER JOIN participants AS p ON c.id = p.conversation_id
-		WHERE p.user_id != $1 AND p.has_left = false AND p.is_kicked = false
+		LEFT JOIN users AS u ON p.user_id = u.id
+		WHERE p.user_id != $1 AND p.has_left = false AND p.is_kicked = false AND u.is_deleted = false
 		LIMIT 1;
 	`).Scan(&newCreatorId)
 	if err != nil && err != sql.ErrNoRows {

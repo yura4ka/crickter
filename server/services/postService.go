@@ -258,6 +258,7 @@ type postInfo struct {
 	Dislikes     int     `json:"dislikes"`
 	Reaction     int     `json:"reaction"`
 	Comments     int     `json:"comments"`
+	Responses    int     `json:"responseCount"`
 	Reposts      int     `json:"reposts"`
 	IsFavorite   bool    `json:"isFavorite"`
 }
@@ -392,28 +393,23 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 	return query, args
 }
 
-func parsePosts(rows *sql.Rows, isComment bool) ([]PostsResult, error) {
+func parsePosts(rows *sql.Rows) ([]PostsResult, error) {
 	result := make([]PostsResult, 0)
 	for rows.Next() {
 		var text, updatedAt string
 		var avatarUrl, avatarType, userId, username, name, mediaJson *string
-		var responses int
 		row := PostsResult{}
 
 		err := rows.Scan(
 			&row.Id, &text, &row.CreatedAt, &updatedAt, &row.CanComment, &row.IsDeleted,
 			&userId, &username, &name, &avatarUrl, &avatarType, &row.User.IsDeleted,
 			&row.OriginalId, &row.CommentToId, &row.ResponseToId,
-			&row.Likes, &row.Dislikes, &row.Reaction, &row.Comments, &responses, &row.Reposts, &row.IsFavorite,
+			&row.Likes, &row.Dislikes, &row.Reaction, &row.Comments, &row.Responses, &row.Reposts, &row.IsFavorite,
 			&mediaJson,
 		)
 
 		if err != nil {
 			return nil, err
-		}
-
-		if isComment {
-			row.Comments = responses
 		}
 
 		if row.IsDeleted {
@@ -463,7 +459,7 @@ func GetPosts(params *QueryParams) ([]PostsResult, error) {
 
 	defer rows.Close()
 
-	result, err := parsePosts(rows, params.CommentsToId != "" || params.ResponseToId != "")
+	result, err := parsePosts(rows)
 	if err != nil {
 		return nil, err
 	}
@@ -521,7 +517,7 @@ func QueryPostById(postId, userId string) (*PostsResult, error) {
 
 	defer rows.Close()
 
-	result, err := parsePosts(rows, false)
+	result, err := parsePosts(rows)
 	if err != nil {
 		return nil, err
 	}
@@ -599,7 +595,7 @@ func GetFavoritePosts(userId string, page int) ([]PostsResult, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	return parsePosts(rows, false)
+	return parsePosts(rows)
 }
 
 func HasMoreFavorite(userId string, page int) (bool, error) {

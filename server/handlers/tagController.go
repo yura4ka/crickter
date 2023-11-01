@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"log"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/yura4ka/crickter/services"
 )
@@ -19,10 +21,17 @@ func GetTags(c *fiber.Ctx) error {
 	page := c.QueryInt("page", 1)
 	tags, err := services.GetTags(page)
 	if err != nil {
+		log.Print(err)
+		return c.SendStatus(500)
+	}
+	hasMore, err := services.HasMoreTags(page)
+	if err != nil {
+		log.Print(err)
 		return c.SendStatus(500)
 	}
 	return c.JSON(fiber.Map{
-		"tags": tags,
+		"tags":    tags,
+		"hasMore": hasMore,
 	})
 }
 
