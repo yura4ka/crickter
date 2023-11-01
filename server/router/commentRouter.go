@@ -10,6 +10,5 @@ func addCommentRouter(app *fiber.App) {
 	comment := app.Group("comment")
 
 	comment.Get("/", middleware.ParseAuth, handlers.GetComments)
-	comment.Post("/:postId", middleware.RequireAuth, handlers.CreatePost)
 	comment.Get("/:commentId", middleware.ParseAuth, handlers.GetResponses)
 }

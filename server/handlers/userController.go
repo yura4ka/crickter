@@ -8,7 +8,7 @@ import (
 )
 
 func GetUserInfo(c *fiber.Ctx) error {
-	id := c.Params("id")
+	id := c.Params("userId")
 	requestUserId, _ := c.Locals("userId").(string)
 	user, err := services.GetUserInfo(id, requestUserId)
 	if err != nil {
@@ -140,11 +140,66 @@ func DeleteUser(c *fiber.Ctx) error {
 	userId, _ := c.Locals("userId").(string)
 	err := services.DeleteUser(userId)
 	if err != nil {
+		log.Print(err)
 		c.SendStatus(400)
 	}
 
 	c.Cookie(services.ClearRefreshCookie())
 	return c.JSON(fiber.Map{
 		"message": "Ok",
+	})
+}
+
+func BlockUser(c *fiber.Ctx) error {
+	userId, _ := c.Locals("userId").(string)
+	blockUser := c.Params("userId")
+
+	err := services.BlockUser(userId, blockUser)
+	if err != nil {
+		log.Print(err)
+		c.SendStatus(400)
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Ok",
+	})
+}
+
+func UnblockUser(c *fiber.Ctx) error {
+	userId, _ := c.Locals("userId").(string)
+	blockUser := c.Params("userId")
+
+	err := services.UnblockUser(userId, blockUser)
+	if err != nil {
+		log.Print(err)
+		c.SendStatus(400)
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Ok",
+	})
+}
+
+func IsUserBlocked(c *fiber.Ctx) error {
+	userId, _ := c.Locals("userId").(string)
+	checkUser := c.Params("userId")
+	isMeBlocked := c.Params("type") == "me"
+
+	var err error
+	var isBlocked bool
+
+	if isMeBlocked {
+		isBlocked, err = services.IsUserBlocked(checkUser, userId)
+	} else {
+		isBlocked, err = services.IsUserBlocked(userId, checkUser)
+	}
+
+	if err != nil {
+		log.Print(err)
+		c.SendStatus(400)
+	}
+
+	return c.JSON(fiber.Map{
+		"isBlocked": isBlocked,
 	})
 }

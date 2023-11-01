@@ -41,6 +41,31 @@ func CreateMessage(message *CreateMessageRequest, userId string) (string, error)
 		return "", ErrForbidden
 	}
 
+	c, err := getConversationById(message.ConversationId)
+	if err != nil {
+		return "", err
+	}
+
+	if c.ConvType == "private" {
+		var receiver string
+		err := db.Client.QueryRow(`
+			SELECT user_id
+			FROM participants
+			WHERE user_id != $1
+			LIMIT 1;
+		`, userId).Scan(&receiver)
+		if err != nil {
+			return "", err
+		}
+		isBlocked, err := IsUserBlocked(receiver, userId)
+		if err != nil {
+			return "", err
+		}
+		if isBlocked {
+			return "", ErrBlocked
+		}
+	}
+
 	var mUrl, mType *string
 	if message.Media != nil {
 		mUrl = message.Media.Url

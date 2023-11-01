@@ -207,6 +207,30 @@ export const userApi = api.injectEndpoints({
     deleteUser: builder.mutation<undefined, void>({
       query: () => ({ url: "user", method: "DELETE" }),
     }),
+
+    isBlocked: builder.query<boolean, { userId: string; meBlocked: boolean }>({
+      query: ({ userId, meBlocked }) => ({
+        url: `user/${userId}/blocked/${meBlocked ? "me" : "1"}`,
+      }),
+      transformResponse: ({ isBlocked }: { isBlocked: boolean }) => isBlocked,
+      providesTags: (_result, _error, { userId, meBlocked }) => [
+        { type: "Blocked", userId, meBlocked },
+      ],
+    }),
+
+    blockUser: builder.mutation<undefined, string>({
+      query: (id) => ({ url: `user/${id}/block`, method: "POST" }),
+      invalidatesTags: (_result, _error, userId) => [
+        { type: "Blocked", userId, meBlocked: false },
+      ],
+    }),
+
+    unblockUser: builder.mutation<undefined, string>({
+      query: (id) => ({ url: `user/${id}/unblock`, method: "POST" }),
+      invalidatesTags: (_result, _error, userId) => [
+        { type: "Blocked", userId, meBlocked: false },
+      ],
+    }),
   }),
 });
 
@@ -219,4 +243,7 @@ export const {
   useGetFollowingQuery,
   useChangeUserMutation,
   useDeleteUserMutation,
+  useIsBlockedQuery,
+  useBlockUserMutation,
+  useUnblockUserMutation,
 } = userApi;

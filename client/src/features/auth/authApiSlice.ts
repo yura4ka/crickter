@@ -26,6 +26,7 @@ export const authApi = api.injectEndpoints({
         { type: "Comments" },
         { type: "Users" },
         { type: "Favorite" },
+        { type: "Blocked" },
       ],
     }),
     register: builder.mutation<{ id: string }, RegisterRequest>({
@@ -52,7 +53,12 @@ export const authApi = api.injectEndpoints({
         method: "GET",
         responseHandler: (response) => response.text(),
       }),
-      invalidatesTags: [{ type: "Posts" }, { type: "Comments" }, { type: "Users" }],
+      invalidatesTags: [
+        { type: "Posts" },
+        { type: "Comments" },
+        { type: "Users" },
+        { type: "Blocked" },
+      ],
     }),
     checkUsername: builder.mutation<undefined, string>({
       query: (username) => ({

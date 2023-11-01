@@ -23,15 +23,40 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useNavigate } from "react-router-dom";
+import {
+  useBlockUserMutation,
+  useIsBlockedQuery,
+  useUnblockUserMutation,
+} from "../user/userApiSlice";
+
+const BlockUserSection = ({ userId }: { userId: string }) => {
+  const [block] = useBlockUserMutation();
+  const [unblock] = useUnblockUserMutation();
+  const { data: isBlocked, isLoading } = useIsBlockedQuery({ userId, meBlocked: false });
+
+  if (isLoading || isBlocked === undefined) return <></>;
+
+  const handleClick = () => {
+    if (isBlocked) unblock(userId);
+    else block(userId);
+  };
+
+  return (
+    <DropdownMenuItem onClick={handleClick}>
+      <UserX className="mr-2 h-4 w-4" />
+      <span>{!isBlocked ? "Block User" : "Unblock User"}</span>
+    </DropdownMenuItem>
+  );
+};
 
 interface Props {
   children: React.ReactElement;
-  isOwner: boolean;
+  userId?: string;
   post: NormalPost;
   handleEditing: (isEditing: boolean) => void;
 }
 
-const PostContextMenu = ({ children, isOwner, post, handleEditing }: Props) => {
+const PostContextMenu = ({ children, userId, post, handleEditing }: Props) => {
   const [changePost] = useChangePostMutation();
   const [deletePost] = useDeletePostMutation();
   const navigate = useNavigate();
@@ -49,7 +74,7 @@ const PostContextMenu = ({ children, isOwner, post, handleEditing }: Props) => {
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
         <DropdownMenuContent className="w-56">
-          {isOwner ? (
+          {userId === post.user.id ? (
             <>
               <DropdownMenuItem onClick={() => navigate(`/post/${post.id}/history`)}>
                 <History className="mr-2 h-4 w-4" />
@@ -73,12 +98,7 @@ const PostContextMenu = ({ children, isOwner, post, handleEditing }: Props) => {
               </AlertDialogTrigger>
             </>
           ) : (
-            <DropdownMenuItem>
-              <DropdownMenuItem>
-                <UserX className="mr-2 h-4 w-4" />
-                <span>Block User</span>
-              </DropdownMenuItem>
-            </DropdownMenuItem>
+            post.user.id && <BlockUserSection userId={post.user.id} />
           )}
         </DropdownMenuContent>
       </DropdownMenu>

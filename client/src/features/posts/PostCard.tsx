@@ -192,11 +192,7 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
     >
       {isAuth && !p.isDeleted && !p.user.isDeleted && (
         <div className="absolute right-1 top-4">
-          <PostContextMenu
-            isOwner={user?.id === p.user.id}
-            post={p}
-            handleEditing={setIsEditing}
-          >
+          <PostContextMenu userId={user?.id} post={p} handleEditing={setIsEditing}>
             <Button variant="ghost" size="icon">
               <MoreHorizontal />
             </Button>

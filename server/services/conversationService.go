@@ -23,6 +23,13 @@ func CreateConversation(creatorId string, params *CreateConversationRequest) (st
 	params.Name = strings.TrimSpace(params.Name)
 	if params.ConvType == "private" {
 		params.Name = ""
+		isBlocked, err := IsUserBlocked(params.AddUserId, creatorId)
+		if err != nil {
+			return "", err
+		}
+		if isBlocked {
+			return "", ErrBlocked
+		}
 	} else if len(params.Name) == 0 {
 		return "", ErrEmptyString
 	}
@@ -180,12 +187,20 @@ func AddUsersToConversation(userId, convId string, users []string) error {
 		return ErrForbidden
 	}
 
+	blocked, err := getBlockedMap(userId)
+	if err != nil {
+		return err
+	}
+
 	args := make([]any, 1, len(users)+1)
 	args[0] = convId
 	argCount := 2
 	queries := make([]string, 0, len(users))
 
 	for _, u := range users {
+		if blocked[u] {
+			continue
+		}
 		queries = append(queries, fmt.Sprintf("($1, $%d)", argCount))
 		args = append(args, u)
 		argCount++

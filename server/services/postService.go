@@ -62,6 +62,26 @@ func AddMedia(tx *sql.Tx, postId string, media []PostMedia) error {
 }
 
 func CreatePost(userId string, params *PostParams) (string, error) {
+	if params.CommentToId != nil {
+		var originalUserId string
+		err := db.Client.QueryRow(`
+			SELECT u.id
+			FROM posts AS p
+			LEFT JOIN users AS u ON p.user_id = u.id
+			WHERE p.id = $1
+		`, params.CommentToId).Scan(&originalUserId)
+		if err != nil {
+			return "", err
+		}
+		isBlocked, err := IsUserBlocked(originalUserId, userId)
+		if err != nil {
+			return "", err
+		}
+		if isBlocked {
+			return "", ErrBlocked
+		}
+	}
+
 	var postId string
 
 	tx, err := db.Client.Begin()

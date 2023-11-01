@@ -436,3 +436,61 @@ func DeleteUser(userId string) error {
 	_, err := db.Client.Exec("CALL delete_user($1);", userId)
 	return err
 }
+
+func BlockUser(userId, blockUserId string) error {
+	_, err := db.Client.Exec(`
+		INSERT INTO blocked_users (user_id, blocked_user_id)
+		VALUES ($1, $2)
+		ON CONFLICT DO NOTHING;
+	`, userId, blockUserId)
+	return err
+}
+
+func UnblockUser(userId, blockUserId string) error {
+	_, err := db.Client.Exec(`
+		DELETE FROM blocked_users
+		WHERE user_id = $1 AND blocked_user_id = $2;
+	`, userId, blockUserId)
+	return err
+}
+
+func IsUserBlocked(userId, blockedUserId string) (bool, error) {
+	isBlocked := false
+	err := db.Client.QueryRow(`
+		SELECT true
+		FROM blocked_users
+		WHERE user_id = $1 AND blocked_user_id = $2;
+	`, userId, blockedUserId).Scan(&isBlocked)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return true, err
+	}
+
+	return isBlocked, nil
+}
+
+func getBlockedMap(blockedUser string) (map[string]bool, error) {
+	blocked := make(map[string]bool)
+	rows, err := db.Client.Query(`
+		SELECT user_id
+		FROM blocked_users
+		WHERE blocked_user_id = $1;
+	`, blockedUser)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var id string
+		err := rows.Scan(&id)
+		if err != nil {
+			return nil, err
+		}
+		blocked[id] = true
+	}
+
+	return blocked, nil
+}

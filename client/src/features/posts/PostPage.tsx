@@ -13,6 +13,7 @@ import { useAuth } from "../auth/useAuth";
 import { useInfiniteScroll } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
 import { Lock } from "lucide-react";
+import { useIsBlockedQuery } from "../user/userApiSlice";
 
 interface CommentsCardProps {
   comment: Post & { responses?: Post[] };
@@ -107,6 +108,13 @@ const PostPage = () => {
     }
   );
 
+  const userId = !post?.isDeleted ? post?.user.id ?? "" : "";
+
+  const { data: isBlocked } = useIsBlockedQuery(
+    { userId, meBlocked: true },
+    { skip: !userId }
+  );
+
   useEffect(() => {
     if (post && post.commentToId && !isPostLoading) {
       navigate("/post/" + post.commentToId, { replace: true });
@@ -135,6 +143,11 @@ const PostPage = () => {
             <Lock />
             Commenting has been disabled for this post...
           </div>
+        ) : isBlocked === true ? (
+          <div className="flex gap-2 rounded border p-4">
+            <Lock />
+            You has been blocked by this user...
+          </div>
         ) : (
           <CreatePost type="comment" commentToId={postId} />
         )}
@@ -146,7 +159,7 @@ const PostPage = () => {
               comment={c}
               postId={postId}
               responseToId={c.id}
-              canComment={post?.canComment ?? false}
+              canComment={(post?.canComment && !isBlocked) ?? false}
             />
           ))}
           <PostCard
