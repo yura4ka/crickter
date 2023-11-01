@@ -203,6 +203,10 @@ export const userApi = api.injectEndpoints({
         dispatch(changeUser(changes));
       },
     }),
+
+    deleteUser: builder.mutation<undefined, void>({
+      query: () => ({ url: "user", method: "DELETE" }),
+    }),
   }),
 });
 
@@ -214,4 +218,5 @@ export const {
   useGetFollowersQuery,
   useGetFollowingQuery,
   useChangeUserMutation,
+  useDeleteUserMutation,
 } = userApi;

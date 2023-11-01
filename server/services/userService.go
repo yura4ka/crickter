@@ -430,5 +430,9 @@ func ChangeUser(userId string, user *ChangeUserRequest) error {
 	)
 
 	return err
+}
 
+func DeleteUser(userId string) error {
+	_, err := db.Client.Exec("CALL delete_user($1);", userId)
+	return err
 }

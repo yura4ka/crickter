@@ -7,13 +7,14 @@ import (
 )
 
 func addUserRouter(app *fiber.App) {
-	post := app.Group("user")
+	user := app.Group("user")
 
-	post.Get("/:id", middleware.ParseAuth, handlers.GetUserInfo)
-	post.Get("/:userId/posts", middleware.ParseAuth, handlers.GetUserPosts)
-	post.Post("/:userId/follow", middleware.RequireAuth, handlers.HandleFollow)
-	post.Post("/:userId/unfollow", middleware.RequireAuth, handlers.HandleUnFollow)
-	post.Get("/:userId/following", middleware.ParseAuth, handlers.GetFollowing)
-	post.Get("/:userId/followers", middleware.ParseAuth, handlers.GetFollowers)
-	post.Patch("/", middleware.RequireAuth, handlers.ChangeUser)
+	user.Get("/:id", middleware.ParseAuth, handlers.GetUserInfo)
+	user.Get("/:userId/posts", middleware.ParseAuth, handlers.GetUserPosts)
+	user.Post("/:userId/follow", middleware.RequireAuth, handlers.HandleFollow)
+	user.Post("/:userId/unfollow", middleware.RequireAuth, handlers.HandleUnFollow)
+	user.Get("/:userId/following", middleware.ParseAuth, handlers.GetFollowing)
+	user.Get("/:userId/followers", middleware.ParseAuth, handlers.GetFollowers)
+	user.Patch("/", middleware.RequireAuth, handlers.ChangeUser)
+	user.Delete("/", middleware.RequireAuth, handlers.DeleteUser)
 }

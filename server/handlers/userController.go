@@ -135,3 +135,16 @@ func ChangeUser(c *fiber.Ctx) error {
 		"message": "Ok",
 	})
 }
+
+func DeleteUser(c *fiber.Ctx) error {
+	userId, _ := c.Locals("userId").(string)
+	err := services.DeleteUser(userId)
+	if err != nil {
+		c.SendStatus(400)
+	}
+
+	c.Cookie(services.ClearRefreshCookie())
+	return c.JSON(fiber.Map{
+		"message": "Ok",
+	})
+}

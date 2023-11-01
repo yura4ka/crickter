@@ -11,7 +11,11 @@ import {
   usernameMaxLength,
   validatePassword,
 } from "@/lib/utils";
-import { useChangeUserMutation, useGetUserQuery } from "./userApiSlice";
+import {
+  useChangeUserMutation,
+  useDeleteUserMutation,
+  useGetUserQuery,
+} from "./userApiSlice";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +34,7 @@ import { useCheckUsernameMutation } from "../auth/authApiSlice";
 import SubmitButton from "@/components/SubmitButton";
 import ConfirmPassword from "@/components/ConfirmPassword";
 import PasswordInput from "@/components/PasswordInput";
+import { useNavigate } from "react-router-dom";
 
 interface ItemProps {
   header: string;
@@ -65,7 +70,7 @@ const MenuItem = ({ header, subitems }: ItemProps) => {
 
 const MENU: ItemProps[] = [
   { header: "Profile", subitems: ["Profile picture", "Bio", "Name"] },
-  { header: "Security", subitems: ["Password"] },
+  { header: "Security", subitems: ["Password", "Delete account"] },
 ];
 
 const ProfilePictureSection = ({ user }: { user: User }) => {
@@ -313,6 +318,40 @@ const PasswordSection = () => {
   );
 };
 
+const DeleteAccountSection = () => {
+  const navigate = useNavigate();
+  const [deleteAccount] = useDeleteUserMutation();
+
+  const handleDelete = () => {
+    deleteAccount().then(() => navigate(0));
+  };
+
+  return (
+    <section>
+      <p id="delete_account" className="scroll-m-20 pb-4 text-lg text-error">
+        Delete Account
+      </p>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button variant="destructive">Delete Account</Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This action will delete your account
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </section>
+  );
+};
+
 const SettingsPage = () => {
   const { user } = useAuth();
   const { data } = useGetUserQuery(user?.id ?? "", { skip: !user?.id });
@@ -352,6 +391,7 @@ const SettingsPage = () => {
         </h2>
         <div className="space-y-8">
           <PasswordSection />
+          <DeleteAccountSection />
         </div>
       </main>
     </div>
