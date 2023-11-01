@@ -10,4 +10,7 @@ func addMessageRouter(app *fiber.App) {
 	message := app.Group("message")
 
 	message.Post("/", middleware.RequireAuth, handlers.CreateMessage)
+	message.Patch("/:id", middleware.RequireAuth, handlers.EditMessage)
+	message.Delete("/:id", middleware.RequireAuth, handlers.DeleteMessage)
+	message.Get("/:id/changes", middleware.RequireAuth, handlers.GetMessageChanges)
 }

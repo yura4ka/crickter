@@ -92,7 +92,7 @@ func GetConversations(userId string) ([]Conversation, error) {
 			CASE
 				WHEN COUNT(m.*) = 0 THEN 0 
 			ELSE
-				COUNT(CASE WHEN mr.message_id IS NULL AND m.is_deleted != 1 THEN 1 ELSE 0 END)
+				SUM(CASE WHEN mr.message_id IS NULL AND m.is_deleted != 1 THEN 1 ELSE 0 END)
 			END AS unread,
 			lm.*
 		FROM conversations AS c
@@ -106,18 +106,20 @@ func GetConversations(userId string) ([]Conversation, error) {
 			WHERE p.conversation_id = c.id AND p.user_id != $1
 			LIMIT 1
 		) u ON true
-		LEFT JOIN (
+		LEFT JOIN LATERAL(
 			SELECT conversation_id, text, lm.created_at,
 				CASE WHEN media_url IS NULL THEN FALSE ELSE TRUE END AS is_media,
 				CASE WHEN original_id IS NULL THEN FALSE ELSE TRUE END AS is_repost,
 				CASE WHEN post_id IS NULL THEN FALSE ELSE TRUE END AS is_post,
-				u.id AS m_user_id, u.username AS m_username, u.name AS m_name, u.avatar_url AS m_avatar_url,
-				u.avatar_type AS m_avatar_type, u.is_deleted AS m_user_deleted
+				lu.id AS m_user_id, lu.username AS m_username, lu.name AS m_name, lu.avatar_url AS m_avatar_url,
+				lu.avatar_type AS m_avatar_type, lu.is_deleted AS m_user_deleted
 			FROM messages AS lm
-			LEFT JOIN USERS AS u ON lm.user_id = u.id
+			LEFT JOIN USERS AS lu ON lm.user_id = lu.id
+			WHERE conversation_id = c.id AND (lu.id = $1 AND lm.is_deleted = 0 OR lu.id != $1 AND lm.is_deleted != 1)
 			ORDER BY lm.created_at DESC
 			LIMIT 1
-		) lm ON lm.conversation_id = c.id
+		) lm ON TRUE
+		WHERE c.is_deleted != 1
 		GROUP BY c.id, u.user_id, u.username, u.name, u.avatar_url, u.avatar_type, u.user_deleted,
 			lm.conversation_id, lm.text, lm.created_at, lm.is_media, lm.is_repost, lm.is_post,
 			lm.m_user_id, lm.m_username, lm.m_name, lm.m_avatar_url, lm.m_avatar_type, lm.m_user_deleted
@@ -170,17 +172,8 @@ func AddUsersToConversation(userId, convId string, users []string) error {
 
 	if !c.CanAddUsers && userId != c.CreatorId {
 		return ErrCannotAddUser
-	} else if c.CanAddUsers && userId != c.CreatorId {
-		var found string
-		err := db.Client.QueryRow(`
-			SELECT p.user_id 
-			FROM conversations AS c 
-			INNER JOIN participants AS p ON c.id = p.conversation_id
-			WHERE c.id = $1 AND p.user_id = $2 AND p.has_left = false AND p.is_kicked = false;
-		`, convId, userId).Scan(&found)
-		if err != nil {
-			return err
-		}
+	} else if c.CanAddUsers && userId != c.CreatorId && !isParticipant(convId, userId) {
+		return ErrForbidden
 	}
 
 	args := make([]any, 1, len(users)+1)
@@ -350,3 +343,9 @@ func JoinConversation(convId, userId string) error {
 
 	return nil
 }
+
+/*
+TODO
+func EditConversation(c *EditConversationRequest, userId string) error {}
+func DeleteConversation(convId, userId string) error {}
+*/

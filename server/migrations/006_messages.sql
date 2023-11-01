@@ -7,7 +7,7 @@ BEGIN
     OR NEW.text != OLD.text OR NEW.is_deleted != OLD.is_deleted
     OR NEW.media_url != OLD.media_url 
   THEN
-    INSERT INTO post_changes (text, media_url, media_type, is_deleted, message_id)
+    INSERT INTO message_changes (text, media_url, media_type, is_deleted, message_id)
     VALUES (NEW.text, NEW.media_url, NEW.media_type, NEW.is_deleted, NEW.id);
   END IF;
 
@@ -49,6 +49,13 @@ END;
 $$ LANGUAGE plpgsql;
 -- +goose StatementEnd
 
+DROP TRIGGER IF EXISTS message_change ON messages;
+
+CREATE TRIGGER message_change
+AFTER INSERT OR UPDATE ON messages
+FOR EACH ROW
+EXECUTE PROCEDURE on_message_change();
+
 CREATE TRIGGER check_message
 BEFORE INSERT ON messages
 FOR EACH ROW
@@ -65,8 +72,8 @@ ADD COLUMN media_type media_type;
 CREATE OR REPLACE FUNCTION on_message_change()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW.text != OLD.text OR NEW.is_deleted != OLD.is_deleted THEN
-    INSERT INTO post_changes (text, is_deleted, message_id)
+  IF NEW.text != OLD.text OR NEW.is_deleted = 1 AND OLD.is_deleted != 1 THEN
+    INSERT INTO message_changes (text, is_deleted, message_id)
     VALUES (NEW.text, NEW.is_deleted, NEW.id);
   END IF;
 
@@ -80,6 +87,13 @@ $$ LANGUAGE plpgsql;
 -- +goose StatementEnd
 
 DROP FUNCTION IF EXISTS check_message CASCADE;
+
+DROP TRIGGER IF EXISTS message_change ON messages;
+
+CREATE TRIGGER message_change
+BEFORE UPDATE ON messages
+FOR EACH ROW
+EXECUTE PROCEDURE on_message_change();
 
 ALTER TABLE conversations DROP COLUMN IF EXISTS name;
 

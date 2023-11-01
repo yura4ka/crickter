@@ -32,6 +32,22 @@ type Conversation struct {
 	LastMessage *MessageShort `json:"lastMessage,omitempty"`
 }
 
+type Message struct {
+	Id             string        `json:"id"`
+	CreatedAt      string        `json:"createdAt"`
+	UpdatedAt      *string       `json:"updatedAt,omitempty"`
+	Text           *string       `json:"text,omitempty"`
+	Media          *MessageMedia `json:"media,omitempty"`
+	IsDeleted      int           `json:"isDeleted"`
+	UserId         *string       `json:"userId,omitempty"`
+	ConversationId *string       `json:"conversationId,omitempty"`
+	OriginalId     *string       `json:"originalId,omitempty"`
+	ResponseToId   *string       `json:"responseToId,omitempty"`
+	PostId         *string       `json:"postId,omitempty"`
+	IsRead         bool          `json:"isRead"`
+	User           *MessageUser  `json:"user,omitempty"`
+}
+
 func (u *MessageUser) SqlClean() {
 	if *u.IsDeleted {
 		*u = MessageUser{IsDeleted: u.IsDeleted}
@@ -50,5 +66,25 @@ func (c *Conversation) SqlClean() {
 
 	if c.LastMessage.ConversationId == nil {
 		c.LastMessage = nil
+	}
+}
+
+func (m *Message) SqlClean() {
+	m.UserId = nil
+	m.ConversationId = nil
+
+	if m.Media.Url == nil {
+		m.Media = nil
+	}
+
+	if m.CreatedAt == *m.UpdatedAt {
+		m.UpdatedAt = nil
+	}
+
+	if m.IsDeleted == 1 {
+		m.Text = nil
+		m.Media = nil
+		m.User = nil
+		m.UpdatedAt = nil
 	}
 }

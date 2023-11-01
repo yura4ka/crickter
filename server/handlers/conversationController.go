@@ -119,3 +119,16 @@ func JoinConversation(c *fiber.Ctx) error {
 	}
 	return c.SendStatus(200)
 }
+
+func GetMessages(c *fiber.Ctx) error {
+	userId, _ := c.Locals("userId").(string)
+	convId := c.Params("id")
+
+	m, err := services.GetMessages(convId, userId)
+	if err != nil {
+		log.Print(err)
+		return c.SendStatus(400)
+	}
+
+	return c.JSON(m)
+}

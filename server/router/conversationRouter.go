@@ -15,5 +15,6 @@ func addConversationRouter(app *fiber.App) {
 	conversation.Post("/:id/kick", middleware.RequireAuth, handlers.KickUser)
 	conversation.Post("/:id/leave", middleware.RequireAuth, handlers.LeaveConversation)
 	conversation.Post("/:id/join", middleware.RequireAuth, handlers.JoinConversation)
+	conversation.Get("/:id/messages", middleware.RequireAuth, handlers.GetMessages)
 	conversation.Get("/:id", middleware.RequireAuth, handlers.GetConversationInfo)
 }
