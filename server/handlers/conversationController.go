@@ -132,3 +132,33 @@ func GetMessages(c *fiber.Ctx) error {
 
 	return c.JSON(m)
 }
+
+func EditConversation(c *fiber.Ctx) error {
+	input := new(services.EditConversationRequest)
+	if err := c.BodyParser(&input); err != nil {
+		return c.SendStatus(400)
+	}
+	userId, _ := c.Locals("userId").(string)
+	convId := c.Params("id")
+
+	err := services.EditConversation(input, convId, userId)
+	if err != nil {
+		log.Print(err)
+		return c.SendStatus(400)
+	}
+
+	return c.SendStatus(200)
+}
+
+func DeleteConversation(c *fiber.Ctx) error {
+	userId, _ := c.Locals("userId").(string)
+	convId := c.Params("id")
+
+	err := services.DeleteConversation(convId, userId)
+	if err != nil {
+		log.Print(err)
+		return c.SendStatus(400)
+	}
+
+	return c.SendStatus(200)
+}

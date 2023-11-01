@@ -126,11 +126,15 @@ func GetConversations(userId string) ([]Conversation, error) {
 		ORDER BY c.created_at DESC, lm.created_at DESC;
 	`, userId)
 
+	result := make([]Conversation, 0)
+
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return result, nil
+		}
 		return nil, err
 	}
 
-	var result []Conversation
 	result, err = scanner.ScanRows(result, rows)
 	if err != nil {
 		return nil, err
@@ -140,17 +144,17 @@ func GetConversations(userId string) ([]Conversation, error) {
 }
 
 type convSmall struct {
-	ConvType, CreatorId string
-	CanAddUsers         bool
+	ConvType, CreatorId        string
+	CanAddUsers, HasInviteLink bool
 }
 
 func getConversationById(id string) (*convSmall, error) {
 	var c convSmall
 
 	row := db.Client.QueryRow(`
-		SELECT type, creator_id, can_add_users
+		SELECT type, creator_id, can_add_users, has_invite_link
 		FROM conversations
-		WHERE id = $1;
+		WHERE id = $1 AND is_deleted != 1;
 	`, id)
 
 	err := scanner.Scan(row, &c)
@@ -292,7 +296,7 @@ func GetConversationInfo(convId, userId string) (*ConversationInfo, error) {
 		FROM conversations AS c
 		LEFT JOIN participants AS p ON c.id = p.conversation_id
 		LEFT JOIN users AS u ON p.user_id = u.id
-		WHERE c.id = $1 AND p.has_left = false AND p.is_kicked = false;
+		WHERE c.is_deleted != 1 AND c.id = $1 AND p.has_left = false AND p.is_kicked = false;
 	`, convId)
 	if err != nil {
 		return nil, err
@@ -325,8 +329,17 @@ func GetConversationInfo(convId, userId string) (*ConversationInfo, error) {
 }
 
 func JoinConversation(convId, userId string) error {
+	c, err := getConversationById(convId)
+	if err != nil {
+		return err
+	}
+
+	if !c.HasInviteLink {
+		return ErrForbidden
+	}
+
 	var isKicked bool
-	err := db.Client.QueryRow(`
+	err = db.Client.QueryRow(`
 		INSERT INTO participants (conversation_id, user_id)
 		VALUES ($1, $2)
 		ON CONFLICT ON CONSTRAINT participants_pkey 
@@ -344,8 +357,66 @@ func JoinConversation(convId, userId string) error {
 	return nil
 }
 
-/*
-TODO
-func EditConversation(c *EditConversationRequest, userId string) error {}
-func DeleteConversation(convId, userId string) error {}
-*/
+type EditConversationRequest struct {
+	Name          *string `json:"name"`
+	CanAddUsers   *bool   `json:"canAddUsers"`
+	HasInviteLink *bool   `json:"hasInviteLinks"`
+	CreatorId     *string `json:"creatorId"`
+}
+
+func EditConversation(changes *EditConversationRequest, convId, userId string) error {
+	c, err := getConversationById(convId)
+	if err != nil {
+		return err
+	}
+
+	if c.CreatorId != userId || c.ConvType != "group" {
+		return ErrForbidden
+	}
+
+	queries := make([]string, 0)
+	args := make([]any, 0)
+	argsCount := 1
+
+	if changes.Name != nil {
+		queries = append(queries, fmt.Sprintf("name = $%d", argsCount))
+		args = append(args, *changes.Name)
+		argsCount++
+	}
+	if changes.CanAddUsers != nil {
+		queries = append(queries, fmt.Sprintf("can_add_users = $%d", argsCount))
+		args = append(args, *changes.CanAddUsers)
+		argsCount++
+	}
+	if changes.HasInviteLink != nil {
+		queries = append(queries, fmt.Sprintf("has_invite_link = $%d", argsCount))
+		args = append(args, *changes.HasInviteLink)
+		argsCount++
+	}
+	if changes.CreatorId != nil && *changes.CreatorId != userId {
+		if !isParticipant(convId, *changes.CreatorId) {
+			return ErrForbidden
+		}
+		queries = append(queries, fmt.Sprintf("creator_id = $%d", argsCount))
+		args = append(args, *changes.CreatorId)
+		argsCount++
+	}
+
+	args = append(args, convId)
+
+	_, err = db.Client.Exec(
+		"UPDATE conversations SET\n"+strings.Join(queries, ", ")+fmt.Sprintf("\nWHERE id = $%d", argsCount),
+		args...,
+	)
+
+	return err
+}
+
+func DeleteConversation(convId, userId string) error {
+	_, err := db.Client.Exec(`
+		UPDATE conversations SET is_deleted = 1
+		WHERE id = $1 AND creator_id = $2;
+	`, convId, userId)
+
+	return err
+}

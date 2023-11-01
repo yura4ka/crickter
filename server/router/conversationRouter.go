@@ -17,4 +17,6 @@ func addConversationRouter(app *fiber.App) {
 	conversation.Post("/:id/join", middleware.RequireAuth, handlers.JoinConversation)
 	conversation.Get("/:id/messages", middleware.RequireAuth, handlers.GetMessages)
 	conversation.Get("/:id", middleware.RequireAuth, handlers.GetConversationInfo)
+	conversation.Patch("/:id", middleware.RequireAuth, handlers.EditConversation)
+	conversation.Delete("/:id", middleware.RequireAuth, handlers.DeleteConversation)
 }
