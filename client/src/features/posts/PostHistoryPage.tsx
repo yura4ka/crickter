@@ -41,9 +41,11 @@ const PostHistoryPage = () => {
                 timeStyle: "medium",
               })}
             </time>
-            <h3 className="italic text-muted-foreground">
-              {h.isDeleted ? "deleted" : `text ${h.text ? "changed:" : "deleted"}`}
-            </h3>
+            {h.text !== undefined && (
+              <h3 className="italic text-muted-foreground">
+                {h.isDeleted ? "deleted" : `text ${h.text ? "changed:" : "deleted"}`}
+              </h3>
+            )}
             {!h.isDeleted && h.text && <div>{formatText(h.text)}</div>}
             {h.addMedia.length !== 0 && (
               <div>

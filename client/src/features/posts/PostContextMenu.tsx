@@ -80,12 +80,14 @@ const PostContextMenu = ({ children, userId, post, handleEditing }: Props) => {
                 <History className="mr-2 h-4 w-4" />
                 <span>View history</span>
               </DropdownMenuItem>
-              <DropdownMenuCheckboxItem
-                checked={post.canComment}
-                onCheckedChange={handleCanCommentChange}
-              >
-                Allow Comments
-              </DropdownMenuCheckboxItem>
+              {!post.commentToId && (
+                <DropdownMenuCheckboxItem
+                  checked={post.canComment}
+                  onCheckedChange={handleCanCommentChange}
+                >
+                  Allow Comments
+                </DropdownMenuCheckboxItem>
+              )}
               <DropdownMenuItem onClick={() => handleEditing(true)}>
                 <Pencil className="mr-2 h-4 w-4" />
                 <span>Edit Post</span>

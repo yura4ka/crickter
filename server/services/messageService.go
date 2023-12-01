@@ -219,7 +219,7 @@ type MessageChange struct {
 
 func GetMessageChanges(messageId, userId string) ([]MessageChange, error) {
 	rows, err := db.Client.Query(`
-		SELECT c.id, c.created_a  t, c.text, c.is_deleted, c.media_type, c.media_url
+		SELECT c.id, c.created_at, c.text, c.is_deleted, c.media_type, c.media_url
 		FROM messages AS m
 		LEFT JOIN message_changes AS c ON m.id = c.message_id
 		WHERE m.id = $1 AND m.user_id = $2

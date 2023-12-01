@@ -16,6 +16,8 @@ BEGIN
     RETURN NEW;
   END IF;
 
+  DELETE FROM post_tags WHERE post_id = NEW.id;
+
   FOR tag IN
     SELECT DISTINCT lower((regexp_matches(NEW.text, '\Y#(\w+)', 'gm'))[1]) AS name
   LOOP
