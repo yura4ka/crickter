@@ -7,6 +7,14 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+  cassandra:
+    image: cassandra
+    restart: always
+    ports:
+      - "9042:9042"
+    volumes:
+      - cassandra_data:/var/lib/cassandra
 
 volumes:
   pgdata:
+  cassandra_data:
