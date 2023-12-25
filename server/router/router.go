@@ -10,4 +10,5 @@ func SetupRouter(app *fiber.App) {
 	addTagRouter(app)
 	addConversationRouter(app)
 	addMessageRouter(app)
+	addCassandraRouter(app)
 }

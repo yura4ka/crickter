@@ -5,10 +5,12 @@ import (
 	"log"
 	"os"
 
+	"github.com/gocql/gocql"
 	_ "github.com/lib/pq"
 )
 
 var Client *sql.DB
+var Cassandra *gocql.Session
 
 func Connect() {
 	var err error
@@ -16,5 +18,13 @@ func Connect() {
 
 	if err != nil {
 		log.Fatalf("failed opening connection to postgres: %v", err)
+	}
+
+	cluster := gocql.NewCluster("localhost:9042")
+	cluster.Keyspace = "db"
+	cluster.Consistency = gocql.Quorum
+	Cassandra, err = cluster.CreateSession()
+	if err != nil {
+		log.Fatal(err)
 	}
 }

@@ -11,7 +11,7 @@ import (
 	"github.com/yura4ka/crickter/db"
 )
 
-const POSTS_PER_PAGE = 10
+const POSTS_PER_PAGE = 100
 
 type Post struct {
 	Id, UserId, Text       string
