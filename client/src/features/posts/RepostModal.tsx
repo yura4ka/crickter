@@ -13,7 +13,7 @@ const RepostModal = () => {
         <DialogHeader>
           <DialogTitle>Make a repost</DialogTitle>
         </DialogHeader>
-        <CreatePost repostOf={post} originalId={post.id} onPostCreated={hideModal} />
+        <CreatePost repostOf={post} originalId={post.id} onSubmitted={hideModal} />
       </DialogContent>
     </Dialog>
   );
