@@ -17,9 +17,13 @@ func init() {
 	location, _ := time.LoadLocation("UTC")
 	time.Local = location
 
+	if mode := os.Getenv("MODE"); mode == "PROD" {
+		return;
+	}
+
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Print("Error loading .env file")
 	}
 }
 
@@ -27,7 +31,7 @@ func main() {
 	app := fiber.New()
 	app.Use(logger.New())
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "http://localhost:5173",
+		AllowOrigins:     os.Getenv("CLIENT_ADDR"),
 		AllowCredentials: true,
 	}))
 
