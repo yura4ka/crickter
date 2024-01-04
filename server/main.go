@@ -18,7 +18,7 @@ func init() {
 	time.Local = location
 
 	if mode := os.Getenv("MODE"); mode == "PROD" {
-		return;
+		return
 	}
 
 	err := godotenv.Load()
@@ -38,5 +38,12 @@ func main() {
 	db.Connect()
 	router.SetupRouter(app)
 
-	log.Fatal(app.Listen(os.Getenv("SERVER_ADDR")))
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = ":8000"
+	} else {
+		port = ":" + port
+	}
+
+	log.Fatal(app.Listen(port))
 }
