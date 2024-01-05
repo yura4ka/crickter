@@ -26,16 +26,18 @@ const Feed = () => {
     }),
   });
 
+  const isLoading = isFetching || isAuthLoading;
+
   const loaderDiv = useRef<HTMLDivElement>(null);
   useInfiniteScroll(loaderDiv, () => {
-    if (hasMore && !isFetching && !isAuthLoading) {
+    if (hasMore && !isLoading) {
       setPage((p) => p + 1);
     }
   });
 
   return (
     <div className="divide-y">
-      {posts.length === 0 && (
+      {!isLoading && posts.length === 0 && (
         <div className="pt-4 text-center text-xl">No posts here...</div>
       )}
       {posts.map((p) => (
@@ -44,7 +46,7 @@ const Feed = () => {
       <PostCard
         ref={loaderDiv}
         post={undefined}
-        className={hasMore || isFetching ? "" : "hidden"}
+        className={hasMore || isLoading ? "" : "hidden"}
       />
     </div>
   );

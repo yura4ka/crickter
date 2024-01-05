@@ -25,9 +25,11 @@ const TagPostsPage = () => {
     }
   );
 
+  const isLoading = isFetching || isAuthLoading;
+
   const loaderDiv = useRef<HTMLDivElement>(null);
   useInfiniteScroll(loaderDiv, () => {
-    if (hasMore && !isFetching && !isAuthLoading) {
+    if (hasMore && !isLoading) {
       setPage((p) => p + 1);
     }
   });
@@ -43,7 +45,7 @@ const TagPostsPage = () => {
         <Hash />
         {tag}
       </h1>
-      {posts.length === 0 && !isFetching && (
+      {!isLoading && posts.length === 0 && (
         <div className="px-2 pt-4 text-center text-xl">
           There aren't any posts with this tags...
         </div>
@@ -67,7 +69,7 @@ const TagPostsPage = () => {
         <PostCard
           ref={loaderDiv}
           post={undefined}
-          className={hasMore || isFetching ? "" : "hidden"}
+          className={hasMore || isLoading ? "" : "hidden"}
         />
       </div>
     </main>

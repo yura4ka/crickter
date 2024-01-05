@@ -199,10 +199,12 @@ const UserInfo = ({ id }: { id: string }) => {
 };
 
 const Feed = ({ id }: { id: string }) => {
+  const { isLoading: isAuthLoading } = useAuth();
   const [page, setPage] = useState(1);
   const { posts, hasMore, isFetching } = useGetUserPostsQuery(
     { page, id },
     {
+      skip: isAuthLoading,
       selectFromResult: ({ data, ...other }) => ({
         posts: postsSelector.selectAll(data?.posts ?? postsAdapter.getInitialState()),
         hasMore: data?.hasMore,
@@ -210,16 +212,19 @@ const Feed = ({ id }: { id: string }) => {
       }),
     }
   );
+
+  const isLoading = isFetching || isAuthLoading;
+
   const loaderDiv = useRef<HTMLDivElement>(null);
   useInfiniteScroll(loaderDiv, () => {
-    if (hasMore && !isFetching) {
+    if (hasMore && !isLoading) {
       setPage((p) => p + 1);
     }
   });
 
   return (
     <div className="divide-y">
-      {posts.length === 0 && !isFetching && (
+      {posts.length === 0 && !isLoading && (
         <div className="pt-4 text-center text-xl">No posts here...</div>
       )}
       {posts.map((p) => (
@@ -228,7 +233,7 @@ const Feed = ({ id }: { id: string }) => {
       <PostCard
         ref={loaderDiv}
         post={undefined}
-        className={hasMore || isFetching ? "" : "hidden"}
+        className={hasMore || isLoading ? "" : "hidden"}
       />
     </div>
   );

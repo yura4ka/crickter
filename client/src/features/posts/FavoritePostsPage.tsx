@@ -17,9 +17,11 @@ const FavoritePostsPage = () => {
     }),
   });
 
+  const isLoading = isFetching || isAuthLoading;
+
   const loaderDiv = useRef<HTMLDivElement>(null);
   useInfiniteScroll(loaderDiv, () => {
-    if (hasMore && !isFetching && !isAuthLoading) {
+    if (hasMore && !isLoading) {
       setPage((p) => p + 1);
     }
   });
@@ -30,7 +32,7 @@ const FavoritePostsPage = () => {
         <Bookmark className="fill-reaction" />
         favorite posts
       </h1>
-      {posts.length === 0 && !isFetching && (
+      {posts.length === 0 && !isLoading && (
         <div className="px-2 pt-4 text-center text-xl">
           You don't have any favorite posts now...
         </div>
@@ -42,7 +44,7 @@ const FavoritePostsPage = () => {
         <PostCard
           ref={loaderDiv}
           post={undefined}
-          className={hasMore || isFetching ? "" : "hidden"}
+          className={hasMore || isLoading ? "" : "hidden"}
         />
       </div>
     </main>

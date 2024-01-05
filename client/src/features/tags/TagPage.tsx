@@ -18,9 +18,11 @@ const TagPage = () => {
     }),
   });
 
+  const isLoading = isFetching || isAuthLoading;
+
   const loaderDiv = useRef<HTMLDivElement>(null);
   useInfiniteScroll(loaderDiv, () => {
-    if (hasMore && !isFetching && !isAuthLoading) {
+    if (hasMore && !isLoading) {
       setPage((p) => p + 1);
     }
   });
@@ -31,7 +33,7 @@ const TagPage = () => {
         <Hash />
         trending tags
       </h1>
-      {tags.length === 0 && (
+      {!isLoading && tags.length === 0 && (
         <div className="pt-4 text-center text-xl">Nothing here...</div>
       )}
       <div className="mx-2 mt-4 grid gap-4 sm:mx-0">
@@ -53,7 +55,7 @@ const TagPage = () => {
         ))}
         <div
           ref={loaderDiv}
-          className={hasMore || isFetching ? "rounded border p-2" : "hidden"}
+          className={hasMore || isLoading ? "rounded border p-2" : "hidden"}
         >
           <Skeleton className="mb-1.5 h-[18px] w-[160px]" />
           <Skeleton className="h-[14px] w-[60px]" />
