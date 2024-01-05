@@ -105,6 +105,7 @@ const CreatePost: FC<Props> = ({
 
   const formRef = useRef<HTMLFormElement>(null);
   const uploaderRef = useRef<UploadCtxProvider>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleUpload = useCallback(
     (e: CustomEvent<UploadEventDetails>) => {
@@ -147,6 +148,11 @@ const CreatePost: FC<Props> = ({
     };
   }, [handleUpload, initMedia]);
 
+  const resizeTextArea = (element: HTMLTextAreaElement, reset = false) => {
+    element.style.height = "";
+    if (!reset) element.style.height = element.scrollHeight + "px";
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const v = value.trim();
@@ -165,6 +171,7 @@ const CreatePost: FC<Props> = ({
       await changePost({ post: edit, changes: { text: v, canComment, media } }).unwrap();
     setValue("");
     setMedia([]);
+    if (textareaRef.current) resizeTextArea(textareaRef.current, true);
     uploaderRef.current?.uploadCollection.clearAll();
     onSubmitted?.();
   };
@@ -234,6 +241,7 @@ const CreatePost: FC<Props> = ({
         >
           {type !== "response" ? (
             <Textarea
+              ref={textareaRef}
               value={value}
               name="text"
               onChange={(e) => setValue(e.target.value)}
@@ -245,10 +253,9 @@ const CreatePost: FC<Props> = ({
                 repostOf &&
                   "min-h-[20px] border-0 ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
               )}
-              onInput={(e) => {
-                e.currentTarget.style.height = "";
-                e.currentTarget.style.height = e.currentTarget.scrollHeight + "px";
-              }}
+              onInput={(e) => resizeTextArea(e.currentTarget)}
+              onFocus={(e) => resizeTextArea(e.currentTarget)}
+              autoFocus={!!edit}
               onKeyDown={(e) => {
                 if (e.key !== "Enter" || e.shiftKey) return;
                 formRef.current?.requestSubmit();
