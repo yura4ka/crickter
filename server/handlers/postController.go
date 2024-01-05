@@ -196,3 +196,29 @@ func GetPostHistory(c *fiber.Ctx) error {
 		"media":   history.Media,
 	})
 }
+
+func GetPostsBySearch(c *fiber.Ctx) error {
+	q := c.Query("q")
+	if q == "" {
+		return c.SendStatus(400)
+	}
+	userId, _ := c.Locals("userId").(string)
+	page := c.QueryInt("page", 1)
+
+	posts, err := services.SearchPosts(q, page, userId)
+	if err != nil {
+		log.Print(err)
+		return c.SendStatus(400)
+	}
+
+	hasMore, err := services.HasSearchMorePosts(q, page)
+	if err != nil {
+		log.Print(err)
+		return c.SendStatus(400)
+	}
+
+	return c.JSON(fiber.Map{
+		"posts":   posts,
+		"hasMore": hasMore,
+	})
+}

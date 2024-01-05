@@ -304,6 +304,7 @@ type QueryParams struct {
 	OrderBy                                                   TSortBy
 	IsFavorite                                                bool
 	Tag                                                       string
+	Search                                                    string
 }
 
 func buildPostQuery(params *QueryParams) (string, []interface{}) {
@@ -386,6 +387,9 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 			WHERE t.name = $2 AND p.is_deleted = FALSE
 			`
 		args = append(args, params.Tag)
+	} else if params.Search != "" {
+		query += "\nWHERE plainto_tsquery($2) @@ p.post_tsv\n"
+		args = append(args, params.Search)
 	} else {
 		query += "\nWHERE p.comment_to_id IS NULL AND p.is_deleted = FALSE\n"
 	}
@@ -676,4 +680,23 @@ func GetPostHistory(postId string) (*PostHistory, error) {
 	}
 
 	return &result, nil
+}
+
+func SearchPosts(q string, page int, userId string) ([]PostsResult, error) {
+	query, args := buildPostQuery(&QueryParams{RequestUserId: userId, Search: q, Page: page})
+	rows, err := db.Client.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return parsePosts(rows)
+}
+
+func HasSearchMorePosts(q string, page int) (bool, error) {
+	var total int
+	err := db.Client.QueryRow("SELECT COUNT(*) FROM posts WHERE plainto_tsquery($1) @@ post_tsv;", q).Scan(&total)
+	if err != nil {
+		return false, err
+	}
+	return total > page*POSTS_PER_PAGE, nil
 }
