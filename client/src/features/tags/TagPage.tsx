@@ -31,6 +31,9 @@ const TagPage = () => {
         <Hash />
         trending tags
       </h1>
+      {tags.length === 0 && (
+        <div className="pt-4 text-center text-xl">Nothing here...</div>
+      )}
       <div className="mx-2 mt-4 grid gap-4 sm:mx-0">
         {tags.map((t) => (
           <Link

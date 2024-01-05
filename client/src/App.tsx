@@ -81,10 +81,15 @@ const Trends = () => {
             </Link>
           ))
         )}
+        {tags && tags.length === 0 && (
+          <p className="px-2 py-4 text-lg">Nothing here...</p>
+        )}
       </div>
-      <Link to="tags" className="link block border-t border-accent-border p-2">
-        Show more
-      </Link>
+      {tags && tags.length !== 0 && (
+        <Link to="tags" className="link block border-t border-accent-border p-2">
+          Show more
+        </Link>
+      )}
     </div>
   );
 };

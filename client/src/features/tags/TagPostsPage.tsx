@@ -58,7 +58,7 @@ const TagPostsPage = () => {
               className={cn(p.commentToId && "pb-0 sm:pb-0")}
             />
             {p.commentToId && (
-              <Link to={"/post/" + p.commentToId} className="link mb-2 block px-2">
+              <Link to={"/post/" + p.commentToId} className="link mb-2 inline-block px-2">
                 view thread
               </Link>
             )}
