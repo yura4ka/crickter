@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { useAuth } from "./features/auth/useAuth";
 import CreatePost from "./features/posts/CreatePost";
 import PostCard from "./features/posts/PostCard";
@@ -9,7 +9,7 @@ import {
 } from "./features/posts/postsApiSlice";
 import { useInfiniteScroll } from "./lib/hooks";
 import { useGetPopularTagsQuery } from "./features/tags/tagsApiSlice";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Skeleton } from "./components/ui/skeleton";
 import { Input } from "./components/ui/input";
 import { Search } from "lucide-react";
@@ -100,9 +100,23 @@ const Trends = () => {
 };
 
 const PostSearch = () => {
+  const [value, setValue] = useState("");
+  const navigate = useNavigate();
+
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (value.trim()) navigate(`post/search?q=${value.trim()}`);
+  };
+
   return (
-    <form className="relative">
-      <Input name="search" placeholder="Search" className="bg-muted pl-9" />
+    <form onSubmit={onSubmit} className="relative">
+      <Input
+        name="search"
+        placeholder="Search"
+        className="bg-muted pl-9"
+        value={value}
+        onChange={(e) => setValue(e.currentTarget.value)}
+      />
       <Search className="absolute left-2 top-1/2 h-5 w-5 -translate-y-1/2" />
     </form>
   );

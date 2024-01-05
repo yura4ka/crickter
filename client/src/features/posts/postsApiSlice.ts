@@ -377,6 +377,37 @@ export const postApi = api.injectEndpoints({
         );
       },
     }),
+
+    searchPost: builder.query<PostsResponse, { query: string; page: number }>({
+      query: ({ query, page }) => ({ url: "post/search", params: { q: query, page } }),
+      keepUnusedDataFor: 0,
+      transformResponse: ({ posts, hasMore }: { posts: Post[]; hasMore: boolean }) => {
+        return {
+          posts: postsAdapter.setMany(postsAdapter.getInitialState(), posts),
+          hasMore,
+        };
+      },
+      serializeQueryArgs: ({ endpointName }) => {
+        return endpointName;
+      },
+      merge: (currentCache, newItems) => {
+        postsAdapter.setMany(currentCache.posts, postsSelector.selectAll(newItems.posts));
+        currentCache.hasMore = newItems.hasMore;
+      },
+      forceRefetch({ currentArg, previousArg }) {
+        return (
+          currentArg?.page !== previousArg?.query ||
+          currentArg?.query !== previousArg?.query
+        );
+      },
+      providesTags: (result, _, { query }) =>
+        result
+          ? [
+              ...result.posts.ids.map((id) => ({ type: "Posts" as const, id, query })),
+              { type: "Posts", id: "SEARCH", query },
+            ]
+          : [{ type: "Posts", id: "SEARCH", query }],
+    }),
   }),
 });
 
@@ -390,4 +421,5 @@ export const {
   useChangePostMutation,
   useDeletePostMutation,
   useGetPostHistoryQuery,
+  useSearchPostQuery,
 } = postApi;

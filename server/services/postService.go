@@ -683,7 +683,7 @@ func GetPostHistory(postId string) (*PostHistory, error) {
 }
 
 func SearchPosts(q string, page int, userId string) ([]PostsResult, error) {
-	query, args := buildPostQuery(&QueryParams{RequestUserId: userId, Search: q, Page: page})
+	query, args := buildPostQuery(&QueryParams{RequestUserId: userId, Search: q, Page: page, OrderBy: SortNew})
 	rows, err := db.Client.Query(query, args...)
 	if err != nil {
 		return nil, err

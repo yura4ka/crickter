@@ -24,6 +24,7 @@ import TagPostsPage from "./features/tags/TagPostsPage.tsx";
 import HeadlessModal from "./lib/HeadlessModal.ts";
 import PostHistoryPage from "./features/posts/PostHistoryPage.tsx";
 import SettingsPage from "./features/user/SettingsPage.tsx";
+import SearchPostsPage from "./features/posts/SearchPostsPage.tsx";
 
 LR.registerBlocks({ ...LR, HeadlessModal });
 
@@ -33,6 +34,7 @@ const router = createBrowserRouter(
       <Route path="login" element={<Login />} />
       <Route path="register" element={<Register />} />
       <Route index element={<App />} />
+      <Route path="post/search" element={<SearchPostsPage />} />
       <Route path="post/:postId" element={<PostPage />} />
       <Route path="user/:userId" element={<UserPage />} />
       <Route path="tags" element={<TagPage />} />
