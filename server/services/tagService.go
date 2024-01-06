@@ -27,6 +27,8 @@ func GetTags(page int) ([]TagsResponse, error) {
 		SELECT t.name, COUNT(pt.post_id) as count, t.created_at
 		FROM tags AS t
 		LEFT JOIN post_tags AS pt ON t.id = pt.tag_id
+		LEFT JOIN posts AS p ON pt.post_id = p.id
+		WHERE p.is_deleted = FALSE
 		GROUP BY t.name, t.created_at
 		HAVING COUNT(pt.post_id) != 0
 		ORDER BY count DESC
@@ -57,6 +59,8 @@ func HasMoreTags(page int) (bool, error) {
 		SELECT COUNT(t.name)
 		FROM tags AS t
 		LEFT JOIN post_tags AS pt ON t.id = pt.tag_id
+		LEFT JOIN posts AS p ON pt.post_id = p.id
+		WHERE p.is_deleted = FALSE
 		GROUP BY t.name
 		HAVING COUNT(pt.post_id) != 0
 	`).Scan(&total)

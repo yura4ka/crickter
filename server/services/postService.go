@@ -388,7 +388,7 @@ func buildPostQuery(params *QueryParams) (string, []interface{}) {
 			`
 		args = append(args, params.Tag)
 	} else if params.Search != "" {
-		query += "\nWHERE plainto_tsquery($2) @@ p.post_tsv\n"
+		query += "\nWHERE plainto_tsquery($2) @@ p.post_tsv AND p.is_deleted = FALSE\n"
 		args = append(args, params.Search)
 	} else {
 		query += "\nWHERE p.comment_to_id IS NULL AND p.is_deleted = FALSE\n"
@@ -694,7 +694,10 @@ func SearchPosts(q string, page int, userId string) ([]PostsResult, error) {
 
 func HasSearchMorePosts(q string, page int) (bool, error) {
 	var total int
-	err := db.Client.QueryRow("SELECT COUNT(*) FROM posts WHERE plainto_tsquery($1) @@ post_tsv;", q).Scan(&total)
+	err := db.Client.QueryRow(`
+			SELECT COUNT(*) FROM posts WHERE plainto_tsquery($1) @@ post_tsv 
+			AND is_deleted = FALSE;`,
+		q).Scan(&total)
 	if err != nil {
 		return false, err
 	}
