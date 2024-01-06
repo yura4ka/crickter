@@ -55,7 +55,7 @@ const TagPostsPage = () => {
           <div key={p.id}>
             <PostCard
               post={p}
-              fromTag={tag}
+              from={{ tag }}
               type={p.commentToId ? "comment" : "post"}
               className={cn(p.commentToId && "pb-0 sm:pb-0")}
             />

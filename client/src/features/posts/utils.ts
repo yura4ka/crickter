@@ -11,6 +11,13 @@ import { userApi } from "../user/userApiSlice";
 import { commentApi, commentsAdapter, commentsSelector } from "./commentsApiSlice";
 import { tagsApi } from "../tags/tagsApiSlice";
 
+export interface PostOrigin {
+  tag?: string;
+  search?: string;
+}
+
+export type WithOrigin<T> = T & { from?: PostOrigin };
+
 export function getReactionChanges(post: Post | undefined, liked: boolean) {
   const r = liked ? 1 : -1;
   const changes = {
@@ -44,7 +51,7 @@ export type PostType = "post" | "comment" | "response";
 
 type TPostData = Pick<Post, "id"> &
   Partial<Pick<NormalPost, "commentToId" | "responseToId" | "user">> & {
-    fromTag?: string;
+    from?: PostOrigin;
   };
 
 export function updatePost(
@@ -135,12 +142,23 @@ export function updatePost(
       )
     );
 
-  if (post.fromTag)
+  if (post.from?.tag)
     result.push(
       dispatch(
         tagsApi.util.updateQueryData(
           "getTagPosts",
-          { tag: post.fromTag, page: 0 },
+          { tag: post.from.tag, page: 0 },
+          updateRecipe
+        )
+      )
+    );
+
+  if (post.from?.search)
+    result.push(
+      dispatch(
+        postApi.util.updateQueryData(
+          "searchPost",
+          { query: post.from.search, page: 0 },
           updateRecipe
         )
       )

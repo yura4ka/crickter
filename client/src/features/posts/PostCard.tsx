@@ -18,7 +18,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 import { FC, forwardRef, useState } from "react";
-import { PostType } from "./utils";
+import { PostOrigin, PostType } from "./utils";
 import { useAuth } from "../auth/useAuth";
 import { useLoginModal } from "../loginModal/useLoginModal";
 import { AvatarImage } from "@radix-ui/react-avatar";
@@ -67,7 +67,7 @@ interface Props {
   type?: PostType;
   hideControls?: boolean;
   onCommentClick?: () => void;
-  fromTag?: string;
+  from?: PostOrigin;
 }
 
 const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
@@ -78,7 +78,7 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
     onCommentClick,
     type = "post",
     hideControls,
-    fromTag,
+    from,
   } = props;
 
   const { isAuth, user } = useAuth();
@@ -99,7 +99,7 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
       showModal();
       return;
     }
-    handleReaction({ post: { ...p, fromTag }, liked });
+    handleReaction({ post: { ...p, from }, liked });
   };
 
   const onFavoriteClick = () => {
@@ -108,7 +108,7 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
       showModal();
       return;
     }
-    handleFavorite({ ...p, fromTag });
+    handleFavorite({ ...p, from });
   };
 
   if (p === undefined) {
@@ -130,7 +130,7 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
     return (
       <article ref={ref} className="py-4 pr-2 sm:py-6 sm:pr-0">
         <CreatePost
-          edit={p}
+          edit={{ ...p, from }}
           repostOf={original}
           type={type}
           onSubmitted={() => setIsEditing(false)}

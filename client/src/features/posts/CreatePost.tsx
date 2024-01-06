@@ -13,7 +13,7 @@ import {
 } from "./postsApiSlice";
 import SubmitButton from "@/components/SubmitButton";
 import { cn, optimizeImageUrl } from "@/lib/utils";
-import { PostType } from "./utils";
+import { PostType, WithOrigin } from "./utils";
 import { Input } from "@/components/ui/input";
 import PostCard from "./PostCard";
 import {
@@ -68,7 +68,7 @@ interface Props {
   originalId?: string;
   className?: string;
   repostOf?: Post;
-  edit?: NormalPost;
+  edit?: WithOrigin<NormalPost>;
 }
 
 const CreatePost: FC<Props> = ({

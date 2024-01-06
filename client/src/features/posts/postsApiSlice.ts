@@ -1,5 +1,5 @@
 import { api } from "@/app/api/apiSlice";
-import { getReactionChanges, updatePost } from "./utils";
+import { WithOrigin, getReactionChanges, updatePost } from "./utils";
 import { RootState } from "@/app/store";
 import { EntityState, createEntityAdapter } from "@reduxjs/toolkit";
 import {
@@ -75,7 +75,7 @@ export interface CreatePostRequest {
 }
 
 interface ReactionRequest {
-  post: Post & { fromTag?: string };
+  post: WithOrigin<Post>;
   liked: boolean;
 }
 
@@ -276,7 +276,7 @@ export const postApi = api.injectEndpoints({
           : [{ type: "Favorite", id: "LIST" }],
     }),
 
-    handleFavorite: builder.mutation<undefined, Post & { fromTag?: string }>({
+    handleFavorite: builder.mutation<undefined, WithOrigin<Post>>({
       query: ({ id }) => ({ url: "post/favorite", method: "POST", body: { postId: id } }),
       async onQueryStarted(post, { dispatch, queryFulfilled, getState }) {
         const user = (getState() as RootState).auth.user;
@@ -302,7 +302,7 @@ export const postApi = api.injectEndpoints({
 
     changePost: builder.mutation<
       undefined,
-      { post: NormalPost; changes: ChangePostRequest }
+      { post: WithOrigin<NormalPost>; changes: ChangePostRequest }
     >({
       query: ({ post, changes }) => ({
         url: `post/${post.id}`,
@@ -310,7 +310,7 @@ export const postApi = api.injectEndpoints({
         body: changes,
       }),
       invalidatesTags: (_result, _error, { post }) => [{ type: "History", id: post.id }],
-      async onQueryStarted({ post, changes }, { dispatch, queryFulfilled }) {
+      onQueryStarted: async ({ post, changes }, { dispatch, queryFulfilled }) => {
         await queryFulfilled;
         updatePost(dispatch, post, { ...changes, updatedAt: new Date().toString() });
       },
@@ -321,14 +321,6 @@ export const postApi = api.injectEndpoints({
         url: `post/${post.id}`,
         method: "DELETE",
       }),
-      invalidatesTags: (_result, _error, { id }) => [
-        { type: "Comments" },
-        { type: "Favorite" },
-        { type: "Posts" },
-        { type: "Tags" },
-        { type: "Users" },
-        { type: "History", id },
-      ],
       async onQueryStarted(post, { dispatch, queryFulfilled }) {
         await queryFulfilled;
         updatePost(dispatch, post, { isDeleted: true });
@@ -387,18 +379,15 @@ export const postApi = api.injectEndpoints({
           hasMore,
         };
       },
-      serializeQueryArgs: ({ endpointName }) => {
-        return endpointName;
+      serializeQueryArgs: ({ endpointName, queryArgs }) => {
+        return endpointName + queryArgs.query;
       },
       merge: (currentCache, newItems) => {
         postsAdapter.setMany(currentCache.posts, postsSelector.selectAll(newItems.posts));
         currentCache.hasMore = newItems.hasMore;
       },
       forceRefetch({ currentArg, previousArg }) {
-        return (
-          currentArg?.page !== previousArg?.query ||
-          currentArg?.query !== previousArg?.query
-        );
+        return currentArg?.page !== previousArg?.query;
       },
       providesTags: (result, _, { query }) =>
         result
