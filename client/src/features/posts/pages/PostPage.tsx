@@ -133,8 +133,8 @@ const PostPage = () => {
   }
 
   return (
-    <main className="overflow-x-hidden px-2 pb-4 sm:container">
-      <PostCard post={post} className="my-2 border-b" />
+    <>
+      <PostCard post={post} className="-mt-4 border-b" />
       <div className="pt-2">
         <h3 className="pb-4 text-lg">{total} comments</h3>
         {!post?.canComment && !isPostLoading ? (
@@ -168,7 +168,7 @@ const PostPage = () => {
           />
         </div>
       </div>
-    </main>
+    </>
   );
 };
 

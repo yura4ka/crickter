@@ -40,8 +40,8 @@ const TagPostsPage = () => {
   }
 
   return (
-    <main className="sm:container">
-      <h1 className="flex items-center gap-2 border-b p-4 text-xl font-bold">
+    <>
+      <h1 className="flex items-center gap-2 border-b p-4 pt-0 text-xl font-bold">
         <Hash />
         {tag}
       </h1>
@@ -50,7 +50,7 @@ const TagPostsPage = () => {
           There aren't any posts with this tags...
         </div>
       )}
-      <div className="divide-y px-4 sm:px-4">
+      <div className="divide-y">
         {posts.map((p) => (
           <div key={p.id}>
             <PostCard
@@ -72,7 +72,7 @@ const TagPostsPage = () => {
           className={hasMore || isLoading ? "" : "hidden"}
         />
       </div>
-    </main>
+    </>
   );
 };
 

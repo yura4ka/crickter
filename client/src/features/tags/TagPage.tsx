@@ -28,15 +28,15 @@ const TagPage = () => {
   });
 
   return (
-    <main className="sm:container">
-      <h1 className="flex items-center gap-2 border-b p-4 text-xl font-bold">
+    <>
+      <h1 className="flex items-center gap-2 border-b p-4 pt-0 text-xl font-bold">
         <Hash />
         trending tags
       </h1>
       {!isLoading && tags.length === 0 && (
         <div className="pt-4 text-center text-xl">Nothing here...</div>
       )}
-      <div className="mx-2 mt-4 grid gap-4 sm:mx-0">
+      <div className="mt-4 grid gap-4">
         {tags.map((t) => (
           <Link
             key={t.name}
@@ -61,7 +61,7 @@ const TagPage = () => {
           <Skeleton className="h-[14px] w-[60px]" />
         </div>
       </div>
-    </main>
+    </>
   );
 };
 

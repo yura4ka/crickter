@@ -128,7 +128,7 @@ const UserInfo = ({ id }: { id: string }) => {
 
   return (
     <>
-      <header className="mx-auto flex max-w-xl sm:max-w-4xl">
+      <header className="mx-auto flex sm:max-w-4xl">
         <div className="pr-4 sm:py-4 sm:pr-10 md:pr-20">
           <button
             onClick={() => uploaderRef.current?.initFlow()}
@@ -250,12 +250,12 @@ const UserPage = () => {
   }
 
   return (
-    <div className="p-4 sm:p-6">
+    <>
       <UserInfo id={userId} />
-      <main className="mt-4 border-t sm:container sm:mt-12">
+      <div className="mt-4 border-t sm:mt-6">
         <Feed id={userId} />
-      </main>
-    </div>
+      </div>
+    </>
   );
 };
 

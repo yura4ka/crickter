@@ -38,8 +38,8 @@ const SearchPostsPage = () => {
   if (!query) navigate("/");
 
   return (
-    <main className="sm:container">
-      <h1 className="flex items-center gap-2 border-b p-4 text-xl font-bold">
+    <>
+      <h1 className="flex items-center gap-2 border-b p-4 pt-0 text-xl font-bold">
         <SearchCheck /> Search result for: {query}
       </h1>
       <div className="divide-y">
@@ -67,7 +67,7 @@ const SearchPostsPage = () => {
           className={hasMore || isLoading ? "" : "hidden"}
         />
       </div>
-    </main>
+    </>
   );
 };
 

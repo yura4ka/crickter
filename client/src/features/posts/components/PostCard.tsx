@@ -190,7 +190,7 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
       ref={ref}
       className={cn("relative flex gap-3 py-4 pr-2 sm:gap-4 sm:py-6 sm:pr-0", className)}
     >
-      {isAuth && !p.isDeleted && !p.user.isDeleted && (
+      {isAuth && !p.isDeleted && !p.user.isDeleted && !hideControls && (
         <div className="absolute right-1 top-4">
           <PostContextMenu userId={user?.id} post={p} handleEditing={setIsEditing}>
             <Button variant="ghost" size="icon">

@@ -39,15 +39,17 @@ const router = createBrowserRouter(
 
       <Route element={<SidebarLayout />}>
         <Route index element={<App />} />
+        <Route path="post/search" element={<SearchPostsPage />} />
+        <Route path="post/:postId" element={<PostPage />} />
+        <Route path="tags" element={<TagPage />} />
+        <Route path="tags/:tag" element={<TagPostsPage />} />
+        <Route path="user/:userId" element={<UserPage />} />
       </Route>
-      <Route path="post/search" element={<SearchPostsPage />} />
-      <Route path="post/:postId" element={<PostPage />} />
-      <Route path="user/:userId" element={<UserPage />} />
-      <Route path="tags" element={<TagPage />} />
-      <Route path="tags/:tag" element={<TagPostsPage />} />
 
       <Route element={<AuthLayout />}>
-        <Route path="favorite" element={<FavoritePostsPage />} />
+        <Route element={<SidebarLayout />}>
+          <Route path="favorite" element={<FavoritePostsPage />} />
+        </Route>
         <Route path="post/:postId/history" element={<PostHistoryPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
