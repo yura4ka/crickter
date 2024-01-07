@@ -43,6 +43,8 @@ const router = createBrowserRouter(
         <Route path="post/:postId" element={<PostPage />} />
         <Route path="tags" element={<TagPage />} />
         <Route path="tags/:tag" element={<TagPostsPage />} />
+      </Route>
+      <Route element={<SidebarLayout show={{ trends: "desktop" }} />}>
         <Route path="user/:userId" element={<UserPage />} />
       </Route>
 

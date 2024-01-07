@@ -4,6 +4,7 @@ import { Skeleton } from "../ui/skeleton";
 import { useState } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { Input } from "../ui/input";
+import { cn } from "@/lib/utils";
 
 const Trends = () => {
   const { data: tags, isLoading } = useGetPopularTagsQuery();
@@ -75,12 +76,46 @@ const PostSearch = () => {
   );
 };
 
-const SidebarLayout = () => {
+type ShowMode = boolean | "mobile" | "desktop";
+
+type ContainerProps = {
+  mode: ShowMode | undefined;
+  children: React.ReactNode;
+};
+
+const SidebarContainer = ({ children, mode }: ContainerProps) => {
+  if (mode === false) return null;
+  if (mode === true || mode === undefined) return children;
+
+  return (
+    <div
+      className={cn(
+        mode === "mobile" && "lg:hidden",
+        mode === "desktop" && "hidden lg:block"
+      )}
+    >
+      {children}
+    </div>
+  );
+};
+
+type Props = {
+  show?: {
+    search?: ShowMode;
+    trends?: ShowMode;
+  };
+};
+
+const SidebarLayout = ({ show }: Props) => {
   return (
     <div className="flex flex-col gap-6 px-2 py-4 lg:container sm:px-4 lg:flex-row lg:gap-4 xl:px-8">
       <aside className="flex flex-col gap-4 lg:order-2 lg:w-1/4">
-        <PostSearch />
-        <Trends />
+        <SidebarContainer mode={show?.search}>
+          <PostSearch />
+        </SidebarContainer>
+        <SidebarContainer mode={show?.trends}>
+          <Trends />
+        </SidebarContainer>
       </aside>
       <main className="overflow-x-hidden lg:w-3/4 lg:border-r lg:pr-4">
         <Outlet />
