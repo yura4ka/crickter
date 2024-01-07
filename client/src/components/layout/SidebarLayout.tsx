@@ -1,8 +1,8 @@
 import { useGetPopularTagsQuery } from "@/features/tags/tagsApiSlice";
 import { Search } from "lucide-react";
 import { Skeleton } from "../ui/skeleton";
-import { useState } from "react";
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { Link, Outlet, useNavigate, useSearchParams } from "react-router-dom";
 import { Input } from "../ui/input";
 import { cn } from "@/lib/utils";
 
@@ -54,12 +54,18 @@ const Trends = () => {
 };
 
 const PostSearch = () => {
-  const [value, setValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [params] = useSearchParams();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (inputRef.current) inputRef.current.value = params.get("q") ?? "";
+  }, [params]);
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (value.trim()) navigate(`post/search?q=${value.trim()}`);
+    const value = inputRef.current?.value.trim();
+    if (value) navigate(`post/search?q=${value}`);
   };
 
   return (
@@ -68,8 +74,7 @@ const PostSearch = () => {
         name="search"
         placeholder="Search"
         className="bg-muted pl-9"
-        value={value}
-        onChange={(e) => setValue(e.currentTarget.value)}
+        ref={inputRef}
       />
       <Search className="absolute left-2 top-1/2 h-5 w-5 -translate-y-1/2" />
     </form>
