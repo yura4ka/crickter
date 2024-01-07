@@ -7,9 +7,9 @@ import {
   postsAdapter,
   postsSelector,
 } from "./postsApiSlice";
-import { userApi } from "../user/userApiSlice";
+import { userApi } from "../../user/userApiSlice";
 import { commentApi, commentsAdapter, commentsSelector } from "./commentsApiSlice";
-import { tagsApi } from "../tags/tagsApiSlice";
+import { tagsApi } from "../../tags/tagsApiSlice";
 
 export interface PostOrigin {
   tag?: string;

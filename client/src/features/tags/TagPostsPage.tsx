@@ -2,10 +2,10 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useGetTagPostsQuery } from "./tagsApiSlice";
 import { useAuth } from "../auth/useAuth";
 import { useRef, useState } from "react";
-import { postsAdapter, postsSelector } from "../posts/postsApiSlice";
+import { postsAdapter, postsSelector } from "../posts/slices/postsApiSlice";
 import { useInfiniteScroll } from "@/lib/hooks";
 import { Hash } from "lucide-react";
-import PostCard from "../posts/PostCard";
+import { PostCard } from "@/features/posts/components";
 import { cn } from "@/lib/utils";
 
 const TagPostsPage = () => {

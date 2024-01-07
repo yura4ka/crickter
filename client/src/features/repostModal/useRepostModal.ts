@@ -1,6 +1,6 @@
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import { show, hide, setOpen } from "./repostModalSlice";
-import { Post } from "./postsApiSlice";
+import { Post } from "../posts/slices/postsApiSlice";
 
 export const useRepostModal = () => {
   const { isOpen, post } = useAppSelector((state) => state.repostModal);

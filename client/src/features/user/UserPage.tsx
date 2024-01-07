@@ -7,9 +7,9 @@ import {
 } from "./userApiSlice";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { postsAdapter, postsSelector } from "../posts/postsApiSlice";
+import { postsAdapter, postsSelector } from "../posts/slices/postsApiSlice";
 import { useInfiniteScroll } from "@/lib/hooks";
-import PostCard from "../posts/PostCard";
+import { PostCard } from "@/features/posts/components";
 import { cn, optimizeImageUrl } from "@/lib/utils";
 import SubscribeButton from "./SubscribeButton";
 import {

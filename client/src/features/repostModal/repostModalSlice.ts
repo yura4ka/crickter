@@ -1,5 +1,5 @@
 import { PayloadAction, createSlice } from "@reduxjs/toolkit";
-import { Post } from "./postsApiSlice";
+import { Post } from "../posts/slices/postsApiSlice";
 
 interface ModalState {
   isOpen: boolean;

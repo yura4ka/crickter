@@ -1,6 +1,11 @@
 import { api } from "@/app/api/apiSlice";
 import { EntityState, createEntityAdapter } from "@reduxjs/toolkit";
-import { Post, PostsResponse, postsAdapter, postsSelector } from "../posts/postsApiSlice";
+import {
+  Post,
+  PostsResponse,
+  postsAdapter,
+  postsSelector,
+} from "../posts/slices/postsApiSlice";
 
 interface Tag {
   name: string;

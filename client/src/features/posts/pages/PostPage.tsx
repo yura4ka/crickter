@@ -1,19 +1,18 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { Post, useGetPostByIdQuery } from "./postsApiSlice";
-import PostCard from "./PostCard";
-import CreatePost from "./CreatePost";
+import { Post, useGetPostByIdQuery } from "../slices/postsApiSlice";
+import { CreatePost, PostCard } from "@/features/posts/components";
 import {
   commentsAdapter,
   commentsSelector,
   useGetCommentResponsesMutation,
   useGetCommentsQuery,
-} from "./commentsApiSlice";
+} from "../slices/commentsApiSlice";
 import { FC, useEffect, useRef, useState } from "react";
-import { useAuth } from "../auth/useAuth";
+import { useAuth } from "../../auth/useAuth";
 import { useInfiniteScroll } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
 import { Lock } from "lucide-react";
-import { useIsBlockedQuery } from "../user/userApiSlice";
+import { useIsBlockedQuery } from "../../user/userApiSlice";
 
 interface CommentsCardProps {
   comment: Post & { responses?: Post[] };
@@ -173,4 +172,4 @@ const PostPage = () => {
   );
 };
 
-export default PostPage;
+export { PostPage };

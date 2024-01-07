@@ -17,15 +17,17 @@ import Login from "./features/auth/Login.tsx";
 import Register from "./features/auth/Register.tsx";
 import UserPage from "./features/user/UserPage.tsx";
 import { ThemeProvider } from "./lib/ThemeContext.tsx";
-import PostPage from "./features/posts/PostPage.tsx";
-import FavoritePostsPage from "./features/posts/FavoritePostsPage.tsx";
 import TagPage from "./features/tags/TagPage.tsx";
 import TagPostsPage from "./features/tags/TagPostsPage.tsx";
 import HeadlessModal from "./lib/HeadlessModal.ts";
-import PostHistoryPage from "./features/posts/PostHistoryPage.tsx";
 import SettingsPage from "./features/user/SettingsPage.tsx";
-import SearchPostsPage from "./features/posts/SearchPostsPage.tsx";
 import SidebarLayout from "./components/layout/SidebarLayout.tsx";
+import {
+  FavoritePostsPage,
+  PostHistoryPage,
+  PostPage,
+  SearchPostsPage,
+} from "@/features/posts/pages";
 
 LR.registerBlocks({ ...LR, HeadlessModal });
 

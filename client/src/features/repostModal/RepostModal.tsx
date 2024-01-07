@@ -1,4 +1,4 @@
-import CreatePost from "./CreatePost";
+import { CreatePost } from "@/features/posts/components";
 import { DialogHeader, Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useRepostModal } from "./useRepostModal";
 

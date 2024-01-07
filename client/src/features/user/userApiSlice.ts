@@ -1,5 +1,10 @@
 import { api } from "@/app/api/apiSlice";
-import { Post, PostsResponse, postsAdapter, postsSelector } from "../posts/postsApiSlice";
+import {
+  Post,
+  PostsResponse,
+  postsAdapter,
+  postsSelector,
+} from "../posts/slices/postsApiSlice";
 import { EntityState, createEntityAdapter } from "@reduxjs/toolkit";
 import { RootState } from "@/app/store";
 import { changeUser } from "../auth/authSlice";

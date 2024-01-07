@@ -1,5 +1,5 @@
 import { Loader2, Lock, Paperclip, Unlock } from "lucide-react";
-import { useAuth } from "../auth/useAuth";
+import { useAuth } from "../../auth/useAuth";
 import { Link } from "react-router-dom";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -10,12 +10,12 @@ import {
   PostMedia,
   useChangePostMutation,
   useCreatePostMutation,
-} from "./postsApiSlice";
+} from "../slices/postsApiSlice";
 import SubmitButton from "@/components/SubmitButton";
 import { cn, optimizeImageUrl } from "@/lib/utils";
-import { PostType, WithOrigin } from "./utils";
+import { PostType, WithOrigin } from "../slices/utils";
 import { Input } from "@/components/ui/input";
-import PostCard from "./PostCard";
+import { PostCard } from "./";
 import {
   Tooltip,
   TooltipContent,
@@ -25,7 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { UploadEventDetails } from "@/lib/HeadlessModal";
 import { UploadCtxProvider } from "@uploadcare/blocks";
-import Uploader from "./Uploader";
+import { Uploader } from "./Uploader";
 
 const placeholders = [
   "Maxwell's equations",
@@ -382,4 +382,5 @@ const CreatePost: FC<Props> = ({
     </form>
   );
 };
-export default CreatePost;
+
+export { CreatePost };

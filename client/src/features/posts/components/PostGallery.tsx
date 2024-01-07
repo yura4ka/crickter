@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { PostMedia } from "./postsApiSlice";
+import { PostMedia } from "../slices/postsApiSlice";
 import { Gallery } from "react-grid-gallery";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
@@ -90,4 +90,4 @@ const PostGallery = ({ media }: Props) => {
   );
 };
 
-export default PostGallery;
+export { PostGallery };

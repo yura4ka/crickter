@@ -3,7 +3,7 @@ import {
   useGetPostByIdQuery,
   useHandleFavoriteMutation,
   useProcessReactionMutation,
-} from "./postsApiSlice";
+} from "../slices/postsApiSlice";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn, formatTimeAgo, optimizeImageUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -18,15 +18,15 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 import { FC, forwardRef, useState } from "react";
-import { PostOrigin, PostType } from "./utils";
-import { useAuth } from "../auth/useAuth";
-import { useLoginModal } from "../loginModal/useLoginModal";
+import { PostOrigin, PostType } from "../slices/utils";
+import { useAuth } from "../../auth/useAuth";
+import { useLoginModal } from "../../loginModal/useLoginModal";
 import { AvatarImage } from "@radix-ui/react-avatar";
-import { useRepostModal } from "./useRepostModal";
-import PostGallery from "./PostGallery";
-import PostContextMenu from "./PostContextMenu";
-import CreatePost from "./CreatePost";
-import { formatText } from "./textFormatter";
+import { useRepostModal } from "../../repostModal/useRepostModal";
+import { PostGallery } from "./PostGallery";
+import { PostContextMenu } from "./PostContextMenu";
+import { CreatePost } from "./CreatePost";
+import { formatText } from "../utils/textFormatter";
 
 const MinimalOriginal: FC<{ post: Post | undefined }> = ({ post }) => {
   if (!post)
@@ -282,4 +282,4 @@ const PostCard = forwardRef<HTMLDivElement, Props>((props, ref) => {
     </article>
   );
 });
-export default PostCard;
+export { PostCard };

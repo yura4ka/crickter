@@ -1,8 +1,12 @@
 import { useRef, useState } from "react";
-import { useAuth } from "../auth/useAuth";
-import { postsAdapter, postsSelector, useGetFavoritePostsQuery } from "./postsApiSlice";
+import { useAuth } from "../../auth/useAuth";
+import {
+  postsAdapter,
+  postsSelector,
+  useGetFavoritePostsQuery,
+} from "../slices/postsApiSlice";
 import { useInfiniteScroll } from "@/lib/hooks";
-import PostCard from "./PostCard";
+import { PostCard } from "@/features/posts/components";
 import { Bookmark } from "lucide-react";
 
 const FavoritePostsPage = () => {
@@ -51,4 +55,4 @@ const FavoritePostsPage = () => {
   );
 };
 
-export default FavoritePostsPage;
+export { FavoritePostsPage };

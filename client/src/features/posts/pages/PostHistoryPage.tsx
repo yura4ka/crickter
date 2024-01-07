@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { useGetPostHistoryQuery } from "./postsApiSlice";
-import { formatText } from "./textFormatter";
-import PostGallery from "./PostGallery";
+import { useGetPostHistoryQuery } from "../slices/postsApiSlice";
+import { formatText } from "../utils/textFormatter";
+import { PostGallery } from "../components/PostGallery";
 import { Loader2 } from "lucide-react";
 
 const PostHistoryPage = () => {
@@ -66,4 +66,4 @@ const PostHistoryPage = () => {
   );
 };
 
-export default PostHistoryPage;
+export { PostHistoryPage };

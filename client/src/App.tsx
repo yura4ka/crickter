@@ -1,12 +1,11 @@
 import { useRef, useState } from "react";
 import { useAuth } from "./features/auth/useAuth";
-import CreatePost from "./features/posts/CreatePost";
-import PostCard from "./features/posts/PostCard";
+import { CreatePost, PostCard } from "@/features/posts/components";
 import {
   postsAdapter,
   postsSelector,
   useGetPostsQuery,
-} from "./features/posts/postsApiSlice";
+} from "./features/posts/slices/postsApiSlice";
 import { useInfiniteScroll } from "./lib/hooks";
 
 const Feed = () => {

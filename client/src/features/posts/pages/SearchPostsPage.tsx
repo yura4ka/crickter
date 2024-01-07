@@ -1,9 +1,9 @@
 import { useRef, useState } from "react";
-import { useAuth } from "../auth/useAuth";
-import { postsAdapter, postsSelector, useSearchPostQuery } from "./postsApiSlice";
+import { useAuth } from "../../auth/useAuth";
+import { postsAdapter, postsSelector, useSearchPostQuery } from "../slices/postsApiSlice";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useInfiniteScroll } from "@/lib/hooks";
-import PostCard from "./PostCard";
+import { PostCard } from "@/features/posts/components";
 import { SearchCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -71,4 +71,4 @@ const SearchPostsPage = () => {
   );
 };
 
-export default SearchPostsPage;
+export { SearchPostsPage };

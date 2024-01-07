@@ -8,8 +8,8 @@ import {
   commentsAdapter,
   commentsSelector,
 } from "./commentsApiSlice";
-import { userApi } from "../user/userApiSlice";
-import { User } from "../auth/authSlice";
+import { userApi } from "../../user/userApiSlice";
+import { User } from "../../auth/authSlice";
 
 export type PostUser =
   | (Partial<User> & { isDeleted: true })

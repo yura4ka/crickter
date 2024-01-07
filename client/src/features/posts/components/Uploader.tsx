@@ -34,4 +34,4 @@ const Uploader = forwardRef<UploadCtxProvider, Props>(
   }
 );
 
-export default Uploader;
+export { Uploader };

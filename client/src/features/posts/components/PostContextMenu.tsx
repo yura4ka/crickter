@@ -10,7 +10,7 @@ import {
   NormalPost,
   useChangePostMutation,
   useDeletePostMutation,
-} from "./postsApiSlice";
+} from "../slices/postsApiSlice";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,7 +27,7 @@ import {
   useBlockUserMutation,
   useIsBlockedQuery,
   useUnblockUserMutation,
-} from "../user/userApiSlice";
+} from "../../user/userApiSlice";
 
 const BlockUserSection = ({ userId }: { userId: string }) => {
   const [block] = useBlockUserMutation();
@@ -121,4 +121,4 @@ const PostContextMenu = ({ children, userId, post, handleEditing }: Props) => {
   );
 };
 
-export default PostContextMenu;
+export { PostContextMenu };

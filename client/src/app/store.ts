@@ -2,7 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "../features/auth/authSlice";
 import { api } from "./api/apiSlice";
 import loginModalReducer from "../features/loginModal/loginModalSlice";
-import repostModalReducer from "../features/posts/repostModalSlice";
+import repostModalReducer from "../features/repostModal/repostModalSlice";
 
 export const store = configureStore({
   reducer: {
