@@ -29,7 +29,12 @@ const ConfirmPassword: FC<Props> = ({ description, onChange, validate, ...rest }
     const isValid = validate(value.trim());
     const isEqual = value2 === value.trim();
 
-    setPassword({ value, isError: !isValid, info: description });
+    setPassword({
+      value,
+      isError: !isValid || (!isEqual && value2.length !== 0),
+      info:
+        !isEqual && isValid && value2.length !== 0 ? PasswordInfo.NOT_MATCH : description,
+    });
 
     if (!isEqual) {
       setConfirm((prev) => ({
@@ -37,6 +42,8 @@ const ConfirmPassword: FC<Props> = ({ description, onChange, validate, ...rest }
         isError: value2.length !== 0,
         info: value2.length === 0 ? PasswordInfo.CONFIRM : PasswordInfo.NOT_MATCH,
       }));
+    } else {
+      setConfirm((prev) => ({ ...prev, isError: false, info: PasswordInfo.CONFIRM }));
     }
 
     onChange(value, isValid && isEqual);
@@ -46,17 +53,28 @@ const ConfirmPassword: FC<Props> = ({ description, onChange, validate, ...rest }
     const value = e.target.value;
     const original = password.value.trim();
 
+    const isEqual = value.trim() === original;
+    const isOriginalValid = validate(original);
+    const isValid = isEqual && isOriginalValid;
+
     if (value.trim().length === 0) {
       setConfirm({ value, isError: false, info: PasswordInfo.CONFIRM });
+      setPassword((prev) => ({ ...prev, isError: !isOriginalValid, info: description }));
       onChange(password.value, false);
       return;
     }
 
-    const isEqual = value.trim() === original;
-    setConfirm({ value, isError: !isEqual, info: isEqual ?  PasswordInfo.CONFIRM: PasswordInfo.NOT_MATCH });
+    setConfirm({
+      value,
+      isError: !isEqual,
+      info: isEqual ? PasswordInfo.CONFIRM : PasswordInfo.NOT_MATCH,
+    });
 
-    const isValid = isEqual && validate(original);
-    setPassword((prev) => ({ ...prev, isError: !isValid }));
+    setPassword((prev) => ({
+      ...prev,
+      isError: !isValid,
+      info: !isEqual ? PasswordInfo.NOT_MATCH : description,
+    }));
 
     onChange(original, isValid);
   };

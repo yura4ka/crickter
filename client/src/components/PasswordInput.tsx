@@ -2,6 +2,7 @@ import { FC, useState } from "react";
 import CustomInput, { CustomInputProps } from "./CustomInput";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "./ui/button";
+import { cn } from "@/lib/utils";
 
 const PasswordInput: FC<CustomInputProps> = (props) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -13,6 +14,7 @@ const PasswordInput: FC<CustomInputProps> = (props) => {
       <CustomInput
         {...props}
         type={isVisible ? "text" : "password"}
+        className={cn(props.className, "pr-[3.25rem]")}
         placeholder={placeholder}
       />
       <Button
