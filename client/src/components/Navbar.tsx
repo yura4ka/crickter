@@ -26,7 +26,7 @@ const Navbar = () => {
 
   return (
     <header className="supports-backdrop-blur:bg-background/60 sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
-      <div className="flex items-center justify-between gap-4 px-4 py-2 sm:container">
+      <div className="flex items-center justify-between gap-4 px-4 py-2 lg:container lg:px-4 xl:px-8">
         <Link to="/" className="font-mono text-2xl font-semibold tracking-tighter">
           crickter
         </Link>

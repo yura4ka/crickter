@@ -1,6 +1,6 @@
 import { Outlet } from "react-router-dom";
-import Navbar from "./Navbar";
-import Footer from "./Footer";
+import Navbar from "../Navbar";
+import Footer from "../Footer";
 import LoginModal from "@/features/loginModal/LoginModal";
 import RepostModal from "@/features/posts/RepostModal";
 import { useAuth } from "@/features/auth/useAuth";

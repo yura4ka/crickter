@@ -11,7 +11,7 @@ import {
   createBrowserRouter,
   createRoutesFromElements,
 } from "react-router-dom";
-import Layout from "./components/Layout.tsx";
+import Layout from "./components/layout/Layout.tsx";
 import AuthLayout from "./features/auth/AuthLayout.tsx";
 import Login from "./features/auth/Login.tsx";
 import Register from "./features/auth/Register.tsx";
@@ -25,6 +25,7 @@ import HeadlessModal from "./lib/HeadlessModal.ts";
 import PostHistoryPage from "./features/posts/PostHistoryPage.tsx";
 import SettingsPage from "./features/user/SettingsPage.tsx";
 import SearchPostsPage from "./features/posts/SearchPostsPage.tsx";
+import SidebarLayout from "./components/layout/SidebarLayout.tsx";
 
 LR.registerBlocks({ ...LR, HeadlessModal });
 
@@ -33,7 +34,10 @@ const router = createBrowserRouter(
     <Route path="/" element={<Layout />}>
       <Route path="login" element={<Login />} />
       <Route path="register" element={<Register />} />
-      <Route index element={<App />} />
+
+      <Route element={<SidebarLayout />}>
+        <Route index element={<App />} />
+      </Route>
       <Route path="post/search" element={<SearchPostsPage />} />
       <Route path="post/:postId" element={<PostPage />} />
       <Route path="user/:userId" element={<UserPage />} />
